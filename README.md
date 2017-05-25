@@ -6,23 +6,23 @@ This plugin calculates the percentage area of a region of interest which has bee
 2.	Load the “StainAnalysis” plugin from the pulldown list of Algorithms (Fig 1.)
 
 <p align="center">
-  <img src="https://github.com/sedeen-piip-plugins/RoiCropper/blob/master/Images/ROICroper_2.png"/>
+  <img src="https://github.com/sedeen-piip-plugins/StainAnalysis-plugin/blob/master/Images/StainAnalysis_1_1.png"/>
 </p>
 
 <p align="center">
 <strong>Fig1.</strong> 
-  <font size="2" color="black">Annotated WSI with 6 selected ROI by the pathologist. Zoomed in ROI 1 in the annotated WSI.</font>
+  <font size="2" color="black">Select the Stain Analysis Plugin.</font>
 </p>
 
 3.	Select the stain using the Selected Stain pulldown menu (Fig 2.). The plugin provides a number of "built in" stain vectors:   Hematoxylin and Eosin (H&E), Hematoxylin and DAB (H DAB), and Hematoxylin, Eosin and DAB (H&E DAB) [1] .
 
 <p align="center">
-  <img src="https://github.com/sedeen-piip-plugins/RoiCropper/blob/master/Images/ROICroper_2.png"/>
+  <img src="https://github.com/sedeen-piip-plugins/StainAnalysis-plugin/blob/master/Images/StainAnalysis_1_2.png"/>
 </p>
 
 <p align="center">
 <strong>Fig1.</strong> 
-  <font size="2" color="black">Annotated WSI with 6 selected ROI by the pathologist. Zoomed in ROI 1 in the annotated WSI.</font>
+  <font size="2" color="black">Select stain option.</font>
 </p>
 
 4.	Users can also determine their own vectors to achieve an accurate stain separation. This option is available in two ways: “From ROI” or “Load From File”. If the “From ROI” option is set, users also need to choose three ROIs to compute the stain vectors. Select small ROIs areas which are intensely stained with only one of the stain, without empty background. If the staining method uses only 2 colors instead of 3, for the 3rd selection just select a small ROI from the background. The plug-in will compute the stain vectors based on three regions [1] 
