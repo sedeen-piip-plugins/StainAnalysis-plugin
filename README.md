@@ -21,7 +21,7 @@ This plugin calculates the percentage area of a region of interest which has bee
 </p>
 
 <p align="center">
-<strong>Fig1.</strong> 
+<strong>Fig2.</strong> 
   <font size="2" color="black">Select stain option.</font>
 </p>
 
