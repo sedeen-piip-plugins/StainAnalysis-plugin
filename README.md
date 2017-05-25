@@ -5,14 +5,14 @@ This plugin calculates the percentage area of a region of interest which has bee
 1.	Open the WSI image and define the region of interest (ROI). 
 2.	Load the “StainAnalysis” plugin from the pulldown list of Algorithms (Fig 1.)
 
-<p align="center">
+<div align="right">
   <img src="https://github.com/sedeen-piip-plugins/StainAnalysis-plugin/blob/master/Images/StainAnalysis_1_1.png"/>
-</p>
+</div>
 
-<p align="center">
+<div align="right">
 <strong>Fig1.</strong> 
   <font size="2" color="black">Select the Stain Analysis Plugin.</font>
-</p>
+</div>
 
 3.	Select the stain using the Selected Stain pulldown menu (Fig 2.). The plugin provides a number of "built in" stain vectors:   Hematoxylin and Eosin (H&E), Hematoxylin and DAB (H DAB), and Hematoxylin, Eosin and DAB (H&E DAB) [1] .
 
