@@ -32,17 +32,26 @@ The computed stain vectors will be saved in default directory (the Sedeen folder
 7.	The Processing ROI option allows the % staining to be calculated over a user defined ROI. (Fig 3). If an ROI is not selected then the calculation will be done over the displayed region.
 
 <p align="center">
-  <img src="https://github.com/sedeen-piip-plugins/RoiCropper/blob/master/Images/ROICroper_2.png"/>
+  <img src="https://github.com/sedeen-piip-plugins/StainAnalysis-plugin/blob/master/Images/StainAnalysis_1_3.png"/>
 </p>
 
 <p align="center">
-<strong>Fig1.</strong> 
-  <font size="2" color="black">Annotated WSI with 6 selected ROI by the pathologist. Zoomed in ROI 1 in the annotated WSI.</font>
+<strong>Fig3.</strong> 
+  <font size="2" color="black">Select the Processing ROI.</font>
 </p>
 
 8.	Clicking on the Run button will execute the algorithm. The calculated % area is shown in the results panel. A color overlay shows which pixels are included in the % stain calculation. Use the Show Result checkbox to toggle the overlay on and off. The overlay is generated at the resolution of the displayed image but the calculation is carried out at full image resolution.
 
-<p><small>A. C. Ruifrok and D. A. Johnston, “Quantification of histochemical staining by color deconvolution,” Anal. Quant. Cytol. Histol., vol. 23, no. 4, pp. 291–299, 2001.</small></p>
+<p align="center">
+  <img src="https://github.com/sedeen-piip-plugins/StainAnalysis-plugin/blob/master/Images/StainAnalysis_1_4.png"/>
+</p>
+
+<p align="center">
+<strong>Fig4.</strong> 
+  <font size="2" color="black">Select the Processing ROI.</font>
+</p>
+
+<p><small> A. C. Ruifrok and D. A. Johnston, “Quantification of histochemical staining by color deconvolution,” Anal. Quant. Cytol. Histol., vol. 23, no. 4, pp. 291–299, 2001. </small></p>
 
 ## Authors
 **Azadeh Yazanpanah**
