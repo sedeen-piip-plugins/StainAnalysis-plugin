@@ -1,5 +1,5 @@
 <h3 align="center">Stain Analysis Plugin</h3>
-This plugin calculates the percentage area of a region of interest which has been stained using an IHC biomarker. The color deconvolution method described by Ruifrok [^1] is used to separate the color channels. The stain of interest is selected and a threshold image is then obtained by applying a linear thresholding algorithm on the deconvolved image. Finally, the percentage of pixels that have been stained is calculated using the threshold image. All the processing is done in the highest resolution.
+This plugin calculates the percentage area of a region of interest which has been stained using an IHC biomarker. The color deconvolution method described by Ruifrok <sup>[1]</sup> is used to separate the color channels. The stain of interest is selected and a threshold image is then obtained by applying a linear thresholding algorithm on the deconvolved image. Finally, the percentage of pixels that have been stained is calculated using the threshold image. All the processing is done in the highest resolution.
 
 ## User Manual
 1.	Open the WSI image and define the region of interest (ROI). 
@@ -51,11 +51,7 @@ The computed stain vectors will be saved in default directory (the Sedeen folder
   <font size="2" color="black">Select the Processing ROI.</font>
 </div>
 
-I have more [^2] to say up here.
-
-[^2]: To say down here.
-
-[^1]: A. C. Ruifrok and D. A. Johnston, “Quantification of histochemical staining by color deconvolution,” Anal. Quant. Cytol. Histol., vol. 23, no. 4, pp. 291–299, 2001.
+<sup>[1]</sup> A. C. Ruifrok and D. A. Johnston, “Quantification of histochemical staining by color deconvolution,” Anal. Quant. Cytol. Histol., vol. 23, no. 4, pp. 291–299, 2001.
 
 ## Authors
 **Azadeh Yazanpanah**
