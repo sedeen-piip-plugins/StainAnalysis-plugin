@@ -50,8 +50,7 @@ The computed stain vectors will be saved in default directory (the Sedeen folder
 <strong>Fig4.</strong> 
   <font size="2" color="black">Select the Processing ROI.</font>
 </div>
-
-<div><small> A. C. Ruifrok and D. A. Johnston, “Quantification of histochemical staining by color deconvolution,” Anal. Quant. Cytol. Histol., vol. 23, no. 4, pp. 291–299, 2001. </small></div>
+###### A. C. Ruifrok and D. A. Johnston, “Quantification of histochemical staining by color deconvolution,” Anal. Quant. Cytol. Histol., vol. 23, no. 4, pp. 291–299, 2001.
 
 ## Authors
 **Azadeh Yazanpanah**
