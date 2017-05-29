@@ -1,5 +1,5 @@
 <div align="center">
-<img src="https://github.com/sedeen-piip-plugins/StainAnalysis-plugin/blob/master/Images/PIIP_SRI_.gif"  height="400" width="600"/>
+<img src="https://github.com/sedeen-piip-plugins/StainAnalysis-plugin/blob/master/Images/PIIP_SRI_.gif"  height="400" width="400"/>
 </div>
 <h1 align="center">Stain Analysis Plugin</h1>
 This plugin calculates the percentage area of a region of interest which has been stained using an IHC biomarker. The color deconvolution method described by Ruifrok <sup>[1]</sup> is used to separate the color channels. The stain of interest is selected and a threshold image is then obtained by applying a linear thresholding algorithm on the deconvolved image. Finally, the percentage of pixels that have been stained is calculated using the threshold image. All the processing is done in the highest resolution.
