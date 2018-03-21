@@ -85,7 +85,7 @@ namespace sedeen {
 
 				virtual RawImage doProcessData(const RawImage &source);
 
-				virtual Color doGetColor() const;
+				virtual const ColorSpace& doGetColorSpace() const;
 
 				//RawImage separate_stains(const RawImage &source, const Eigen::Matrix<double,3,3>);
 				/*Eigen::MatrixXd convertImageToMatrix(const RawImage &source);
@@ -118,6 +118,8 @@ namespace sedeen {
 
 				//std::ofstream log_file;
 				int count;
+
+        ColorSpace m_colorSpace;
 
 				/// \endcond
 			};
