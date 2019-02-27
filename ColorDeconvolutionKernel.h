@@ -1,3 +1,11 @@
+/*=========================================================================
+ *
+ *  Copyright (c) 2019 Sunnybrook Research Institute
+ *
+ *  License terms pending.
+ *
+ *=========================================================================*/
+
 #ifndef DPTK_SRC_IMAGE_FILTER_KERNELS_COLORDECONVOLUTION_H
 #define DPTK_SRC_IMAGE_FILTER_KERNELS_COLORDECONVOLUTION_H
 

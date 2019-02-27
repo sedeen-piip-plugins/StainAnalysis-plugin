@@ -1,3 +1,11 @@
+/*=========================================================================
+ *
+ *  Copyright (c) 2019 Sunnybrook Research Institute
+ *
+ *  License terms pending.
+ *
+ *=========================================================================*/
+
 #ifndef SEDEEN_SRC_PLUGINS_STAINANALYSIS_STAINANALYSIS_H
 #define SEDEEN_SRC_PLUGINS_STAINANALYSIS_STAINANALYSIS_H
 

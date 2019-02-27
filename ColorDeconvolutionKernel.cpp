@@ -1,3 +1,11 @@
+/*=========================================================================
+ *
+ *  Copyright (c) 2019 Sunnybrook Research Institute
+ *
+ *  License terms pending.
+ *
+ *=========================================================================*/
+
 #include "ColorDeconvolutionKernel.h"
 
 namespace sedeen {
