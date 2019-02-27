@@ -1,7 +1,15 @@
+/*=========================================================================
+ *
+ *  Copyright (c) 2019 Sunnybrook Research Institute
+ *
+ *  License terms pending.
+ *
+ *=========================================================================*/
+
 // StainAnalysis.cpp : Defines the exported functions for the DLL application.
 //
 // Primary header
-#include "StainAnalysis.h"
+#include "StainAnalysis-plugin.h"
 
 #include <algorithm>
 #include <cassert>
@@ -43,6 +51,7 @@ StainAnalysis::StainAnalysis()
 	m_colorDeconvolution_factory(nullptr)
 	//m_threshold_factory(nullptr)
 {
+
 
 }
 
