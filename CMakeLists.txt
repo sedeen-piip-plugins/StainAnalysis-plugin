@@ -1,4 +1,4 @@
-PROJECT( StainAnalysis )
+PROJECT( StainAnalysis-plugin )
 CMAKE_MINIMUM_REQUIRED( VERSION 3.8 )
 ## Set the C++ standard to use
 SET(CMAKE_CXX_STANDARD 17)
@@ -28,16 +28,16 @@ LINK_DIRECTORIES( ${LINK_DIRECTORIES} "${SEDEENSDK_LIBRARY_DIR}" "${BOOST_ROOT}/
 
 ##
 ## Build the code into a module library
-ADD_LIBRARY( StainAnalysis MODULE StainAnalysis.cpp StainAnalysis.h ColorDeconvolutionKernel.cpp ColorDeconvolutionKernel.h)
+ADD_LIBRARY( ${PROJECT_NAME} MODULE ${PROJECT_NAME}.cpp ${PROJECT_NAME}.h ColorDeconvolutionKernel.cpp ColorDeconvolutionKernel.h)
 
 # Link the library against the Sedeen libraries
 # NOTE: The QT libraries must be linked first.
-TARGET_LINK_LIBRARIES( StainAnalysis ${SEDEENSDK_LIBRARIES} 
+TARGET_LINK_LIBRARIES( ${PROJECT_NAME} ${SEDEENSDK_LIBRARIES} 
 					     Boost::filesystem )
 
 ##
 ## Install the plugin in the sedeen plugins directory
-IF( ${PATHCORE_FOUND} )
-  INSTALL( TARGETS StainAnalysis 
-           LIBRARY DESTINATION "${PATHCORE_DIR}/plugins" )
+IF( ${SEDEEN_FOUND} )
+  INSTALL( TARGETS ${PROJECT_NAME} 
+           LIBRARY DESTINATION "D:/mschumaker/projects/Sedeen/testSedeen/Sedeen Viewer/plugins/cpp/piip/${PROJECT_NAME}" )
 ENDIF()
