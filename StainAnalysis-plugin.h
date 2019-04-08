@@ -29,7 +29,7 @@
 #include "algorithm/AlgorithmBase.h"
 #include "algorithm/Parameters.h"
 #include "algorithm/Results.h"
-#include "ColorDeconvolutionKernel.h"
+//#include "ColorDeconvolutionKernel.h"
 
 #include <omp.h>
 #include <Windows.h>
@@ -41,22 +41,26 @@ namespace tile {
 } // namespace tile
 
 namespace algorithm {
-/// Color Deconvolution
+#define round(x) ( x >= 0.0f ? floor(x + 0.5f) : ceil(x - 0.5f) )
+
+/// Stain Analysis
 /// This plugin implements stain separation using the colour deconvolution
 /// method described in:
 //Ruifrok AC, Johnston DA. Quantification of histochemical
 //staining by color deconvolution. Analytical & Quantitative
 //Cytology & Histology 2001; 23: 291-299.
-#define round(x) ( x >= 0.0f ? floor(x + 0.5f) : ceil(x - 0.5f) )
-
 class StainAnalysis : public algorithm::AlgorithmBase {
 public:
 	StainAnalysis();
+    virtual ~StainAnalysis();
 
 private:
 	// virtual function
 	virtual void run();
 	virtual void init(const image::ImageHandle& image);
+
+    //Define the open file dialog options outside of init
+    sedeen::file::FileDialogOptions defineOpenFileDialogOptions();
 
 	/// Creates the Color Deconvolution pipeline with a cache
 	//
@@ -93,30 +97,57 @@ private:
 	std::string m_path_to_root;
 	std::string m_path_to_stainfile;
 
-	algorithm::DisplayAreaParameter m_display_area;
-	algorithm::OptionParameter m_retainment;
-	algorithm::OptionParameter m_displayOptions;
+	DisplayAreaParameter m_displayArea;
+
+    //The new parameters!!!
+    OpenFileDialogParameter m_openProfile;
+    OptionParameter m_stainSeparationAlgorithm;
+    OptionParameter m_stainVectorProfile;
+    GraphicItemParameter m_regionToProcess;
+
+    OptionParameter m_stainToDisplay;
+    BoolParameter m_applyThreshold;
+    /// User defined Threshold value.
+    algorithm::DoubleParameter m_threshold;
+    //End of the new parameters
+
+    /// The output result
+    ImageResult m_result;			
+    TextResult m_output_text;
+    std::string m_report;
+
+
+    /// The intermediate image factory after color deconvolution
+    std::shared_ptr<image::tile::Factory> m_colorDeconvolution_factory;
+
+    /// The intermediate image factory after thresholding
+    std::shared_ptr<image::tile::Factory> m_threshold_factory;
+    std::ofstream log_file;
+
+
+
+	//algorithm::OptionParameter m_retainment;
+	//algorithm::OptionParameter m_displayOptions;
 	/// Parameter for selecting threshold retainment 
 	//algorithm::OptionParameter m_behavior;
 	/// User defined Threshold value.
-	algorithm::DoubleParameter m_threshold;
+	//algorithm::DoubleParameter m_threshold;
 	/// The output result
-	algorithm::ImageResult m_result;			
-	algorithm::TextResult m_output_text;
-	std::string m_report;
+	//algorithm::ImageResult m_result;			
+	//algorithm::TextResult m_output_text;
+	//std::string m_report;
 	/// Parameter for selecting which of the intermediate result to display
 	//algorithm::OptionParameter m_output_option;
 	/// User region of interest
-	std::vector<algorithm::GraphicItemParameter> m_region_interest;
-	algorithm::GraphicItemParameter m_region_toProcess;
+	//std::vector<algorithm::GraphicItemParameter> m_region_interest;
+	//algorithm::GraphicItemParameter m_regionToProcess;
 
-	/// The intermediate image factory after color deconvolution
-	std::shared_ptr<image::tile::Factory> m_colorDeconvolution_factory;
 
-	/// The intermediate image factory after thresholding
-	//std::shared_ptr<image::tile::Factory> m_threshold_factory;
-	std::ofstream log_file;
-
+private:
+    //Member variables
+    std::vector<std::string> m_separationAlgorithmOptions;
+    std::vector<std::string> m_stainVectorProfileOptions;
+    std::vector<std::string> m_stainToDisplayOptions;
 
 };
 
