@@ -12,8 +12,8 @@ SET( DEVELOPER_TEXT "Sunnybrook Research Institute" CACHE STRING "Name of the au
 SET(PROGRAMFILESX86 "PROGRAMFILES\(X86\)")
 FIND_PACKAGE( SEDEENSDK REQUIRED 
                 HINTS ../../.. 
-                  "$ENV{${PROGRAMFILESX86}}/Sedeen Viewer SDK/v5.4.0.20181217/msvc2017"
-                  "$ENV{PROGRAMFILES}/Sedeen Viewer SDK/v5.4.0.20181217/msvc2017" )
+                  "$ENV{${PROGRAMFILESX86}}/Sedeen Viewer SDK/v5.4.1.20190327/msvc2017"
+                  "$ENV{PROGRAMFILES}/Sedeen Viewer SDK/v5.4.1.20190327/msvc2017" )
 
 # The ColorDeconvolutionKernel depends on boost.filesystem
 IF(NOT BOOST_ROOT)
@@ -25,8 +25,8 @@ ENDIF()
 FIND_PACKAGE(Boost ${BOOST_VERSION} REQUIRED COMPONENTS
                filesystem )
 
-INCLUDE_DIRECTORIES( ${INCLUDE_DIRECTORIES} "${SEDEENSDK_INCLUDE_DIR}" "${BOOST_ROOT}")
-LINK_DIRECTORIES( ${LINK_DIRECTORIES} "${SEDEENSDK_LIBRARY_DIR}" "${BOOST_ROOT}/stage/lib")
+INCLUDE_DIRECTORIES( ${INCLUDE_DIRECTORIES} ${SEDEENSDK_INCLUDE_DIR} ${BOOST_ROOT})
+LINK_DIRECTORIES( ${LINK_DIRECTORIES} ${SEDEENSDK_LIBRARY_DIR} "${BOOST_ROOT}/stage/lib")
 
 # Build the code into a module library
 ADD_LIBRARY( ${PROJECT_NAME} MODULE ${PROJECT_NAME}.cpp ${PROJECT_NAME}.h ColorDeconvolutionKernel.cpp ColorDeconvolutionKernel.h)
@@ -37,7 +37,7 @@ TARGET_LINK_LIBRARIES( ${PROJECT_NAME} ${SEDEENSDK_LIBRARIES}
 
 #Create or update the .info file in the build directory
 STRING( TIMESTAMP DATE_CREATED_TEXT "%Y-%m-%d" )
-CONFIGURE_FILE( "${PROJECT_NAME}.info.in" "${PROJECT_NAME}.info" )
+CONFIGURE_FILE( "infoTemplate.info.in" "${PROJECT_NAME}.info" )
 
 # Set the install destination directory
 IF( NOT PLUGIN_DESTINATION_DIR )
@@ -52,8 +52,8 @@ ENDIF()
 
 # Install the plugin and .info file in the PLUGIN_DESTINATION_DIR directory
 IF( ${SEDEEN_FOUND} )
-  install(TARGETS ${PROJECT_NAME}
+  INSTALL(TARGETS ${PROJECT_NAME}
           LIBRARY DESTINATION "${PLUGIN_DESTINATION_DIR}")
-  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.info"
+  INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.info"
           DESTINATION "${PLUGIN_DESTINATION_DIR}")
 ENDIF()
