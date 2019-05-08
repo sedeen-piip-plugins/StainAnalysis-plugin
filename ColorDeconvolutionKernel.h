@@ -37,10 +37,11 @@
 
 #include <fstream>
 #include <sstream>
-#include <boost/filesystem.hpp>
+#include <filesystem> //Requires C++17
+#include <memory>
 
-using namespace boost::filesystem;
-
+//Plugin includes
+#include "StainProfile.h"
 
 //#include "Eigen\Dense"
 
@@ -61,18 +62,12 @@ namespace sedeen {
 				enum Behavior {
 					///User selected ROI
 					RegionOfInterest,
-					///rgb_from_hex: Hematoxylin + Eosin
-					HematoxylinPEosin,
-					///rgb_from_hdx: Hematoxylin + DAB
-					HematoxylinPDAB,
-					///rgb_from_hed: Hematoxylin + Eosin + DAB
-					HematoxylinPEosinPDAB,
-					///Load from previously saved file
-					LoadFromFile
+                    ///Load from the StainProfile
+					LoadFromProfile
 				};
 
-				/// Disply options for the output image
-				enum DisplyOptions {
+				/// Display options for the output image
+				enum DisplayOptions {
 					STAIN1,
 					STAIN2,
 					STAIN3
@@ -83,7 +78,7 @@ namespace sedeen {
 				//
 				/// \param 
 				/// 
-				explicit ColorDeconvolution(Behavior behavior, DisplyOptions displyOption, double[9], double, const std::string& );
+                explicit ColorDeconvolution(Behavior behavior, DisplayOptions displayOption, std::shared_ptr<StainProfile>, bool, double); // , const std::string& );
 
 				virtual ~ColorDeconvolution();
 
@@ -94,15 +89,15 @@ namespace sedeen {
 				/// \post
 				///  is updated. If  is changed, update() is called to notify
 				/// the observers
-				void setDisplayOptions(DisplyOptions displyOption);
+				void setDisplayOptions(DisplayOptions displayOption);
 
 				/// Set the Stain combination matrices of the kernel
 				/// \param t
-				/// The Stain combination matrice name
+				/// The Stain combination Matrix name
 				/// \post
-				/// m_StainMatrice is updated. If m_StainMatrice is changed, update() is called to notify
+				/// m_StainMatrix is updated. If m_StainMatrix is changed, update() is called to notify
 				/// the observers.
-				void SetStainMatrice(Behavior behavior, double[9], const std::string&);
+                void SetStainMatrix(Behavior behavior, double[9]); // , const std::string&);
 
 			private:
 				/// \cond INTERNAL
@@ -116,34 +111,37 @@ namespace sedeen {
 				RawImage convertMatrixToImage(const Eigen::MatrixXd &source);*/
 
 				RawImage separate_stains(const RawImage &source, double[9]);
-				void computeMatrixInvers( double[9] );
-				bool saveToCSVfile(const std::string& );
-				void loadFromCSV( const std::string&, const std::string&);
+				void computeMatrixInverse( double[9] );
+				//bool saveToCSVfile(const std::string& );
+				//void loadFromCSV( const std::string&, const std::string&);
 				/*void getmeanRGBODfromROI(std::shared_ptr<tile::Factory> source,
 					const Rect &region_of_interest,
 					const Size &rescaled_resolution);*/
 				///matrix conversion from H&E to RGB (original matrix from Ruifrok, 2001)
 				// rows of matrix are stains, columns are color channels
 				//const Eigen::Matrix<double, 3, 3, Eigen::DontAlign> m_rgb_from_HandE;
-				ColorDeconvolution::Behavior m_Stain;
-				ColorDeconvolution::DisplyOptions m_displyOption;	
+				ColorDeconvolution::Behavior m_behaviorType;
+				ColorDeconvolution::DisplayOptions m_DisplayOption;	
 				//std::vector<RawImage> m_outputImages;
 				//std::vector<RawImage> m_binaryImages;
+                bool m_applyThreshold;
 				double m_threshold;
 
-				static const int NumOfStains =3;
+				static const int NumOfStains = 3;
 				double log255;
-				double MODx[3];
-				double MODy[3];
-				double MODz[3];
-				double cosx[3];
-				double cosy[3];
-				double cosz[3];
+				double m_MODx[3];
+				double m_MODy[3];
+				double m_MODz[3];
+				double m_cosx[3];
+				double m_cosy[3];
+				double m_cosz[3];
 
 				//std::ofstream log_file;
 				int count;
 
-        ColorSpace m_colorSpace;
+                ColorSpace m_colorSpace;
+
+                std::shared_ptr<StainProfile> m_stainProfile;
 
 				/// \endcond
 			};
@@ -152,17 +150,11 @@ namespace sedeen {
 
 		PATHCORE_IMAGE_API
 			void getStainsComponents(std::shared_ptr<tile::Factory> source,
-								const std::vector<std::shared_ptr<GraphicItemBase>> region_of_interests,
+								const std::vector<std::shared_ptr<GraphicItemBase>> regions_of_interest,
 								const Size& rescaled_resolutions, double[9]);
 
 		PATHCORE_IMAGE_API
 			void getmeanRGBODfromROI(RawImage, double[3]);
-
-		PATHCORE_IMAGE_API
-		bool serachForfile( const path&, const std::string&, path& ); 
-
-		PATHCORE_IMAGE_API
-		void setImagePath( const std::string& ); 
 
 	} // namespace image
 } // namespace sedeen

@@ -1,0 +1,22 @@
+<stain-profile profile-name="Hematoxylin + DAB">
+    <components numstains="2">
+        <stain index="1" stain-name="Hematoxylin">
+            <stain-value value-type="r">0.650</stain-value>
+            <stain-value value-type="g">0.704</stain-value>
+            <stain-value value-type="b">0.286</stain-value>
+        </stain>
+        <stain index="2" stain-name="DAB">
+            <stain-value value-type="r">0.268</stain-value>
+            <stain-value value-type="g">0.570</stain-value>
+            <stain-value value-type="b">0.776</stain-value>
+        </stain>
+        <stain index="3" stain-name="">
+            <stain-value value-type="r">0</stain-value>
+            <stain-value value-type="g">0</stain-value>
+            <stain-value value-type="b">0</stain-value>
+        </stain>
+    </components>
+    <algorithm alg-name="Ruifrok+Johnston Deconvolution">
+        <parameter/>
+    </algorithm>
+</stain-profile>

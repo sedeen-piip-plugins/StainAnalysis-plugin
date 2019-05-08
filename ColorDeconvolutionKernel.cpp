@@ -27,184 +27,121 @@
 namespace sedeen {
 	namespace image {
 		namespace tile {
-			ColorDeconvolution::ColorDeconvolution( Behavior behavior, DisplyOptions displyOption, double conv_matrix[9], double threshold, const std::string& path_to_root):
+			ColorDeconvolution::ColorDeconvolution( Behavior behavior, DisplayOptions displayOption, std::shared_ptr<StainProfile> theProfile, 
+                bool applyThreshold, double threshold) : /// const std::string& path_to_root) :
+                m_applyThreshold(applyThreshold),
 				m_threshold(threshold),
 				count(0),
-				m_Stain(behavior),
+				m_behaviorType(behavior),
 				log255(std::log(255.0)),
-				m_displyOption(displyOption),
-        m_colorSpace(ColorModel::RGBA, ChannelType::UInt8)
-
+				m_DisplayOption(displayOption),
+                m_stainProfile(theProfile),
+                m_colorSpace(ColorModel::RGBA, ChannelType::UInt8)
 			{
-				SetStainMatrice(m_Stain, conv_matrix, path_to_root);
-				setDisplayOptions(m_displyOption);
+                //Get the stain profile values as a 9-element array
+                double conv_matrix[9];
+                theProfile->GetProfileAsDoubleArray(conv_matrix);
+                SetStainMatrix(m_behaviorType, conv_matrix); // , path_to_root);
+				setDisplayOptions(displayOption);
+			}//end constructor
 
-				/*std::string name = "C:/sedeen/logfile1.txt";
-				log_file= std::ofstream(name, std::ios_base::out | std::ios_base::app );*/
-			}
 
+            ColorDeconvolution::~ColorDeconvolution(void) {
+            }//end destructor
 
-			ColorDeconvolution::~ColorDeconvolution(void)
+			void ColorDeconvolution::setDisplayOptions(DisplayOptions displayOption)
 			{
-			}
+                if (displayOption == DisplayOptions::STAIN1) {
+                    m_DisplayOption = DisplayOptions::STAIN1;
+                }
 
-			void ColorDeconvolution::setDisplayOptions(DisplyOptions displyOption)
+                if (displayOption == DisplayOptions::STAIN2) {
+                    m_DisplayOption = DisplayOptions::STAIN2;
+                }
+
+                if (displayOption == DisplayOptions::STAIN3) {
+                    m_DisplayOption = DisplayOptions::STAIN3;
+                }
+			}//end setDisplayOptions
+
+			void ColorDeconvolution::SetStainMatrix(Behavior behavior, double conv_matrix[9]) //, const std::string& path_to_root)
 			{
-				if( displyOption == DisplyOptions::STAIN1 )
-					m_displyOption = DisplyOptions::STAIN1;
-
-				if( displyOption == DisplyOptions::STAIN2 )
-					m_displyOption = DisplyOptions::STAIN2;
-
-				if( displyOption == DisplyOptions::STAIN3 )
-					m_displyOption = DisplyOptions::STAIN3;
-
-			}
-
-
-			void ColorDeconvolution::SetStainMatrice(Behavior behavior, double conv_matrix[9], const std::string& path_to_root)
-			{
-				path dir_path = path_to_root +"sedeen/";
+                //std::filesystem::path dir_path = path_to_root +"sedeen/";
 				if(behavior == Behavior::RegionOfInterest)
 				{
 					for (int i=0; i < 3; i++)
 					{
-						MODx[i]= conv_matrix[i*3];
-						MODy[i]= conv_matrix[i*3+1];
-						MODz[i]= conv_matrix[i*3+2];
+						m_MODx[i]= conv_matrix[i*3];
+						m_MODy[i]= conv_matrix[i*3+1];
+						m_MODz[i]= conv_matrix[i*3+2];
 					}
 
-					path dir_path = path_to_root +"sedeen/";
-					std::string file_name = "StainsFile.csv";
+                    //std::filesystem::path dir_path = path_to_root +"sedeen/";
+					//std::string file_name = "StainsFile.csv";
 
 					/*path dir_path = "C:/sedeen/";
 					std::string file_name = "StainsFile.csv";*/
-					try
-					{
-						//&& boost::filesystem::is_directory(dir_path)
-						if( !boost::filesystem::exists( dir_path ) )
-						{
-							if(boost::filesystem::create_directory( dir_path ))
-							{
-								std::string fn = dir_path.string() + file_name;
-								saveToCSVfile(fn);
-							}
+					//try
+					//{
+					//	//&& boost::filesystem::is_directory(dir_path)
+					//	if( !std::filesystem::exists( dir_path ) )
+					//	{
+					//		if(std::filesystem::create_directory( dir_path ))
+					//		{
+					//			std::string fn = dir_path.string() + file_name;
+					//			saveToCSVfile(fn);
+					//		}
+                    //
+					//	}
+					//	else
+					//	{
+					//		std::string fn = dir_path.string() + file_name;
+					//		saveToCSVfile(fn);
+					//	}
+                    //
+					//}
+					//catch(std::filesystem::filesystem_error const & e)
+					//{
+                    //
+					//}
 
-						}
-						else
-						{
-							std::string fn = dir_path.string() + file_name;
-							saveToCSVfile(fn);
-						}
-
-					}
-					catch(boost::filesystem::filesystem_error const & e)
-					{
-
-					}
-
+                    m_stainProfile->SetProfileFromDoubleArray(conv_matrix);
 				}
 
-				if(behavior == Behavior::LoadFromFile)
-				{
-					std::string file_name = path_to_root +"sedeen/StainsFile.csv";
-					//std::string fileName = "C:/sedeen/StainsFile.csv";
-					loadFromCSV(file_name, "RegionOfInterest");
+				if(behavior == Behavior::LoadFromProfile){
+					//std::filesystem::path dir_path = "C:/sedeen/";
+                    //std::filesystem::path dir_path = path_to_root +"sedeen/";
+					//std::string file_name = "DefaultStainsFile.csv";
+                    //std::filesystem::path path_found = std::filesystem::path();
+
+					//bool thereIsAny = image::serachForfile( dir_path, file_name, path_found );
+					//if(thereIsAny)
+					//{
+					//	std::string fn = dir_path.string() + file_name;
+					//	loadFromCSV(fn, "HematoxylinPEosin");
+					//}
+					//else
+					//{
+
+                    //Fill conv_matrix with the stain profile values, then assign to member MOD arrays
+                    bool checkResult = m_stainProfile->GetProfileAsDoubleArray(conv_matrix);
+                    //If checkResult is false, assign zeros to everything
+                    m_MODx[0] = checkResult ? conv_matrix[0] : 0.0;
+					m_MODy[0] = checkResult ? conv_matrix[1] : 0.0;
+					m_MODz[0] = checkResult ? conv_matrix[2] : 0.0;
+
+                    m_MODx[1] = checkResult ? conv_matrix[3] : 0.0;
+					m_MODy[1] = checkResult ? conv_matrix[4] : 0.0;
+					m_MODz[1] = checkResult ? conv_matrix[5] : 0.0;
+
+                    m_MODx[2] = checkResult ? conv_matrix[6] : 0.0;
+					m_MODy[2] = checkResult ? conv_matrix[7] : 0.0;
+					m_MODz[2] = checkResult ? conv_matrix[8] : 0.0;
+					//}
 				}
+			}//end SetStainMatrix
 
-				if (behavior == Behavior::HematoxylinPEosin){
-					//path dir_path = "C:/sedeen/";
-					path dir_path = path_to_root +"sedeen/";
-					std::string file_name = "DefaultStainsFile.csv";
-					path path_found = path();
-
-					bool thereIsAny = image::serachForfile( dir_path, file_name, path_found );
-					if(thereIsAny)
-					{
-						std::string fn = dir_path.string() + file_name;
-						loadFromCSV(fn, "HematoxylinPEosin");
-					}
-					else
-					{
-						// GL Haem matrix
-						MODx[0]= 0.644211; //0.650;
-						MODy[0]= 0.716556; //0.704;
-						MODz[0]= 0.266844; //0.286;
-						// GL Eos matrix
-						MODx[1]= 0.092789; //0.072;
-						MODy[1]= 0.954111; //0.990;
-						MODz[1]= 0.283111; //0.105;
-						// Zero matrix
-						MODx[2]= 0.0;
-						MODy[2]= 0.0;
-						MODz[2]= 0.0;
-					}
-
-				}
-
-				if (behavior == Behavior::HematoxylinPDAB){
-
-					//path dir_path = "C:/sedeen/";
-					path dir_path = path_to_root +"sedeen/";
-					std::string file_name = "DefaultStainsFile.csv";
-					path path_found = path();
-
-					bool thereIsAny = image::serachForfile( dir_path, file_name, path_found );
-					if(thereIsAny)
-					{
-						std::string fn = dir_path.string() + file_name;
-						loadFromCSV(fn, "HematoxylinPDAB");
-					}
-					else
-					{
-						// 3,3-diamino-benzidine tetrahydrochloride
-						// Haem matrix
-						MODx[0]= 0.650;
-						MODy[0]= 0.704;
-						MODz[0]= 0.286;
-						// DAB matrix
-						MODx[1]= 0.268;
-						MODy[1]= 0.570;
-						MODz[1]= 0.776;
-						// Zero matrix
-						MODx[2]= 0.0;
-						MODy[2]= 0.0;
-						MODz[2]= 0.0;
-					}
-				}
-
-				if (behavior == Behavior::HematoxylinPEosinPDAB){
-					//path dir_path = "C:/sedeen/";
-					path dir_path = path_to_root +"sedeen/";
-					std::string file_name = "DefaultStainsFile.csv";
-					path path_found = path();
-
-					bool thereIsAny = image::serachForfile( dir_path, file_name, path_found );
-					if(thereIsAny)
-					{
-						std::string fn = dir_path.string() + file_name;
-						loadFromCSV(fn, "HematoxylinPEosinPDAB");
-					}
-					else
-					{
-						// Haem matrix
-						MODx[0]= 0.650;
-						MODy[0]= 0.704;
-						MODz[0]= 0.286;
-						// Eos matrix
-						MODx[1]= 0.072;
-						MODy[1]= 0.990;
-						MODz[1]= 0.105;
-						// DAB matrix
-						MODx[2]= 0.268;
-						MODy[2]= 0.570;
-						MODz[2]= 0.776;
-					}
-				}
-
-			}
-
-			void ColorDeconvolution::computeMatrixInvers( double inversionMat[9] )
+			void ColorDeconvolution::computeMatrixInverse( double inversionMat[9] )
 			{
 				double leng, A, V, C;
 				double  len[NumOfStains];
@@ -212,83 +149,83 @@ namespace sedeen {
 
 				for (int i=0; i<NumOfStains; i++){
 					//normalise vector length
-					cosx[i]=cosy[i]=cosz[i]=0.0;
-					len[i]=std::sqrt(MODx[i]*MODx[i] + MODy[i]*MODy[i] + MODz[i]*MODz[i]);
+					m_cosx[i]=m_cosy[i]=m_cosz[i]=0.0;
+					len[i]=std::sqrt(m_MODx[i]*m_MODx[i] + m_MODy[i]*m_MODy[i] + m_MODz[i]*m_MODz[i]);
 					if (len[i] != 0.0){
-						cosx[i]= MODx[i]/len[i];
-						cosy[i]= MODy[i]/len[i];
-						cosz[i]= MODz[i]/len[i];
+						m_cosx[i]= m_MODx[i]/len[i];
+						m_cosy[i]= m_MODy[i]/len[i];
+						m_cosz[i]= m_MODz[i]/len[i];
 					}
 				}
 
 				// translation matrix
-				if (cosx[1]==0.0){ //2nd colour is unspecified
-					if (cosy[1]==0.0){
-						if (cosz[1]==0.0){
-							cosx[1]=cosz[0];
-							cosy[1]=cosx[0];
-							cosz[1]=cosy[0];
+				if (m_cosx[1]==0.0){ //2nd colour is unspecified
+					if (m_cosy[1]==0.0){
+						if (m_cosz[1]==0.0){
+							m_cosx[1]=m_cosz[0];
+							m_cosy[1]=m_cosx[0];
+							m_cosz[1]=m_cosy[0];
 						}
 					}
 				}
 
 
-				if (cosx[2]==0.0){ // 3rd colour is unspecified
-					if (cosy[2]==0.0){
-						if (cosz[2]==0.0){
+				if (m_cosx[2]==0.0){ // 3rd colour is unspecified
+					if (m_cosy[2]==0.0){
+						if (m_cosz[2]==0.0){
 
-							cosx[2]= cosy[0]*cosz[1] - cosy[1]*cosz[0];
-							cosy[2]= cosz[0]*cosx[1] - cosz[1]*cosx[0];
-							cosz[2]= cosx[0]*cosy[1] - cosx[1]*cosy[0];
+							m_cosx[2]= m_cosy[0]*m_cosz[1] - m_cosy[1]*m_cosz[0];
+							m_cosy[2]= m_cosz[0]*m_cosx[1] - m_cosz[1]*m_cosx[0];
+							m_cosz[2]= m_cosx[0]*m_cosy[1] - m_cosx[1]*m_cosy[0];
 
 						}
 					}
 				}
 
-				leng=std::sqrt(cosx[2]*cosx[2] + cosy[2]*cosy[2] + cosz[2]*cosz[2]);
+				leng=std::sqrt(m_cosx[2]*m_cosx[2] + m_cosy[2]*m_cosy[2] + m_cosz[2]*m_cosz[2]);
 
-				cosx[2]= cosx[2]/leng;
-				cosy[2]= cosy[2]/leng;
-				cosz[2]= cosz[2]/leng;
+				m_cosx[2]= m_cosx[2]/leng;
+				m_cosy[2]= m_cosy[2]/leng;
+				m_cosz[2]= m_cosz[2]/leng;
 
 				for (int i=0; i<3; i++){
-					if (cosx[i] == 0.0) cosx[i] = 0.001;
-					if (cosy[i] == 0.0) cosy[i] = 0.001;
-					if (cosz[i] == 0.0) cosz[i] = 0.001;
+					if (m_cosx[i] == 0.0) m_cosx[i] = 0.001;
+					if (m_cosy[i] == 0.0) m_cosy[i] = 0.001;
+					if (m_cosz[i] == 0.0) m_cosz[i] = 0.001;
 				}
 
 
 				//matrix inversion
-				/*det = cosx[0]*( cosy[1]*cosz[2] - cosy[2]*cosz[1] ) - cosy[0]*( cosx[1]*cosz[2] - cosx[2]*cosz[1]) + 
-				cosz[0]*( cosx[1]*cosy[2] - cosx[2]*cosy[1]);
+				/*det = m_cosx[0]*( m_cosy[1]*m_cosz[2] - m_cosy[2]*m_cosz[1] ) - m_cosy[0]*( m_cosx[1]*m_cosz[2] - m_cosx[2]*m_cosz[1]) + 
+				m_cosz[0]*( m_cosx[1]*m_cosy[2] - m_cosx[2]*m_cosy[1]);
 
 
-				q[2] = (cosx[1]*cosy[2] - cosx[2]*cosy[1]) / det;
-				q[1] = (cosx[2]*cosz[1] - cosx[1]*cosz[2]) / det;
-				q[0] = (cosy[1]*cosz[2] - cosy[2]*cosz[1] ) / det;
-				q[5] = (cosx[2]*cosy[0] - cosx[0]*cosy[2]) / det;
-				q[4] = (cosx[0]*cosz[2] - cosx[2]*cosz[0]) / det;
-				q[3] =  (cosy[2]*cosz[0] - cosy[0]*cosz[2] ) / det;
-				q[8] = (cosx[0]*cosy[1] - cosx[1]*cosy[0]) / det;
-				q[7] = (cosx[1]*cosz[0] - cosx[0]*cosz[1]) / det;
-				q[6] = (cosy[0]*cosz[1] - cosy[1]*cosz[0] ) / det;*/
+				q[2] = (m_cosx[1]*m_cosy[2] - m_cosx[2]*m_cosy[1]) / det;
+				q[1] = (m_cosx[2]*m_cosz[1] - m_cosx[1]*m_cosz[2]) / det;
+				q[0] = (m_cosy[1]*m_cosz[2] - m_cosy[2]*m_cosz[1] ) / det;
+				q[5] = (m_cosx[2]*m_cosy[0] - m_cosx[0]*m_cosy[2]) / det;
+				q[4] = (m_cosx[0]*m_cosz[2] - m_cosx[2]*m_cosz[0]) / det;
+				q[3] =  (m_cosy[2]*m_cosz[0] - m_cosy[0]*m_cosz[2] ) / det;
+				q[8] = (m_cosx[0]*m_cosy[1] - m_cosx[1]*m_cosy[0]) / det;
+				q[7] = (m_cosx[1]*m_cosz[0] - m_cosx[0]*m_cosz[1]) / det;
+				q[6] = (m_cosy[0]*m_cosz[1] - m_cosy[1]*m_cosz[0] ) / det;*/
 
 
 				//matrix inversion
-				A = cosy[1] - cosx[1] * cosy[0] / cosx[0];
+				A = m_cosy[1] - m_cosx[1] * m_cosy[0] / m_cosx[0];
 				//if(A==0) A=0.001;
-				V = cosz[1] - cosx[1] * cosz[0] / cosx[0];
-				C = cosz[2] - cosy[2] * V/A + cosx[2] * (V/A * cosy[0] / cosx[0] - cosz[0] / cosx[0]);
+				V = m_cosz[1] - m_cosx[1] * m_cosz[0] / m_cosx[0];
+				C = m_cosz[2] - m_cosy[2] * V/A + m_cosx[2] * (V/A * m_cosy[0] / m_cosx[0] - m_cosz[0] / m_cosx[0]);
 				//if(C==0) C=0.001;
-				inversionMat[2] = (-cosx[2] / cosx[0] - cosx[2] / A * cosx[1] / cosx[0] * cosy[0] / cosx[0] + cosy[2] / A * cosx[1] / cosx[0]) / C;
-				inversionMat[1] = -inversionMat[2] * V / A - cosx[1] / (cosx[0] * A);
-				inversionMat[0] = 1.0 / cosx[0] - inversionMat[1] * cosy[0] / cosx[0] - inversionMat[2] * cosz[0] / cosx[0];
-				inversionMat[5] = (-cosy[2] / A + cosx[2] / A * cosy[0] / cosx[0]) / C;
+				inversionMat[2] = (-m_cosx[2] / m_cosx[0] - m_cosx[2] / A * m_cosx[1] / m_cosx[0] * m_cosy[0] / m_cosx[0] + m_cosy[2] / A * m_cosx[1] / m_cosx[0]) / C;
+				inversionMat[1] = -inversionMat[2] * V / A - m_cosx[1] / (m_cosx[0] * A);
+				inversionMat[0] = 1.0 / m_cosx[0] - inversionMat[1] * m_cosy[0] / m_cosx[0] - inversionMat[2] * m_cosz[0] / m_cosx[0];
+				inversionMat[5] = (-m_cosy[2] / A + m_cosx[2] / A * m_cosy[0] / m_cosx[0]) / C;
 				inversionMat[4] = -inversionMat[5] * V / A + 1.0 / A;
-				inversionMat[3] = -inversionMat[4] * cosy[0] / cosx[0] - inversionMat[5] * cosz[0] / cosx[0];
+				inversionMat[3] = -inversionMat[4] * m_cosy[0] / m_cosx[0] - inversionMat[5] * m_cosz[0] / m_cosx[0];
 				inversionMat[8] = 1.0 / C;
 				inversionMat[7] = -inversionMat[8] * V / A;
-				inversionMat[6] = -inversionMat[7] * cosy[0] / cosx[0] - inversionMat[8] * cosz[0] / cosx[0];
+				inversionMat[6] = -inversionMat[7] * m_cosy[0] / m_cosx[0] - inversionMat[8] * m_cosz[0] / m_cosx[0];
 
 			}
 
@@ -315,9 +252,9 @@ namespace sedeen {
 						y++;*/
 
 					// log transform the RGB data
-          double R = source.at(x, y, 0).as<double>();
-          double G = source.at(x, y, 1).as<double>();
-          double B = source.at(x, y, 2).as<double>();
+                    double R = source.at(x, y, 0).as<double>();
+                    double G = source.at(x, y, 1).as<double>();
+                    double B = source.at(x, y, 2).as<double>();
 					double Rlog = -((255.0*log((R+1)/255.0))/log255);
 					double Glog = -((255.0*log((G+1)/255.0))/log255);
 					double Blog = -((255.0*log((B+1)/255.0))/log255);
@@ -336,7 +273,16 @@ namespace sedeen {
 						double Glogscaled = Glogn * conv_matrix[i*3+1];
 						double Blogscaled = Blogn * conv_matrix[i*3+2];
 
-						unsigned char binaryValue = ( (Rlogscaled + Glogscaled + Blogscaled)  > m_threshold) ? 255:0;						
+
+                        //Need a condition around this using m_applyThreshold
+                        unsigned char binaryValue;
+                        if (m_applyThreshold) {
+                            binaryValue = ((Rlogscaled + Glogscaled + Blogscaled) > m_threshold) ? 255 : 0;
+                        }
+                        else {
+                            binaryValue = ((Rlogscaled + Glogscaled + Blogscaled) > 0.0) ? 255 : 0;
+                        }
+
 						binaryImages.at(i).setValue(x, y, 0, binaryValue);
 						binaryImages.at(i).setValue(x, y, 1, 0);
 						binaryImages.at(i).setValue(x, y, 2, 0);
@@ -344,15 +290,15 @@ namespace sedeen {
 					}
 				}
 
-				if( m_displyOption == DisplyOptions::STAIN1 ){					
+				if( m_DisplayOption == DisplayOptions::STAIN1 ){					
 					return binaryImages[0];
 				}
 
-				if( m_displyOption == DisplyOptions::STAIN2 ){
+				if( m_DisplayOption == DisplayOptions::STAIN2 ){
 					return binaryImages[1];
 				}
 
-				if( m_displyOption == DisplyOptions::STAIN3 ){
+				if( m_DisplayOption == DisplayOptions::STAIN3 ){
 					return binaryImages[2];
 				}
 
@@ -362,7 +308,7 @@ namespace sedeen {
 			{
 				//matrix inversion
 				double  conv_matrix[9];
-				computeMatrixInvers( conv_matrix );
+				computeMatrixInverse( conv_matrix );
 
 				//Stain Separation and combination
 				return separate_stains( source, conv_matrix);
@@ -375,55 +321,55 @@ namespace sedeen {
 				return m_colorSpace;
 			}
 
-			bool ColorDeconvolution::saveToCSVfile(const std::string& fileName )
-			{
-				std::ofstream file (fileName);
+			//bool ColorDeconvolution::saveToCSVfile(const std::string& fileName )
+			//{
+			//	std::ofstream file (fileName);
+            //
+			//	if( file.is_open())
+			//	{
+			//		file << "RegionOfInterest;"; 
+			//		for (int i=0; i < 3; i++)
+			//		{
+			//			file << m_MODx[i] << ";" << m_MODy[i] <<
+			//				";" << m_MODz[i] << ";"; 
+			//		}
+			//		file << std::endl;
+			//	}
+			//	else
+			//		return 0;
+			//	file.close();
+			//	return 1;
+			//}
 
-				if( file.is_open())
-				{
-					file << "RegionOfInterest;"; 
-					for (int i=0; i < 3; i++)
-					{
-						file << MODx[i] << ";" << MODy[i] <<
-							";" << MODz[i] << ";"; 
-					}
-					file << std::endl;
-				}
-				else
-					return 0;
-				file.close();
-				return 1;
-			}
+			//void ColorDeconvolution::loadFromCSV( const std::string& fileName, const std::string& marker )
+			//{
+			//	std::ifstream file(fileName);
+			//	std::vector<std::string> row;
+			//	std::string line;
+			//	std::string cell;
 
-			void ColorDeconvolution::loadFromCSV( const std::string& fileName, const std::string& marker )
-			{
-				std::ifstream file(fileName);
-				std::vector<std::string> row;
-				std::string line;
-				std::string cell;
-
-				int i=0;
-				while( std::getline(file, line) )
-				{
-					std::stringstream lineStream(line);
-					row.clear();
-
-					while( std::getline( lineStream, cell, ';' ) )
-						row.push_back( cell );
-
-					int szdiv = (row.size()-1) % 3;
-					if(!row.empty() && row[0] == marker && szdiv==0)
-					{
-						for(unsigned int j=1; j < row.size(); j+=3)
-						{
-							MODx[i] = stod(row.at(j));
-							MODy[i] = stod(row.at(j+1));
-							MODz[i]  = stod(row.at(j+2));
-							i++;
-						}
-					}
-				}
-			}
+			//	int i=0;
+			//	while( std::getline(file, line) )
+			//	{
+			//		std::stringstream lineStream(line);
+			//		row.clear();
+            //
+			//		while( std::getline( lineStream, cell, ';' ) )
+			//			row.push_back( cell );
+            //
+			//		int szdiv = (row.size()-1) % 3;
+			//		if(!row.empty() && row[0] == marker && szdiv==0)
+			//		{
+			//			for(unsigned int j=1; j < row.size(); j+=3)
+			//			{
+			//				m_MODx[i] = stod(row.at(j));
+			//				m_MODy[i] = stod(row.at(j+1));
+			//				m_MODz[i]  = stod(row.at(j+2));
+			//				i++;
+			//			}
+			//		}
+			//	}
+			//}
 
 		} // namespace tile
 
@@ -449,7 +395,7 @@ namespace sedeen {
 			rgbOD[1] = rgbOD[1] / imageSize;
 			rgbOD[2] = rgbOD[2] / imageSize;
 
-		}
+		}//end getmeanRGBODfromROI
 
 		void getStainsComponents(std::shared_ptr<tile::Factory> source,
 			const std::vector<std::shared_ptr<GraphicItemBase>> region_of_interests,
@@ -477,36 +423,7 @@ namespace sedeen {
 				conv_matrix[j*3+2] = rgbOD[2];
 			}
 
-		}
-
-		bool serachForfile( const path & dir_path, const std::string & file_name, path & path_found )
-		{
-			if ( !exists( dir_path ) ) 
-				return false;
-
-			directory_iterator end_itr; // default construction yields past-the-end
-
-			for ( directory_iterator itr( dir_path ); itr != end_itr; ++itr )
-			{
-				if ( is_directory(itr->status()) )
-				{
-					if ( serachForfile( itr->path(), file_name, path_found ) ) 
-						return true;
-				}
-				else if ( itr->path().filename() == file_name )
-				{
-					path_found = itr->path();
-					return true;
-				}
-			}
-			return false;
-		}
-
-		void setImagePath( const std::string& path )
-		{
-
-		}
-
+		}//end getStainsComponents
 
 	} // namespace image
 } // namespace sedeen
