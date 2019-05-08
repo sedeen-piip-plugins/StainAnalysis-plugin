@@ -17,7 +17,7 @@
 #include <string>
 #include <iostream>
 #include <iomanip>
-#include <math.h>
+#include <cmath>
 
 // DPTK headers
 #include "Algorithm.h"
@@ -41,82 +41,87 @@ namespace algorithm {
 
 StainAnalysis::StainAnalysis()
 	: m_displayArea(),
-    //The new parameters!!!
     m_openProfile(),
     m_stainSeparationAlgorithm(),
     m_stainVectorProfile(),
     m_regionToProcess(),
     m_stainToDisplay(),
     m_applyThreshold(),
-    m_threshold()
+    m_threshold(),
+    m_pathToPlugin(""),
 
     //Back to the old parameters!!!
 	//m_retainment(),
 	//m_displayOptions(),
-	//m_result(),
+	m_result(),
 	//m_region_interest(),
-	//m_output_text(),
-	//m_colorDeconvolution_factory(nullptr)
-	//m_threshold_factory(nullptr)
+	m_outputText(),
+	m_colorDeconvolution_factory(nullptr),
+	m_threshold_factory(nullptr)
 {
-    //Define the list of available stain separation algorithms
-    m_separationAlgorithmOptions.push_back("Ruifrok Colour Deconvolution");
+    //Get the path of the current plugin
+    sedeen::file::Location pluginLocation = sedeen::file::getWorkingDirectory();
+    if (GetPluginRelativeDirectory() != "PLUGIN_RELATIVE_DIR-NOTFOUND") {
+        //Convert to std::filesystem::path type, and use the path concatenation operator
+        m_pathToPlugin = std::filesystem::path(pluginLocation.getFilename()) / GetPluginRelativeDirectory();
+        //Build the list of stain vector file names
+        m_stainProfileFullPathNames.push_back(""); //Leave a blank place for the loaded file
+        //HematoxylinPEosin
+        m_stainProfileFullPathNames.push_back(m_pathToPlugin / HematoxylinPEosinFilename());
+        //HematoxylinPDAB
+        m_stainProfileFullPathNames.push_back(m_pathToPlugin / HematoxylinPDABFilename());
+        //HematoxylinPEosinPDAB
+        m_stainProfileFullPathNames.push_back(m_pathToPlugin / HematoxylinPEosinPDABFilename());        
+    }
+    else { //Could not get the plugin's relative directory
+        //Location of the default stain profiles is unknown
+        m_pathToPlugin = "";
+        //Do not try to load the default stain profiles
+        m_stainProfileFullPathNames.push_back("");
+    }
 
-    m_stainVectorProfileOptions.push_back("Load From File");
-    m_stainVectorProfileOptions.push_back("Hematoxylin + Eosin");
-    m_stainVectorProfileOptions.push_back("Hematoxylin + DAB");
-    m_stainVectorProfileOptions.push_back("Hematoxylin + Eosin + DAB");
+    //Create stain vector profiles for the loaded and default profiles, push to vector
+    //Loaded
+    m_LoadedStainProfile = std::make_shared<StainProfile>();
+    m_stainProfileList.push_back(m_LoadedStainProfile);
+    m_stainVectorProfileOptions.push_back("Loaded From File");
+    //Loop over the rest
+    for (auto it = m_stainProfileFullPathNames.begin()+1; it != m_stainProfileFullPathNames.end(); ++it) {
+        std::shared_ptr<StainProfile> tsp = std::make_shared<StainProfile>();
+        //Convert path to string, read stain profile, and check whether the read was successful
+        bool success = tsp->readStainProfile((*it).generic_string());
+        if (success) {
+            m_stainProfileList.push_back(tsp);
+            //Get the name of the profile
+            m_stainVectorProfileOptions.push_back(tsp->GetNameOfStainProfile());
+        }
+        else {
+            //make a dummy one
+            m_stainProfileList.push_back(std::make_shared<StainProfile>());
+            m_stainVectorProfileOptions.push_back("Profile failed to load");
+        }
+        tsp.reset();
+    }
+
+    //Define the list of available stain separation algorithms
+    m_separationAlgorithmOptions.push_back("Ruifrok+Johnston Deconvolution");
 
     //Define the default list of names of stains to display
     m_stainToDisplayOptions.push_back("Stain 1");
     m_stainToDisplayOptions.push_back("Stain 2");
     m_stainToDisplayOptions.push_back("Stain 3");
-
 }//end constructor
 
 StainAnalysis::~StainAnalysis() {
 }//end destructor
 
-
-void StainAnalysis::run() {
-	// Has display area changed
-	auto display_changed = m_displayArea.isChanged();
-
-	// Build the segmentation pipeline
-	//auto pipeline_changed = buildPipeline();
-
-	// Update results
-    /****
-	if (pipeline_changed || display_changed ) {
-
-		m_result.update(m_colorDeconvolution_factory, m_displayArea, *this);
-
-		//updateIntermediateResult();
-
-		// Update the output text report
-		if (false == askedToStop()) {
-			auto report = generateReport();
-			m_output_text.sendText(report);
-		}
-	}
-
-	// Ensure we run again after an abort
-	//
-	// a small kludge that causes buildPipeline() to return TRUE
-	if (askedToStop()) {
-		m_colorDeconvolution_factory.reset();
-	}
-    ****/
-
-}//end run
-
 void StainAnalysis::init(const image::ImageHandle& image) {
-	if (isNull(image)) return;
-	//
-	// bind algorithm members to UI and initialize their properties
+    if (isNull(image)) return;
+    //
+    // bind algorithm members to UI and initialize their properties
 
-	// Bind system parameter for current view
-	m_displayArea = createDisplayAreaParameter(*this);
+    // Bind system parameter for current view
+    m_displayArea = createDisplayAreaParameter(*this);
 
     //Allow the user to choose a stain vector profile xml file
     sedeen::file::FileDialogOptions openFileDialogOptions = defineOpenFileDialogOptions();
@@ -149,79 +154,85 @@ void StainAnalysis::init(const image::ImageHandle& image) {
     auto color = getColorSpace(image);
     auto max_value = (1 << bitsPerChannel(color)) - 1;
     m_threshold = createDoubleParameter(*this,
-            "Threshold", // Widget label
-            "A Threshold value", // Widget tooltip
-            1.0,         // Initial value
-            0.0,          // minimum value
-            50.0,        // maximum value
-            false);
+        "Threshold", // Widget label
+        "A Threshold value", // Widget tooltip
+        1.0,         // Initial value
+        0.0,          // minimum value
+        50.0,        // maximum value
+        false);
 
+    //std::string pathToImage =
+    //    image->getMetaData()->get(image::StringTags::SOURCE_DESCRIPTION, 0);
+    //const std::string temp_str = pathToImage.substr(pathToImage.find_last_of("/\\") + 1);
+    //auto found = pathToImage.find_last_of("/\\") + 1;
+    //m_pathToRoot = pathToImage.substr(0, found);
 
-	//Search for the csv file to load the stain matrix
-	/*path dir_path = sedeen::image::getSourceDescription(image) + "/sedeen/";
-	dir_path.filename();
-	dir_path.stem();
-	std::string file_name = dir_path.stem().string() + "_StainsFile.csv";
-	path path_found = path();*/
-
-	//std::string path_to_image =
-	//	image->getMetaData()->get(image::StringTags::SOURCE_DESCRIPTION, 0);
-	//const std::string temp_str = path_to_image.substr(path_to_image.find_last_of("/\\") + 1);
-	//auto found = path_to_image.find_last_of("/\\") +1;
-	//m_path_to_root = path_to_image.substr(0, found);
-
-
-	//path dir_path = m_path_to_root +"sedeen/";
-	//std::string file_name = "StainsFile.csv";
-	//path path_found = path();
-
-	//bool thereIsAny = image::serachForfile( dir_path, file_name, path_found );
-	//Bind stains selection option list
-    /****
-	std::vector<std::string> options;
-	if(thereIsAny)
-	{
-		options.push_back("From ROI");
-		options.push_back("Hematoxylin + Eosin");
-		options.push_back("Hematoxylin + DAB");
-		options.push_back("Hematoxylin + Eosin + DAB");
-		options.push_back("Load From File");
-	}
-	else
-	{
-		options.push_back("From ROI");
-		options.push_back("Hematoxylin + Eosin");
-		options.push_back("Hematoxylin + DAB");
-		options.push_back("Hematoxylin + Eosin + DAB");
-	}
-	m_retainment = createOptionParameter(*this,
-		"Selected Stain",
-		"Color-convolution matrix",
-		1,        // default selection
-		options,
-		false); // list of all options
-    ****/
-
-	// Bind display options for stain components
-    /****
-    std::vector<std::string> displays(3);
-	displays[0] = "STAIN 1";
-	displays[1] = "STAIN 2";
-	displays[2] = "STAIN 3";
-	m_displayOptions = createOptionParameter(*this,
-		"Display",
-		"Display stain components",
-		0,        // default selection
-		displays,
-		false); // list of all options
-    ****/
-
+    //std::filesystem::path dirPath = m_pathToRoot / "sedeen/";
+    //std::filesystem::path pathFound = std::filesystem::path();
 
     // Bind result
-	m_output_text = createTextResult(*this, "Text Result");
-	m_result = createImageResult(*this, " StainAnalysisResult");
+    m_outputText = createTextResult(*this, "Text Result");
+    m_result = createImageResult(*this, " StainAnalysisResult");
 
 }//end init
+
+
+void StainAnalysis::run() {
+    //The user does not have to select a file,
+    //but if none is chosen, one of the defaults must be selected
+    bool loadResult = LoadStainProfileFromFileDialog();
+    //Get which of the stain vector profiles has been selected by the user
+    int chosenProfileNum = m_stainVectorProfile;
+
+    //Define a pointer for the stain profile to be 
+    //Check whether the user selected to load from file and if so, that it loaded correctly
+    if (!loadResult && chosenProfileNum == 0) {
+        throw std::runtime_error("The stain profile file cannot be read. Choose a default stain profile or try loading a different file.");
+        return;
+    }
+    //else
+
+    // Has display area changed
+    bool display_changed = m_displayArea.isChanged();
+
+    //Get the stain profile that should be used
+    //Use the vector::at operator to do bounds checking
+    std::shared_ptr<StainProfile> chosenStainProfile;
+    try {
+        chosenStainProfile = m_stainProfileList.at(chosenProfileNum);
+    }
+    catch (const std::out_of_range& rangeerr) {
+        rangeerr.what();
+        //The index is out of range. Throw error message
+        throw std::runtime_error("The stain profile cannot be found. Choose a default stain profile.");
+        return;
+    }
+    
+    // Build the operational pipeline
+    bool pipeline_changed = buildPipeline(chosenStainProfile);
+
+	// Update results
+	if ( pipeline_changed || display_changed ) {
+
+		m_result.update(m_colorDeconvolution_factory, m_displayArea, *this);
+        //*********************************************************************************************************************************here
+		//updateIntermediateResult();
+
+		// Update the output text report
+		if (false == askedToStop()) {
+			auto report = generateStainAnalysisReport(chosenStainProfile);
+			m_outputText.sendText(report);
+		}
+	}
+
+	// Ensure we run again after an abort
+	// a small kludge that causes buildPipeline() to return TRUE
+	if (askedToStop()) {
+        m_colorDeconvolution_factory.reset();
+	}
+
+}//end run
+
 
 ///Define the open file dialog options outside of init
 sedeen::file::FileDialogOptions StainAnalysis::defineOpenFileDialogOptions() {
@@ -237,141 +248,151 @@ sedeen::file::FileDialogOptions StainAnalysis::defineOpenFileDialogOptions() {
     return theOptions;
 }//end defineOpenFileDialogOptions
 
+///Access the member file dialog parameter, load into member stain profile
+bool StainAnalysis::LoadStainProfileFromFileDialog() {
+    //Get the full path file name from the file dialog parameter
+    sedeen::algorithm::parameter::OpenFileDialog::DataType fileDialogDataType = this->m_openProfile;
+    if (fileDialogDataType.empty()) {
+        //There is nothing selected in the file dialog box
+        return false;
+    }
+    //else
+    auto profileLocation = fileDialogDataType.at(0);
+    std::string theFile = profileLocation.getFilename();
 
-/****
-bool StainAnalysis::buildPipeline() {
-	using namespace image::tile;
-	bool pipeline_changed = false;
+    //Does it exist and can it be read from?
+    if (StainProfile::checkFile(theFile, "r")) {
+        m_stainProfileFullPathNames[0] = theFile;
+        //Clear the loaded stain profile
+        //something here
 
-	// Get source image properties
-	auto source_factory = image()->getFactory();
-	auto source_color = source_factory->getColorSpace();
-	double conv_matrix[9]= {0.0};
-	bool ROIIsdefined = (m_region_interest.at(0).isUserDefined() &&
-		m_region_interest.at(1).isUserDefined() &&
-		m_region_interest.at(2).isUserDefined() ) &&
-		(m_region_interest.at(0).isChanged() ||
-		m_region_interest.at(1).isChanged() ||
-		m_region_interest.at(2).isChanged() );
+        m_LoadedStainProfile->readStainProfile(theFile);
+        return true;
+    }
+    else {
+        return false;
+    }
+}//end LoadStainProfileFromFileDialog
 
-	bool doProcessing = false;
-	if (m_retainment.isChanged() || m_displayOptions.isChanged() ||
-		ROIIsdefined || m_threshold.isChanged() || m_regionToProcess.isChanged()  ||
-		m_displayArea.isChanged() ||
-		(nullptr == m_colorDeconvolution_factory) || pipeline_changed) {
-			// Build Color Deconvolution Kernel
-			image::tile::ColorDeconvolution::Behavior retainment;
-			switch (m_retainment)
-			{
-			case 0:
-				retainment = image::tile::ColorDeconvolution::Behavior::RegionOfInterest;
-				break;
-			case 1:
-				retainment = image::tile::ColorDeconvolution::Behavior::HematoxylinPEosin;
-				break;
-			case 2:
-				retainment = image::tile::ColorDeconvolution::Behavior::HematoxylinPDAB;
-				break;
-			case 3:
-				retainment = image::tile::ColorDeconvolution::Behavior::HematoxylinPEosinPDAB;
-				break;
-			case 4:
-				retainment = image::tile::ColorDeconvolution::Behavior::LoadFromFile;
-				break;
-			default:
-				break;
-			}
 
-			//if(retainment == image::tile::ColorDeconvolution::Behavior::LoadFromFile)
-		    //{
-			//	std::string path_to_image =
-			//		image()->getMetaData()->get(image::StringTags::SOURCE_DESCRIPTION, 0);
-			//	auto found = path_to_image.find_last_of(".");
-			//	m_path_to_root = path_to_image.substr(0, found);
-			//	m_path_to_stainfile = openFile(m_path_to_root);
-			//}
+bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfile) {
+    using namespace image::tile;
+    bool pipeline_changed = false;
+    //There are two possible behaviors: RegionOfInterest, and LoadFromProfile
+    //This plugin only uses LoadFromProfile
+    image::tile::ColorDeconvolution::Behavior behaviorType = image::tile::ColorDeconvolution::Behavior::LoadFromProfile;
 
-			if (retainment == image::tile::ColorDeconvolution::Behavior::RegionOfInterest) {
+    // Get source image properties
+    auto source_factory = image()->getFactory();
+    auto source_color = source_factory->getColorSpace();
 
-				std::vector<std::shared_ptr<GraphicItemBase>> region_of_interests;
+    bool doProcessing = false;
+    //bool regionsChanged(false);
+    //Have any of the regions to be processed changed?
+    //for (auto it = m_regionsToProcess.begin(); it != m_regionsToProcess.end(); ++it) {
+    //    regionsChanged = regionsChanged || (*it).isChanged();
+    //}
+    //Figure out whether any settings have changed
+    //|| regionsChanged
+    if ( pipeline_changed 
+         || m_regionToProcess.isChanged()
+         || m_stainSeparationAlgorithm.isChanged() 
+         || m_stainVectorProfile.isChanged() 
+         || m_stainToDisplay.isChanged() 
+         || m_applyThreshold.isChanged() 
+         || m_threshold.isChanged() 
+         || m_displayArea.isChanged()
+         || (nullptr == m_colorDeconvolution_factory) )
+    {
+        //Build the color deconvolution channel
 
-				if(m_region_interest.at(0).isUserDefined() && m_region_interest.at(1).isUserDefined()
-					&& m_region_interest.at(2).isUserDefined() )
-				{
-					auto display_resolution = getDisplayResolution(image(), m_displayArea);
-					for(int i=0; i < 3; i++)
-					{
-						std::shared_ptr<GraphicItemBase> region = m_region_interest.at(i);
-						region_of_interests.push_back( region ); //region->graphic()
+        if (behaviorType == image::tile::ColorDeconvolution::Behavior::RegionOfInterest) {
+            //for now, do nothing here.
 
-						Rect rect = containingRect(region_of_interests.at(i)->graphic());
-					}
+            /**
+            if (retainment == image::tile::ColorDeconvolution::Behavior::RegionOfInterest) {
 
-					image::getStainsComponents(source_factory,
-						region_of_interests,
-						display_resolution, conv_matrix);
+                std::vector<std::shared_ptr<GraphicItemBase>> region_of_interests;
 
-					m_report = generateReport(conv_matrix);
-				}
-				else
-				{
-					doProcessing = false;
-					retainment = image::tile::ColorDeconvolution::Behavior::HematoxylinPEosin;
+                if(m_region_interest.at(0).isUserDefined() && m_region_interest.at(1).isUserDefined()
+                    && m_region_interest.at(2).isUserDefined() )
+                {
+                    auto display_resolution = getDisplayResolution(image(), m_displayArea);
+                    for(int i=0; i < 3; i++)
+                    {
+                        std::shared_ptr<GraphicItemBase> region = m_region_interest.at(i);
+                        region_of_interests.push_back( region ); //region->graphic()
 
-				}
-			}
+                        Rect rect = containingRect(region_of_interests.at(i)->graphic());
+                    }
 
-			//m_report = generateReport(conv_matrix);
+                    image::getStainsComponents(source_factory,
+                        region_of_interests,
+                        display_resolution, conv_matrix);
 
-			image::tile::ColorDeconvolution::DisplyOptions displyOption;
-			switch (m_displayOptions)
-			{
-			case 0:
-				displyOption = image::tile::ColorDeconvolution::DisplyOptions::STAIN1;
-				break;
-			case 1:
-				displyOption = image::tile::ColorDeconvolution::DisplyOptions::STAIN2;
-				break;
-			case 2:
-				displyOption = image::tile::ColorDeconvolution::DisplyOptions::STAIN3;
-				break;
-			default:
-				break;
-			}
+                    m_report = generateReport(conv_matrix);
+                }
+                else
+                {
+                    doProcessing = false;
+                    retainment = image::tile::ColorDeconvolution::Behavior::HematoxylinPEosin;
 
-				auto colorDeconvolution_kernel =
-					std::make_shared<image::tile::ColorDeconvolution>(retainment, displyOption, conv_matrix, m_threshold, m_path_to_root);
+                }
+            }
+        **/
 
-				// Create a Factory for the composition of these Kernels
-				auto non_cached_factory =
-					std::make_shared<FilterFactory>(source_factory,  colorDeconvolution_kernel);
+        }//end Behavior is RegionOfInterest
 
-				// Wrap resulting Factory in a Cache for speedy results
-				m_colorDeconvolution_factory =
-					std::make_shared<Cache>(non_cached_factory, RecentCachePolicy(30));
+        //Choose value from the enumeration in ColorDeconvolution
+        image::tile::ColorDeconvolution::DisplayOptions DisplayOption;
+        switch (m_stainToDisplay)
+        {
+        case 0:
+            DisplayOption = image::tile::ColorDeconvolution::DisplayOptions::STAIN1;
+            break;
+        case 1:
+            DisplayOption = image::tile::ColorDeconvolution::DisplayOptions::STAIN2;
+            break;
+        case 2:
+            DisplayOption = image::tile::ColorDeconvolution::DisplayOptions::STAIN3;
+            break;
+        default:
+            break;
+        }
 
-				pipeline_changed = true;
-	}
+        auto colorDeconvolution_kernel =
+            std::make_shared<image::tile::ColorDeconvolution>(behaviorType, DisplayOption, chosenStainProfile, m_applyThreshold, m_threshold);  //Need to tell it whether to use the threshold or not
 
-	//
-	// Constrain processing to the region of interest provided
-	//
-	//
-	std::shared_ptr<GraphicItemBase> region = m_regionToProcess;
-	if (pipeline_changed && (nullptr != region)) {
-		// Constrain the output of the pipeline to the region of interest provided
-		auto constained_factory =
-			std::make_shared<RegionFactory>(m_colorDeconvolution_factory,
-			region->graphic());
+        // Create a Factory for the composition of these Kernels
+        auto non_cached_factory =
+            std::make_shared<FilterFactory>(source_factory, colorDeconvolution_kernel);
 
-		// Wrap resulting Factory in a Cache for speedy results
-		m_colorDeconvolution_factory =
-			std::make_shared<Cache>(constained_factory, RecentCachePolicy(30));
-	}
+        // Wrap resulting Factory in a Cache for speedy results
+        m_colorDeconvolution_factory =
+            std::make_shared<Cache>(non_cached_factory, RecentCachePolicy(30));
 
-	return pipeline_changed;
-}
-****/
+        pipeline_changed = true;
+
+    }//end if parameter values changed
+
+    //
+    // Constrain processing to the region of interest provided
+    std::shared_ptr<GraphicItemBase> region = m_regionToProcess;
+    if (pipeline_changed && (nullptr != region)) {
+        // Constrain the output of the pipeline to the region of interest provided
+        auto constained_factory = std::make_shared<RegionFactory>(m_colorDeconvolution_factory, region->graphic());
+
+        // Wrap resulting Factory in a Cache for speedy results
+        m_colorDeconvolution_factory = std::make_shared<Cache>(constained_factory, RecentCachePolicy(30));
+    }
+
+    return pipeline_changed;
+}//end buildPipeline
+
+
+
+
+
 
 /****
 void StainAnalysis::updateIntermediateResult()
@@ -396,29 +417,57 @@ void StainAnalysis::updateIntermediateResult()
 }
 ****/
 
-std::string StainAnalysis::generateReport(double conv_matrix[9]) const
+std::string StainAnalysis::generateStainAnalysisReport(std::shared_ptr<StainProfile> theProfile) const
 {
-	assert(nullptr != conv_matrix);
+    //I think using assert is a little too strong here. Use different error handling.
+	assert(nullptr != theProfile);
 
-	// Format output with 10 character wide columns
-	std::ostringstream ss;
+    int numStains = theProfile->GetNumberOfStainComponents();
+    if (numStains < 0) {
+        throw std::runtime_error("Error reading the stain profile. Please try a different stain profile or restart.");
+        return "Error reading the stain profile. Please try a different stain profile or restart.";
+    }
+    //Get the profile contents, place in the output stringstream
+    std::ostringstream ss;
 	ss << std::left << std::setw(5);
-	ss << "Color deconvolution - Stains Coefficients " << std::endl;
-	ss << std::endl;
-
-	// Calculate results
-	for(int i =0 ;i < 3; ++i) {
-
-		ss << std::left;
-		ss << "Stain-" << i+1 << std::endl <<
-			"R" << i+1 << ":" << std::setw(10) << std::setprecision(5) << conv_matrix[i*3] <<
-			"G" << i+1 << ":" << std::setw(10) << std::setprecision(5) << conv_matrix[i*3+1] <<
-			"B" << i+1 << ":" << std::setw(10) << std::setprecision(5) << conv_matrix[i*3+2] ;
-		ss << std::endl;
-	}
-
-	return ss.str();
-}
+    ss << "Using stain profile: " << theProfile->GetNameOfStainProfile() << std::endl;
+    ss << "Number of component stains: " << numStains << std::endl;
+    ss << std::endl;
+    
+    //These are cumulative, not if...else
+    //Stain one
+    if (numStains >= 1) {
+        std::array<double, 3> rgb = theProfile->GetStainOneRGB();
+        ss << std::left;
+        ss << "Stain 1: " << theProfile->GetNameOfStainOne() << std::endl;
+        ss << "R: " << std::setw(10) << std::setprecision(5) << rgb[0] <<
+              "G: " << std::setw(10) << std::setprecision(5) << rgb[1] <<
+              "B: " << std::setw(10) << std::setprecision(5) << rgb[2] <<
+              std::endl;
+    }
+    //Stain two
+    if (numStains >= 2) {
+        std::array<double, 3> rgb = theProfile->GetStainTwoRGB();
+        ss << std::left;
+        ss << "Stain 2: " << theProfile->GetNameOfStainTwo() << std::endl;
+        ss << "R: " << std::setw(10) << std::setprecision(5) << rgb[0] <<
+              "G: " << std::setw(10) << std::setprecision(5) << rgb[1] <<
+              "B: " << std::setw(10) << std::setprecision(5) << rgb[2] <<
+              std::endl;
+    }
+    //Stain three
+    if (numStains == 3) {
+        std::array<double, 3> rgb = theProfile->GetStainThreeRGB();
+        ss << std::left;
+        ss << "Stain 3: " << theProfile->GetNameOfStainThree() << std::endl;
+        ss << "R: " << std::setw(10) << std::setprecision(5) << rgb[0] <<
+              "G: " << std::setw(10) << std::setprecision(5) << rgb[1] <<
+              "B: " << std::setw(10) << std::setprecision(5) << rgb[2] <<
+              std::endl;
+    }
+    //Complete, return the string
+    return ss.str();
+}//end generateStainAnalysisReport
 
 
 std::string StainAnalysis::generateReport() const{
@@ -496,32 +545,141 @@ std::string StainAnalysis::generateReport() const{
 
 
 
-
-
-
-std::string StainAnalysis::openFile(std::string path)
-{
-    OPENFILENAME ofn;
-    char szFileName[MAX_PATH] = "";
-
-    //HACK
-    std::string m_path_to_root = "";
-
-    ZeroMemory(&ofn, sizeof(ofn));
-    ofn.lStructSize = sizeof(ofn);
-    ofn.hwndOwner = NULL;
-    ofn.lpstrFilter = "*.csv";
-    ofn.lpstrFile = (LPSTR)szFileName;
-    ofn.nMaxFile = MAX_PATH;
-    ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
-    //ofn.lpstrDefExt = (LPSTR)L"tif";
-    ofn.lpstrInitialDir = (LPSTR)m_path_to_root.c_str();
-    GetOpenFileName(&ofn);
-
-    return ofn.lpstrFile;
-}//end openFile
-
 } // namespace algorithm
 } // namespace sedeen
 
 
+/****
+bool StainAnalysis::buildPipeline() {
+    using namespace image::tile;
+    bool pipeline_changed = false;
+
+    // Get source image properties
+    auto source_factory = image()->getFactory();
+    auto source_color = source_factory->getColorSpace();
+    double conv_matrix[9]= {0.0};
+    bool ROIIsdefined = (m_region_interest.at(0).isUserDefined() &&
+        m_region_interest.at(1).isUserDefined() &&
+        m_region_interest.at(2).isUserDefined() ) &&
+        (m_region_interest.at(0).isChanged() ||
+        m_region_interest.at(1).isChanged() ||
+        m_region_interest.at(2).isChanged() );
+
+    bool doProcessing = false;
+    if (m_retainment.isChanged() || m_displayOptions.isChanged() ||
+        ROIIsdefined || m_threshold.isChanged() || m_regionToProcess.isChanged()  ||
+        m_displayArea.isChanged() ||
+        (nullptr == m_colorDeconvolution_factory) || pipeline_changed) {
+            // Build Color Deconvolution Kernel
+            image::tile::ColorDeconvolution::Behavior retainment;
+            switch (m_retainment)
+            {
+            case 0:
+                retainment = image::tile::ColorDeconvolution::Behavior::RegionOfInterest;
+                break;
+            case 1:
+                retainment = image::tile::ColorDeconvolution::Behavior::HematoxylinPEosin;
+                break;
+            case 2:
+                retainment = image::tile::ColorDeconvolution::Behavior::HematoxylinPDAB;
+                break;
+            case 3:
+                retainment = image::tile::ColorDeconvolution::Behavior::HematoxylinPEosinPDAB;
+                break;
+            case 4:
+                retainment = image::tile::ColorDeconvolution::Behavior::LoadFromFile;
+                break;
+            default:
+                break;
+            }
+
+            //if(retainment == image::tile::ColorDeconvolution::Behavior::LoadFromFile)
+            //{
+            //	std::string path_to_image =
+            //		image()->getMetaData()->get(image::StringTags::SOURCE_DESCRIPTION, 0);
+            //	auto found = path_to_image.find_last_of(".");
+            //	m_pathToRoot = path_to_image.substr(0, found);
+            //	m_path_to_stainfile = openFile(m_pathToRoot);
+            //}
+
+            if (retainment == image::tile::ColorDeconvolution::Behavior::RegionOfInterest) {
+
+                std::vector<std::shared_ptr<GraphicItemBase>> region_of_interests;
+
+                if(m_region_interest.at(0).isUserDefined() && m_region_interest.at(1).isUserDefined()
+                    && m_region_interest.at(2).isUserDefined() )
+                {
+                    auto display_resolution = getDisplayResolution(image(), m_displayArea);
+                    for(int i=0; i < 3; i++)
+                    {
+                        std::shared_ptr<GraphicItemBase> region = m_region_interest.at(i);
+                        region_of_interests.push_back( region ); //region->graphic()
+
+                        Rect rect = containingRect(region_of_interests.at(i)->graphic());
+                    }
+
+                    image::getStainsComponents(source_factory,
+                        region_of_interests,
+                        display_resolution, conv_matrix);
+
+                    m_report = generateReport(conv_matrix);
+                }
+                else
+                {
+                    doProcessing = false;
+                    retainment = image::tile::ColorDeconvolution::Behavior::HematoxylinPEosin;
+
+                }
+            }
+
+            //m_report = generateReport(conv_matrix);
+
+            image::tile::ColorDeconvolution::DisplayOptions DisplayOption;
+            switch (m_displayOptions)
+            {
+            case 0:
+                DisplayOption = image::tile::ColorDeconvolution::DisplayOptions::STAIN1;
+                break;
+            case 1:
+                DisplayOption = image::tile::ColorDeconvolution::DisplayOptions::STAIN2;
+                break;
+            case 2:
+                DisplayOption = image::tile::ColorDeconvolution::DisplayOptions::STAIN3;
+                break;
+            default:
+                break;
+            }
+
+                auto colorDeconvolution_kernel =
+                    std::make_shared<image::tile::ColorDeconvolution>(retainment, DisplayOption, conv_matrix, m_threshold, m_pathToRoot);
+
+                // Create a Factory for the composition of these Kernels
+                auto non_cached_factory =
+                    std::make_shared<FilterFactory>(source_factory,  colorDeconvolution_kernel);
+
+                // Wrap resulting Factory in a Cache for speedy results
+                m_colorDeconvolution_factory =
+                    std::make_shared<Cache>(non_cached_factory, RecentCachePolicy(30));
+
+                pipeline_changed = true;
+    }
+
+    //
+    // Constrain processing to the region of interest provided
+    //
+    //
+    std::shared_ptr<GraphicItemBase> region = m_regionToProcess;
+    if (pipeline_changed && (nullptr != region)) {
+        // Constrain the output of the pipeline to the region of interest provided
+        auto constained_factory =
+            std::make_shared<RegionFactory>(m_colorDeconvolution_factory,
+            region->graphic());
+
+        // Wrap resulting Factory in a Cache for speedy results
+        m_colorDeconvolution_factory =
+            std::make_shared<Cache>(constained_factory, RecentCachePolicy(30));
+    }
+
+    return pipeline_changed;
+}
+****/

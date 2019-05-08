@@ -9,15 +9,30 @@
 #ifndef SEDEEN_SRC_PLUGINS_STAINANALYSIS_STAINANALYSIS_H
 #define SEDEEN_SRC_PLUGINS_STAINANALYSIS_STAINANALYSIS_H
 
+//Convert a macro defined in CMake to a string
+#define StringLiteral(stl) #stl
+#define MacroToString(macro) StringLiteral(macro)
+//Specifically, convert PLUGIN_RELATIVE_DIR to a string literal
+#ifndef PLUGIN_RELATIVE_DIR
+#define PLUGIN_RELATIVE_DIR_STRING "PLUGIN_RELATIVE_DIR-NOTFOUND"
+#else
+#define PLUGIN_RELATIVE_DIR_STRING MacroToString(PLUGIN_RELATIVE_DIR)
+#endif
+
 // DPTK headers - a minimal set 
 #include "algorithm/AlgorithmBase.h"
 #include "algorithm/Parameters.h"
 #include "algorithm/Results.h"
-//#include "ColorDeconvolutionKernel.h"
+
+#include "ColorDeconvolutionKernel.h"
 
 #include <omp.h>
 #include <Windows.h>
 #include <fstream>
+#include <filesystem> //Requires C++17
+
+//Plugin headers
+#include "StainProfile.h"
 
 namespace sedeen {
 namespace tile {
@@ -51,43 +66,46 @@ private:
 	/// \return 
 	/// TRUE if the pipeline has changed since the call to this function, FALSE
 	/// otherwise
-	bool buildPipeline();
+	bool buildPipeline(std::shared_ptr<StainProfile>);
 
-	/// Generates a report of the stain matrix calculated from ROI
-	//
-	/// Report is formatted as a table containing the cofficients
-	/// of each stain
-	//
-	/// \return
-	/// a string containing the cofficients of each stain calculated from ROI
-	std::string generateReport(double[9]) const;
+    ///Create a report including the stain profile data used and the resulting stain analysis output
+	std::string generateStainAnalysisReport(std::shared_ptr<StainProfile>) const;
+    ///Comment pending
 	std::string generateReport(void) const;
-	std::string openFile(std::string path);
 
-
-	void StainAnalysis::updateIntermediateResult();
-
-
-	/// Search folder to find a specific file containg saved stain matrix
-	//
-	/// Report is formatted as a table containing the cofficients
-	/// of each stain
-	//
-	/// \return
-	/// a string containing the cofficients of each stain calculated from ROI
-	//bool find_file( const boost::filesystem::path & , const std::string & , boost::filesystem::path & );        
+	//void StainAnalysis::updateIntermediateResult();
 
 private:
-	std::string m_path_to_root;
-	std::string m_path_to_stainfile;
+    ///Names of the default stain profile files
+    inline static const std::string HematoxylinPEosinFilename()     { return "HematoxylinPEosin.xml"; }
+    inline static const std::string HematoxylinPDABFilename()       { return "HematoxylinPDAB.xml"; }
+    inline static const std::string HematoxylinPEosinPDABFilename() { return "HematoxylinPEosinPDAB.xml"; }
+    ///Returns the directory of the plugin relative to the Sedeen Viewer directory as a string
+    inline static const std::filesystem::path GetPluginRelativeDirectory() { return std::filesystem::path(PLUGIN_RELATIVE_DIR_STRING); }
 
+    ///Access the member file dialog parameter, if possible load the stain profile, return true on success
+    bool LoadStainProfileFromFileDialog();
+
+    ///std::filesystem::path type to the plugin's directory
+    std::filesystem::path m_pathToPlugin;
+
+    ///List of the full path file names of the stain profiles
+    std::vector<std::filesystem::path> m_stainProfileFullPathNames;
+
+    ///List of the connected stain profile objects
+    std::vector<std::shared_ptr<StainProfile>> m_stainProfileList;
+    ///Keep a pointer directly to the loaded stain profile
+    std::shared_ptr<StainProfile> m_LoadedStainProfile;
+
+private:
 	DisplayAreaParameter m_displayArea;
 
     //The new parameters!!!
     OpenFileDialogParameter m_openProfile;
     OptionParameter m_stainSeparationAlgorithm;
     OptionParameter m_stainVectorProfile;
-    GraphicItemParameter m_regionToProcess;
+    GraphicItemParameter m_regionToProcess; //ONE output region for now
+    //std::vector<GraphicItemParameter> m_regionsToProcess;
 
     OptionParameter m_stainToDisplay;
     BoolParameter m_applyThreshold;
@@ -97,34 +115,24 @@ private:
 
     /// The output result
     ImageResult m_result;			
-    TextResult m_output_text;
+    TextResult m_outputText;
     std::string m_report;
-
 
     /// The intermediate image factory after color deconvolution
     std::shared_ptr<image::tile::Factory> m_colorDeconvolution_factory;
 
-    /// The intermediate image factory after thresholding
+    /// The image factory after thresholding
     std::shared_ptr<image::tile::Factory> m_threshold_factory;
     std::ofstream log_file;
 
-
-
-	//algorithm::OptionParameter m_retainment;
-	//algorithm::OptionParameter m_displayOptions;
-	/// Parameter for selecting threshold retainment 
-	//algorithm::OptionParameter m_behavior;
-	/// User defined Threshold value.
-	//algorithm::DoubleParameter m_threshold;
+    //Old parameters
 	/// The output result
-	//algorithm::ImageResult m_result;			
-	//algorithm::TextResult m_output_text;
-	//std::string m_report;
 	/// Parameter for selecting which of the intermediate result to display
 	//algorithm::OptionParameter m_output_option;
-	/// User region of interest
+
+    /// User region of interest (these are for the ROIs defining reference stains. Now only needed in CreateStainVectorProfile)
 	//std::vector<algorithm::GraphicItemParameter> m_region_interest;
-	//algorithm::GraphicItemParameter m_regionToProcess;
+	//
 
 
 private:
