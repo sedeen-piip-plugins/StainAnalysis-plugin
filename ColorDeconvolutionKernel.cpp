@@ -1,3 +1,27 @@
+/*=============================================================================
+ *
+ *  Copyright (c) 2019 Sunnybrook Research Institute
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in all
+ *  copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *  SOFTWARE.
+ *
+ *=============================================================================*/
+
 #include "ColorDeconvolutionKernel.h"
 
 namespace sedeen {
@@ -8,7 +32,8 @@ namespace sedeen {
 				count(0),
 				m_Stain(behavior),
 				log255(std::log(255.0)),
-				m_displyOption(displyOption)
+				m_displyOption(displyOption),
+        m_colorSpace(ColorModel::RGBA, ChannelType::UInt8)
 
 			{
 				SetStainMatrice(m_Stain, conv_matrix, path_to_root);
@@ -275,7 +300,7 @@ namespace sedeen {
 				std::vector<RawImage> binaryImages;
 
 				for (int i=0; i<NumOfStains; i++){
-					binaryImages.push_back( RawImage(imageSize, Color(ColorSpace::RGBA_8)) );
+					binaryImages.push_back( RawImage(imageSize, ColorSpace(ColorModel::RGBA, ChannelType::UInt8)) );
 					binaryImages[i].fill(0);
 				}
 
@@ -290,16 +315,16 @@ namespace sedeen {
 						y++;*/
 
 					// log transform the RGB data
-					int R = source.at(x,y, 0);
-					int G = source.at(x,y, 1);
-					int B = source.at(x,y, 2);
-					double Rlog = -((255.0*log(((double)R+1)/255.0))/log255);
-					double Glog = -((255.0*log(((double)G+1)/255.0))/log255);
-					double Blog = -((255.0*log(((double)B+1)/255.0))/log255);
+          double R = source.at(x, y, 0).as<double>();
+          double G = source.at(x, y, 1).as<double>();
+          double B = source.at(x, y, 2).as<double>();
+					double Rlog = -((255.0*log((R+1)/255.0))/log255);
+					double Glog = -((255.0*log((G+1)/255.0))/log255);
+					double Blog = -((255.0*log((B+1)/255.0))/log255);
 
-					double Rlogn = -log( ((double)R/255.0 + 0.001)/1.001 );
-					double Glogn = -log( ((double)G/255.0 + 0.001)/1.001 );
-					double Blogn = -log( ((double)B/255.0 + 0.001)/1.001 );
+					double Rlogn = -log( (R/255.0 + 0.001)/1.001 );
+					double Glogn = -log( (G/255.0 + 0.001)/1.001 );
+					double Blogn = -log( (B/255.0 + 0.001)/1.001 );
 
 					for (int i=0; i<3; i++){
 						// rescale to match original paper values
@@ -345,10 +370,9 @@ namespace sedeen {
 			}
 
 
-			Color ColorDeconvolution::doGetColor() const
+			const ColorSpace& ColorDeconvolution::doGetColorSpace() const
 			{
-				Color color(ColorSpace::RGBA_8);
-				return color;
+				return m_colorSpace;
 			}
 
 			bool ColorDeconvolution::saveToCSVfile(const std::string& fileName )
@@ -417,9 +441,9 @@ namespace sedeen {
 					y++;
 
 				// rescale to match original paper values
-				rgbOD[0] =rgbOD[0] + (-((255.0*log(((double)(ROI.at(x, y, 0) +1)/255.0))/log255)));
-				rgbOD[1] =rgbOD[1] + (-((255.0*log(((double)(ROI.at(x, y, 1) +1)/255.0))/log255)));
-				rgbOD[2] =rgbOD[2] + (-((255.0*log(((double)(ROI.at(x, y, 2) +1)/255.0))/log255)));
+				rgbOD[0] =rgbOD[0] + (-((255.0*log(((ROI.at(x, y, 0).as<double>() +1)/255.0))/log255)));
+				rgbOD[1] =rgbOD[1] + (-((255.0*log(((ROI.at(x, y, 1).as<double>() +1)/255.0))/log255)));
+				rgbOD[2] =rgbOD[2] + (-((255.0*log(((ROI.at(x, y, 2).as<double>() +1)/255.0))/log255)));
 			}
 			rgbOD[0] = rgbOD[0] / imageSize;
 			rgbOD[1] = rgbOD[1] / imageSize;
