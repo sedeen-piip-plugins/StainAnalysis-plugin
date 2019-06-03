@@ -27,7 +27,8 @@
 namespace sedeen {
 	namespace image {
 		namespace tile {
-			ColorDeconvolution::ColorDeconvolution( Behavior behavior, DisplayOptions displayOption, std::shared_ptr<StainProfile> theProfile, 
+			ColorDeconvolution::ColorDeconvolution( Behavior behavior, DisplayOptions displayOption, 
+                std::shared_ptr<StainProfile> theProfile, 
                 bool applyThreshold, double threshold) : /// const std::string& path_to_root) :
                 m_applyThreshold(applyThreshold),
 				m_threshold(threshold),
