@@ -40,8 +40,6 @@
 #include "algorithm/Parameters.h"
 #include "algorithm/Results.h"
 
-#include "ColorDeconvolutionKernel.h"
-
 #include <omp.h>
 #include <Windows.h>
 #include <fstream>
@@ -49,6 +47,7 @@
 
 //Plugin headers
 #include "StainProfile.h"
+#include "ColorDeconvolutionKernel.h"
 
 namespace sedeen {
 namespace tile {
@@ -82,12 +81,14 @@ private:
 	/// \return 
 	/// TRUE if the pipeline has changed since the call to this function, FALSE
 	/// otherwise
-	bool buildPipeline(std::shared_ptr<StainProfile>);
+	bool buildPipeline(std::shared_ptr<StainProfile>, bool);
 
-    ///Create a report including the stain profile data used and the resulting stain analysis output
-	std::string generateStainAnalysisReport(std::shared_ptr<StainProfile>) const;
-    ///Comment pending
-	std::string generateReport(void) const;
+    ///Create a text report that combines the output of the stain profile and pixel fraction reports
+    std::string generateCompleteReport(std::shared_ptr<StainProfile>) const;
+    ///Create a text report summarizing the stain vector profile
+	std::string generateStainProfileReport(std::shared_ptr<StainProfile>) const;
+    ///Create a text report stating what fraction of the processing area is covered by the filtered output
+	std::string generatePixelFractionReport(void) const;
 
 	//void StainAnalysis::updateIntermediateResult();
 
@@ -120,8 +121,7 @@ private:
     OpenFileDialogParameter m_openProfile;
     OptionParameter m_stainSeparationAlgorithm;
     OptionParameter m_stainVectorProfile;
-    GraphicItemParameter m_regionToProcess; //ONE output region for now
-    //std::vector<GraphicItemParameter> m_regionsToProcess;
+    GraphicItemParameter m_regionToProcess; //ONE output region
 
     OptionParameter m_stainToDisplay;
     BoolParameter m_applyThreshold;
@@ -141,19 +141,8 @@ private:
     std::shared_ptr<image::tile::Factory> m_threshold_factory;
     std::ofstream log_file;
 
-    //Old parameters
-	/// The output result
-	/// Parameter for selecting which of the intermediate result to display
-	//algorithm::OptionParameter m_output_option;
-
-    /// User region of interest (these are for the ROIs defining reference stains. Now only needed in CreateStainVectorProfile)
-	//std::vector<algorithm::GraphicItemParameter> m_region_interest;
-	//
-
-
 private:
     //Member variables
-    std::vector<std::string> m_separationAlgorithmOptions;
     std::vector<std::string> m_stainVectorProfileOptions;
     std::vector<std::string> m_stainToDisplayOptions;
 

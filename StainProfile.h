@@ -112,16 +112,20 @@ public:
     ///Public read method - checks file existence first, returns true/false for success/failure
     bool readStainProfile(std::string);
 
-    ///Request the list of possible stain separation algorithm names from the class
+    ///Request the list of possible stain separation algorithm names from the class, static defined in constructor
     std::vector<std::string> GetStainSeparationAlgorithmOptions();
 
     ///Request an element of the vector of stain separation algorithms. Returns "" on error.
     std::string GetStainSeparationAlgorithmName(int);
 
-    ///Get the stain vector profile as a 9-element double array (must be passed as a blank array)
-    bool GetProfileAsDoubleArray(double[9]);
-    ///Set the values of the stain vector profile from a 9-element double array
-    bool SetProfileFromDoubleArray(double[9]);
+    ///Get the raw (no normalization applied) stain vector profiles and assign to a 9-element double array
+    bool GetProfilesAsDoubleArray(double[9]);
+    ///Normalize each vector to 1, then assign the stain vector profiles to a 9-element double array
+    bool GetNormalizedProfilesAsDoubleArray(double[9]);
+    ///Get the stain vector profiles, normalized or not depending on second parameter, and assign to a 9-element double array
+    bool GetProfilesAsDoubleArray(double[9], bool);
+    ///Set the values of the stain vector profiles from a 9-element double array
+    bool SetProfilesFromDoubleArray(double[9]);
 
     //Check if the file exists, and accessible for reading or writing, depending on the second argument
     static bool checkFile(std::string, std::string);
@@ -166,7 +170,7 @@ private:
 
 private:
     ///Store the list of possible stain separation algorithm names here
-    std::vector<std::string> m_stainSeparationAlgorithmOptions;
+	std::vector<std::string> m_stainSeparationAlgorithmOptions;
 
     ///An XML document associated with this class: note that elements can't be smartpointers
     std::shared_ptr<tinyxml2::XMLDocument> m_xmlDoc;

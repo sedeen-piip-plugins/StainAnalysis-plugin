@@ -25,9 +25,7 @@
 #include "StainProfile.h"
 
 #include <stdexcept>
-#include <algorithm>
 #include <cmath>
-#include <numeric>
 
 #include <sstream>
 
@@ -222,8 +220,7 @@ bool StainProfile::SetStainOneRGB(double rgb[])
 }//end SetStainOneRGB(C array)
 
 bool StainProfile::SetStainOneRGB(std::array<double, 3> rgb) {
-    //Normalize the values in the input array
-    std::array<double, 3> normRGB = StainVectorMath::NormalizeArray<double, 3>(rgb);
+    //Assign as is, do not normalize here
     //Get the first stain value element, or return false if not found
     if (m_stainOneElement == nullptr) { return false; }
     //else
@@ -231,13 +228,13 @@ bool StainProfile::SetStainOneRGB(std::array<double, 3> rgb) {
     if (sVals == nullptr) { return false; }
     while (sVals != nullptr) {
         if (sVals->Attribute(valueTypeAttribute(), "r")) {
-            sVals->SetText(normRGB[0]);
+            sVals->SetText(rgb[0]);
         }
         else if (sVals->Attribute(valueTypeAttribute(), "g")) {
-            sVals->SetText(normRGB[1]);
+            sVals->SetText(rgb[1]);
         }
         else if (sVals->Attribute(valueTypeAttribute(), "b")) {
-            sVals->SetText(normRGB[2]);
+            sVals->SetText(rgb[2]);
         }
         sVals = sVals->NextSiblingElement(stainValueTag());
     }
@@ -305,21 +302,20 @@ bool StainProfile::SetStainTwoRGB(double rgb[]) {
 }//end SetStainTwoRGB(C array)
 
 bool StainProfile::SetStainTwoRGB(std::array<double, 3> rgb) {
-    //Normalize the values in the input array
-    std::array<double, 3> normRGB = StainVectorMath::NormalizeArray<double, 3>(rgb);
+    //Assign as is, do not normalize here
     //Get the first stain value element, or return false if not found
     if (m_stainTwoElement == nullptr) { return false; }
     tinyxml2::XMLElement* sVals = m_stainTwoElement->FirstChildElement(stainValueTag());
     if (sVals == nullptr) { return false; }
     while (sVals != nullptr) {
         if (sVals->Attribute(valueTypeAttribute(), "r")) {
-            sVals->SetText(normRGB[0]);
+            sVals->SetText(rgb[0]);
         }
         else if (sVals->Attribute(valueTypeAttribute(), "g")) {
-            sVals->SetText(normRGB[1]);
+            sVals->SetText(rgb[1]);
         }
         else if (sVals->Attribute(valueTypeAttribute(), "b")) {
-            sVals->SetText(normRGB[2]);
+            sVals->SetText(rgb[2]);
         }
         sVals = sVals->NextSiblingElement(stainValueTag());
     }
@@ -388,21 +384,20 @@ bool StainProfile::SetStainThreeRGB(double rgb[])
 }//end SetStainThreeRGB(C array)
 
 bool StainProfile::SetStainThreeRGB(std::array<double, 3> rgb) {
-    //Normalize the values in the input array
-    std::array<double, 3> normRGB = StainVectorMath::NormalizeArray<double, 3>(rgb);
+    //Assign as is, do not normalize here
     //Get the first stain value element, or return false if not found
     if (m_stainThreeElement == nullptr) { return false; }
     tinyxml2::XMLElement* sVals = m_stainThreeElement->FirstChildElement(stainValueTag());
     if (sVals == nullptr) { return false; }
     while (sVals != nullptr) {
         if (sVals->Attribute(valueTypeAttribute(), "r")) {
-            sVals->SetText(normRGB[0]);
+            sVals->SetText(rgb[0]);
         }
         else if (sVals->Attribute(valueTypeAttribute(), "g")) {
-            sVals->SetText(normRGB[1]);
+            sVals->SetText(rgb[1]);
         }
         else if (sVals->Attribute(valueTypeAttribute(), "b")) {
-            sVals->SetText(normRGB[2]);
+            sVals->SetText(rgb[2]);
         }
         sVals = sVals->NextSiblingElement(stainValueTag());
     }
@@ -438,12 +433,26 @@ std::array<double, 3> StainProfile::GetStainThreeRGB() {
     return out;
 }//end GetStainThreeRGB
 
-bool StainProfile::GetProfileAsDoubleArray(double profileArray[9]) {
-    //This method fills the values of profileArray without regard for what is currently there
+bool StainProfile::GetProfilesAsDoubleArray(double profileArray[9]) {
+    return GetProfilesAsDoubleArray(profileArray, false);
+}//end GetProfileAsDoubleArray
+
+bool StainProfile::GetNormalizedProfilesAsDoubleArray(double profileArray[9]) {
+    return GetProfilesAsDoubleArray(profileArray, true);
+}//end GetNormalizedProfilesAsDoubleArray
+
+bool StainProfile::GetProfilesAsDoubleArray(double profileArray[9], bool normalize) {
+    //This method fills the values of profileArray from local stain profile
+    //Assigns 0.0 for elements corresponding to components beyond the number set in the profile
     int components = this->GetNumberOfStainComponents();
-    std::array<double, 3> rgb1 = this->GetStainOneRGB();
-    std::array<double, 3> rgb2 = this->GetStainTwoRGB();
-    std::array<double, 3> rgb3 = this->GetStainThreeRGB();
+    std::array<double, 3> raw_rgb1 = this->GetStainOneRGB();
+    std::array<double, 3> raw_rgb2 = this->GetStainTwoRGB();
+    std::array<double, 3> raw_rgb3 = this->GetStainThreeRGB();
+
+    std::array<double, 3> rgb1 = normalize ? StainVectorMath::NormalizeArray(raw_rgb1) : raw_rgb1;
+    std::array<double, 3> rgb2 = normalize ? StainVectorMath::NormalizeArray(raw_rgb2) : raw_rgb2;
+    std::array<double, 3> rgb3 = normalize ? StainVectorMath::NormalizeArray(raw_rgb3) : raw_rgb3;
+
     //Use the ternary operator for assignment of the profileArray elements
     profileArray[0] = (components > 0)  ? rgb1[0] : 0.0;
     profileArray[1] = (components > 0)  ? rgb1[1] : 0.0;
@@ -453,17 +462,22 @@ bool StainProfile::GetProfileAsDoubleArray(double profileArray[9]) {
     profileArray[4] = (components > 1)  ? rgb2[1] : 0.0;
     profileArray[5] = (components > 1)  ? rgb2[2] : 0.0;
 
-    profileArray[6] = (components == 3) ? rgb3[0] : 0.0;
-    profileArray[7] = (components == 3) ? rgb3[1] : 0.0;
-    profileArray[8] = (components == 3) ? rgb3[2] : 0.0;
+    profileArray[6] = (components > 2) ? rgb3[0] : 0.0;
+    profileArray[7] = (components > 2) ? rgb3[1] : 0.0;
+    profileArray[8] = (components > 2) ? rgb3[2] : 0.0;
     return true;
-}//end GetProfileAsDoubleArray
+}//end GetProfilesAsDoubleArray
 
-bool StainProfile::SetProfileFromDoubleArray(double profileArray[9]) {
-    //Assume that the contents of profileArray are intentional, and set all values
-    bool check1 = this->SetStainOneRGB(  profileArray[0], profileArray[1], profileArray[2]);
-    bool check2 = this->SetStainTwoRGB(  profileArray[3], profileArray[4], profileArray[5]);
-    bool check3 = this->SetStainThreeRGB(profileArray[6], profileArray[7], profileArray[8]);
+bool StainProfile::SetProfilesFromDoubleArray(double profileArray[9]) {
+    //Copy values to ensure they are in local scope
+    double thisArray[9] = { 0.0 };
+    for (int i = 0; i < 9; i++) {
+        thisArray[i] = profileArray[i];
+    }
+    //Assume that the contents of profileArray are intentional, and directly set all values
+    bool check1 = this->SetStainOneRGB(thisArray[0], thisArray[1], thisArray[2]);
+    bool check2 = this->SetStainTwoRGB(thisArray[3], thisArray[4], thisArray[5]);
+    bool check3 = this->SetStainThreeRGB(thisArray[6], thisArray[7], thisArray[8]);
     return (check1 && check2 && check3);
 }//end SetProfileFromDoubleArray
 
@@ -522,6 +536,12 @@ tinyxml2::XMLError StainProfile::writeStainProfileToXML(std::string fileString) 
 }//end writeStainProfileToXML
 
 tinyxml2::XMLError StainProfile::readStainProfileFromXML(std::string fileString) {
+    //Clear the current structure
+    bool clearSuccessful = ClearXMLDocument();
+    if (!clearSuccessful) {
+        return tinyxml2::XML_ERROR_PARSING_ELEMENT;
+    }
+    //else
     //Read it!
     tinyxml2::XMLError eResult = this->GetXMLDoc()->LoadFile(fileString.c_str());
     XMLCheckResult(eResult);

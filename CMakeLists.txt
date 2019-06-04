@@ -32,7 +32,6 @@ LINK_DIRECTORIES( ${LINK_DIRECTORIES} ${SEDEENSDK_LIBRARY_DIR} ${TinyXML2_LIB_DI
 ADD_LIBRARY( ${PROJECT_NAME} MODULE 
                  ${PROJECT_NAME}.cpp ${PROJECT_NAME}.h 
                  StainProfile.h StainProfile.cpp 
-                 StainVectorMath.h
                  ColorDeconvolutionKernel.h ColorDeconvolutionKernel.cpp
                  )
 
