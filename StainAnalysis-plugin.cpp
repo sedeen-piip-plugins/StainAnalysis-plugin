@@ -65,13 +65,9 @@ StainAnalysis::StainAnalysis()
     m_applyThreshold(),
     m_threshold(),
     m_pathToPlugin(""),
-
-    //Back to the old parameters!!!
-	//m_retainment(),
-	//m_displayOptions(),
-	m_result(),
-	//m_region_interest(),
-	m_outputText(),
+    m_result(),
+    m_outputText(),
+    m_report(""),
 	m_colorDeconvolution_factory(nullptr),
 	m_threshold_factory(nullptr)
 {
@@ -119,9 +115,6 @@ StainAnalysis::StainAnalysis()
         tsp.reset();
     }
 
-    //Define the list of available stain separation algorithms
-    m_separationAlgorithmOptions.push_back("Ruifrok+Johnston Deconvolution");
-
     //Define the default list of names of stains to display
     m_stainToDisplayOptions.push_back("Stain 1");
     m_stainToDisplayOptions.push_back("Stain 2");
@@ -145,9 +138,13 @@ void StainAnalysis::init(const image::ImageHandle& image) {
         "Open a file containing a stain vector profile.",
         openFileDialogOptions, true);
 
+	//Get the list of available stain separation algorithms from a temp StainProfile object
+	auto tempStainProfile = std::make_shared<StainProfile>();
+	std::vector<std::string> tempStainSeparationOptions = tempStainProfile->GetStainSeparationAlgorithmOptions();
+	tempStainProfile.reset();
     m_stainSeparationAlgorithm = createOptionParameter(*this, "Stain Separation Algorithm",
         "Select the stain separation algorithm to use to separate the stain components", 0,
-        m_separationAlgorithmOptions, false);
+		tempStainSeparationOptions, false);
 
     m_stainVectorProfile = createOptionParameter(*this, "Stain Vector Profile",
         "Select the stain vector profile to use; either from the file, or one of the pre-defined profiles", 0,
@@ -164,27 +161,20 @@ void StainAnalysis::init(const image::ImageHandle& image) {
     //User can choose whether to apply the threshold or not
     m_applyThreshold = createBoolParameter(*this, "Display with Threshold Applied",
         "If Display with Threshold Applied is set, the threshold value in the slider below will be applied to the stain-separated image",
-        false, false); //default value, optional
+        true, false); //default value, optional
 
     // Init the user defined threshold value
+	//TEMPORARY!! Can't set precision on DoubleParameter right now, so use 1/100 downscale
     auto color = getColorSpace(image);
     auto max_value = (1 << bitsPerChannel(color)) - 1;
     m_threshold = createDoubleParameter(*this,
-        "Threshold", // Widget label
+        "OD x100 Threshold", // Widget label
         "A Threshold value", // Widget tooltip
-        1.0,         // Initial value
+        50.0,         // Initial value
         0.0,          // minimum value
-        50.0,        // maximum value
+        300.0,        // maximum value
         false);
 
-    //std::string pathToImage =
-    //    image->getMetaData()->get(image::StringTags::SOURCE_DESCRIPTION, 0);
-    //const std::string temp_str = pathToImage.substr(pathToImage.find_last_of("/\\") + 1);
-    //auto found = pathToImage.find_last_of("/\\") + 1;
-    //m_pathToRoot = pathToImage.substr(0, found);
-
-    //std::filesystem::path dirPath = m_pathToRoot / "sedeen/";
-    //std::filesystem::path pathFound = std::filesystem::path();
 
     // Bind result
     m_outputText = createTextResult(*this, "Text Result");
@@ -192,17 +182,20 @@ void StainAnalysis::init(const image::ImageHandle& image) {
 
 }//end init
 
-
 void StainAnalysis::run() {
+    //These have to be checked before the parameters are used
+    //Check if the stain profile has changed
+    bool stainProfile_changed = m_stainVectorProfile.isChanged();
+    //Check whether the stain profile file has changed
+    bool loadedFile_changed = m_openProfile.isChanged();
+
+    //Get which of the stain vector profiles has been selected by the user
+    int chosenProfileNum = m_stainVectorProfile;
     //The user does not have to select a file,
     //but if none is chosen, one of the defaults must be selected
     bool loadResult = LoadStainProfileFromFileDialog();
-    //Get which of the stain vector profiles has been selected by the user
-    int chosenProfileNum = m_stainVectorProfile;
-
-    //Define a pointer for the stain profile to be 
     //Check whether the user selected to load from file and if so, that it loaded correctly
-    if (!loadResult && chosenProfileNum == 0) {
+    if (chosenProfileNum == 0 && !loadResult) {
         throw std::runtime_error("The stain profile file cannot be read. Choose a default stain profile or try loading a different file.");
         return;
     }
@@ -225,18 +218,18 @@ void StainAnalysis::run() {
     }
     
     // Build the operational pipeline
-    bool pipeline_changed = buildPipeline(chosenStainProfile);
+    bool pipeline_changed = buildPipeline(chosenStainProfile, (stainProfile_changed || loadedFile_changed));
 
 	// Update results
-	if ( pipeline_changed || display_changed ) {
+	if ( pipeline_changed || display_changed || stainProfile_changed || loadedFile_changed ) {
 
 		m_result.update(m_colorDeconvolution_factory, m_displayArea, *this);
-        //*********************************************************************************************************************************here
-		//updateIntermediateResult();
+
+        //updateIntermediateResult();
 
 		// Update the output text report
 		if (false == askedToStop()) {
-			auto report = generateStainAnalysisReport(chosenStainProfile);
+			auto report = generateCompleteReport(chosenStainProfile);
 			m_outputText.sendText(report);
 		}
 	}
@@ -246,9 +239,7 @@ void StainAnalysis::run() {
 	if (askedToStop()) {
         m_colorDeconvolution_factory.reset();
 	}
-
 }//end run
-
 
 ///Define the open file dialog options outside of init
 sedeen::file::FileDialogOptions StainAnalysis::defineOpenFileDialogOptions() {
@@ -291,7 +282,7 @@ bool StainAnalysis::LoadStainProfileFromFileDialog() {
 }//end LoadStainProfileFromFileDialog
 
 
-bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfile) {
+bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfile, bool somethingChanged) {
     using namespace image::tile;
     bool pipeline_changed = false;
     //There are two possible behaviors: RegionOfInterest, and LoadFromProfile
@@ -303,14 +294,7 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
     auto source_color = source_factory->getColorSpace();
 
     bool doProcessing = false;
-    //bool regionsChanged(false);
-    //Have any of the regions to be processed changed?
-    //for (auto it = m_regionsToProcess.begin(); it != m_regionsToProcess.end(); ++it) {
-    //    regionsChanged = regionsChanged || (*it).isChanged();
-    //}
-    //Figure out whether any settings have changed
-    //|| regionsChanged
-    if ( pipeline_changed 
+    if ( pipeline_changed || somethingChanged
          || m_regionToProcess.isChanged()
          || m_stainSeparationAlgorithm.isChanged() 
          || m_stainVectorProfile.isChanged() 
@@ -321,42 +305,8 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
          || (nullptr == m_colorDeconvolution_factory) )
     {
         //Build the color deconvolution channel
-
         if (behaviorType == image::tile::ColorDeconvolution::Behavior::RegionOfInterest) {
-            //for now, do nothing here.
-
-            /**
-            if (retainment == image::tile::ColorDeconvolution::Behavior::RegionOfInterest) {
-
-                std::vector<std::shared_ptr<GraphicItemBase>> region_of_interests;
-
-                if(m_region_interest.at(0).isUserDefined() && m_region_interest.at(1).isUserDefined()
-                    && m_region_interest.at(2).isUserDefined() )
-                {
-                    auto display_resolution = getDisplayResolution(image(), m_displayArea);
-                    for(int i=0; i < 3; i++)
-                    {
-                        std::shared_ptr<GraphicItemBase> region = m_region_interest.at(i);
-                        region_of_interests.push_back( region ); //region->graphic()
-
-                        Rect rect = containingRect(region_of_interests.at(i)->graphic());
-                    }
-
-                    image::getStainsComponents(source_factory,
-                        region_of_interests,
-                        display_resolution, conv_matrix);
-
-                    m_report = generateReport(conv_matrix);
-                }
-                else
-                {
-                    doProcessing = false;
-                    retainment = image::tile::ColorDeconvolution::Behavior::HematoxylinPEosin;
-
-                }
-            }
-        **/
-
+            //Do nothing
         }//end Behavior is RegionOfInterest
 
         //Choose value from the enumeration in ColorDeconvolution
@@ -376,8 +326,10 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
             break;
         }
 
+		//TEMPORARY!!! Scale down the threshold to create more precision
         auto colorDeconvolution_kernel =
-            std::make_shared<image::tile::ColorDeconvolution>(behaviorType, DisplayOption, chosenStainProfile, m_applyThreshold, m_threshold);  //Need to tell it whether to use the threshold or not
+            std::make_shared<image::tile::ColorDeconvolution>(behaviorType, DisplayOption, chosenStainProfile, 
+                m_applyThreshold, m_threshold/100.0);  //Need to tell it whether to use the threshold or not
 
         // Create a Factory for the composition of these Kernels
         auto non_cached_factory =
@@ -388,11 +340,10 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
             std::make_shared<Cache>(non_cached_factory, RecentCachePolicy(30));
 
         pipeline_changed = true;
-
     }//end if parameter values changed
 
     //
-    // Constrain processing to the region of interest provided
+    // Constrain processing to the region of interest provided, if set
     std::shared_ptr<GraphicItemBase> region = m_regionToProcess;
     if (pipeline_changed && (nullptr != region)) {
         // Constrain the output of the pipeline to the region of interest provided
@@ -405,35 +356,17 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
     return pipeline_changed;
 }//end buildPipeline
 
+std::string StainAnalysis::generateCompleteReport(std::shared_ptr<StainProfile> theProfile) const {
+    //Combine the output of the stain profile report
+    //and the pixel fraction report, return the full string
+    std::ostringstream ss;
+    ss << generateStainProfileReport(theProfile);
+    ss << std::endl;
+    ss << generatePixelFractionReport();
+    return ss.str();
+}//end generateCompleteReport
 
-
-
-
-
-/****
-void StainAnalysis::updateIntermediateResult()
-{
-	// Update UI with the results of the given factory
-	auto update_result = [&](const std::shared_ptr<image::tile::Factory> &factory) {
-		// Create a compositor
-		auto compositor = std::unique_ptr<image::tile::Compositor>(new image::tile::Compositor(factory));
-
-		// Extract image from it
-		//auto source_region = image()->getFactory()->getLevelRegion(0);
-		//auto image = compositor->getImage(source_region, Size(source_region.width(), source_region.height()));
-
-		DisplayRegion region = m_displayArea;
-		auto image = compositor->getImage(region.source_region, region.output_size);
-
-		// Update UI
-		m_result.update(image, region.source_region);
-	};
-
-	update_result(m_colorDeconvolution_factory);
-}
-****/
-
-std::string StainAnalysis::generateStainAnalysisReport(std::shared_ptr<StainProfile> theProfile) const
+std::string StainAnalysis::generateStainProfileReport(std::shared_ptr<StainProfile> theProfile) const
 {
     //I think using assert is a little too strong here. Use different error handling.
 	assert(nullptr != theProfile);
@@ -483,10 +416,10 @@ std::string StainAnalysis::generateStainAnalysisReport(std::shared_ptr<StainProf
     }
     //Complete, return the string
     return ss.str();
-}//end generateStainAnalysisReport
+}//end generateStainProfileReport
 
 
-std::string StainAnalysis::generateReport() const{
+std::string StainAnalysis::generatePixelFractionReport() const {
 
 	assert(nullptr != m_colorDeconvolution_factory);
 
@@ -513,7 +446,7 @@ std::string StainAnalysis::generateReport() const{
 	}
 
 	// Determine number of pixels above threshold
-	unsigned int totalnumPixels = output_image.width()*output_image.height();
+	unsigned int totalNumPixels = output_image.width()*output_image.height();
 	unsigned int numPixels=0;
 	int j = 0;
 	#pragma omp parallel for private(j)
@@ -525,40 +458,20 @@ std::string StainAnalysis::generateReport() const{
 			}
 		}
 	}
-
-	// Get pixel size of a pixel in the native resolution.
-	Size full_size = getDimensions(image(), 0);
-	float scalew = 1.0;
-	float scaleh = 1.0;
-	unsigned int _totalnumPixels = 1;
-	float _numPixels= (float)numPixels;
-	if(full_size.width() > output_image.width()){
-		scalew = (float)full_size.width() / (float)output_image.width();
-		scaleh = (float)full_size.height() / (float)output_image.height();
-		_totalnumPixels = full_size.width()*full_size.height();
-		_numPixels = (float)(_numPixels*scalew*scaleh)/(float)_totalnumPixels;
-		//_totalnumPixels = full_size.width()*full_size.height() - _numPixels;
-	}
-	else{
-		scalew = float(output_image.width())/float(full_size.width());
-		scaleh = (float)output_image.height()/(float)full_size.height();
-
-		_totalnumPixels = full_size.width()*full_size.height();
-		_numPixels = (float)numPixels/(scalew*scaleh);
-		_numPixels = _numPixels/(float)_totalnumPixels;
-		//_totalnumPixels = full_size.width()*full_size.height() - _numPixels;
-	}
+    float coveredFraction = ((float)numPixels) / ((float)totalNumPixels);
 
 	// Calculate results
 	std::ostringstream ss;
 	ss << std::left << std::setfill(' ') << std::setw(20);
-	ss << "Pixels belong to FG:";
-	ss << std::fixed << std::setprecision(3) << _numPixels*100  << " \%" << std::endl;
+    //ss << "The absolute number of covered pixels is: " << numPixels << std::endl;
+    //ss << "The absolute number of ROI pixels is: " << totalNumPixels << std::endl;
+    ss << "Percent of processed region covered by" << std::endl; 
+    ss << "stain, above threshold : ";
+	ss << std::fixed << std::setprecision(3) << coveredFraction*100  << " %" << std::endl;
 	ss << std::endl;
 
 	return ss.str();
 }
-
 
 
 } // namespace algorithm
@@ -697,5 +610,28 @@ bool StainAnalysis::buildPipeline() {
     }
 
     return pipeline_changed;
+}
+****/
+
+/****
+void StainAnalysis::updateIntermediateResult()
+{
+    // Update UI with the results of the given factory
+    auto update_result = [&](const std::shared_ptr<image::tile::Factory> &factory) {
+        // Create a compositor
+        auto compositor = std::unique_ptr<image::tile::Compositor>(new image::tile::Compositor(factory));
+
+        // Extract image from it
+        //auto source_region = image()->getFactory()->getLevelRegion(0);
+        //auto image = compositor->getImage(source_region, Size(source_region.width(), source_region.height()));
+
+        DisplayRegion region = m_displayArea;
+        auto image = compositor->getImage(region.source_region, region.output_size);
+
+        // Update UI
+        m_result.update(image, region.source_region);
+    };
+
+    update_result(m_colorDeconvolution_factory);
 }
 ****/

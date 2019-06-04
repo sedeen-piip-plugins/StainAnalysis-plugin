@@ -78,7 +78,7 @@ namespace sedeen {
 				//
 				/// \param 
 				/// 
-                explicit ColorDeconvolution(Behavior behavior, DisplayOptions displayOption, std::shared_ptr<StainProfile>, bool, double); // , const std::string& );
+                explicit ColorDeconvolution(Behavior behavior, DisplayOptions displayOption, std::shared_ptr<StainProfile>, bool, double);
 
 				virtual ~ColorDeconvolution();
 
@@ -89,7 +89,7 @@ namespace sedeen {
 				/// \post
 				///  is updated. If  is changed, update() is called to notify
 				/// the observers
-				void setDisplayOptions(DisplayOptions displayOption);
+				//void setDisplayOptions(DisplayOptions displayOption);
 
 				/// Set the Stain combination matrices of the kernel
 				/// \param t
@@ -97,7 +97,7 @@ namespace sedeen {
 				/// \post
 				/// m_StainMatrix is updated. If m_StainMatrix is changed, update() is called to notify
 				/// the observers.
-                void SetStainMatrix(Behavior behavior, double[9]); // , const std::string&);
+                //void SetStainMatrix(Behavior behavior, double[9]); // , const std::string&);
 
 			private:
 				/// \cond INTERNAL
@@ -111,12 +111,7 @@ namespace sedeen {
 				RawImage convertMatrixToImage(const Eigen::MatrixXd &source);*/
 
 				RawImage separate_stains(const RawImage &source, double[9]);
-				void computeMatrixInverse( double[9] );
-				//bool saveToCSVfile(const std::string& );
-				//void loadFromCSV( const std::string&, const std::string&);
-				/*void getmeanRGBODfromROI(std::shared_ptr<tile::Factory> source,
-					const Rect &region_of_interest,
-					const Size &rescaled_resolution);*/
+				void computeMatrixInverse( double[9], double[9] );
 				///matrix conversion from H&E to RGB (original matrix from Ruifrok, 2001)
 				// rows of matrix are stains, columns are color channels
 				//const Eigen::Matrix<double, 3, 3, Eigen::DontAlign> m_rgb_from_HandE;
@@ -127,17 +122,17 @@ namespace sedeen {
                 bool m_applyThreshold;
 				double m_threshold;
 
-				static const int NumOfStains = 3;
-				double log255;
-				double m_MODx[3];
-				double m_MODy[3];
-				double m_MODz[3];
-				double m_cosx[3];
-				double m_cosy[3];
-				double m_cosz[3];
+				//static const int NumOfStains = 3;
+				//double log255;
+				//double m_MODx[3];
+				//double m_MODy[3];
+				//double m_MODz[3];
+				//double m_cosx[3];
+				//double m_cosy[3];
+				//double m_cosz[3];
 
 				//std::ofstream log_file;
-				int count;
+				//int count;
 
                 ColorSpace m_colorSpace;
 
