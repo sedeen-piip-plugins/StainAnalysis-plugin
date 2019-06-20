@@ -26,9 +26,7 @@
 
 #include <stdexcept>
 #include <cmath>
-
 #include <sstream>
-
 #include <tinyxml2.h>
 
 StainProfile::StainProfile() {
@@ -219,8 +217,9 @@ bool StainProfile::SetStainOneRGB(double rgb[])
     return false;
 }//end SetStainOneRGB(C array)
 
-bool StainProfile::SetStainOneRGB(std::array<double, 3> rgb) {
-    //Assign as is, do not normalize here
+bool StainProfile::SetStainOneRGB(std::array<double, 3> rgb_in) {
+    //Normalize the array before assigning
+    std::array<double, 3> rgb = StainVectorMath::NormalizeArray<double, 3>(rgb_in);
     //Get the first stain value element, or return false if not found
     if (m_stainOneElement == nullptr) { return false; }
     //else
@@ -301,8 +300,9 @@ bool StainProfile::SetStainTwoRGB(double rgb[]) {
     return false;
 }//end SetStainTwoRGB(C array)
 
-bool StainProfile::SetStainTwoRGB(std::array<double, 3> rgb) {
-    //Assign as is, do not normalize here
+bool StainProfile::SetStainTwoRGB(std::array<double, 3> rgb_in) {
+    //Normalize the array before assigning
+    std::array<double, 3> rgb = StainVectorMath::NormalizeArray<double, 3>(rgb_in);
     //Get the first stain value element, or return false if not found
     if (m_stainTwoElement == nullptr) { return false; }
     tinyxml2::XMLElement* sVals = m_stainTwoElement->FirstChildElement(stainValueTag());
@@ -383,8 +383,9 @@ bool StainProfile::SetStainThreeRGB(double rgb[])
     return false;
 }//end SetStainThreeRGB(C array)
 
-bool StainProfile::SetStainThreeRGB(std::array<double, 3> rgb) {
-    //Assign as is, do not normalize here
+bool StainProfile::SetStainThreeRGB(std::array<double, 3> rgb_in) {
+    //Normalize the array before assigning
+    std::array<double, 3> rgb = StainVectorMath::NormalizeArray<double, 3>(rgb_in);
     //Get the first stain value element, or return false if not found
     if (m_stainThreeElement == nullptr) { return false; }
     tinyxml2::XMLElement* sVals = m_stainThreeElement->FirstChildElement(stainValueTag());
@@ -729,7 +730,7 @@ bool StainProfile::ClearXMLDocument() {
     this->SetNameOfStainOne("");
     this->SetNameOfStainTwo("");
     this->SetNameOfStainThree("");
-    this->SetNameOfStainSeparationAlgorithm(""); //To be determined: whether to do this
+    this->SetNameOfStainSeparationAlgorithm(""); 
 
     //Clear the stain vector values using the specific method in this class
     this->ClearStainVectorValues();

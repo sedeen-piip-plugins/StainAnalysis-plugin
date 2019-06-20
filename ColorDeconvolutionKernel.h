@@ -37,8 +37,8 @@
 
 #include <fstream>
 #include <sstream>
-#include <filesystem> //Requires C++17
 #include <memory>
+#include <filesystem> //Requires C++17
 
 //Plugin includes
 #include "StainProfile.h"
@@ -82,23 +82,6 @@ namespace sedeen {
 
 				virtual ~ColorDeconvolution();
 
-
-				/// Set the display option of the kernel
-				/// \param t
-				/// The stain name
-				/// \post
-				///  is updated. If  is changed, update() is called to notify
-				/// the observers
-				//void setDisplayOptions(DisplayOptions displayOption);
-
-				/// Set the Stain combination matrices of the kernel
-				/// \param t
-				/// The Stain combination Matrix name
-				/// \post
-				/// m_StainMatrix is updated. If m_StainMatrix is changed, update() is called to notify
-				/// the observers.
-                //void SetStainMatrix(Behavior behavior, double[9]); // , const std::string&);
-
 			private:
 				/// \cond INTERNAL
 
@@ -122,23 +105,13 @@ namespace sedeen {
                 bool m_applyThreshold;
 				double m_threshold;
 
-				//static const int NumOfStains = 3;
-				//double log255;
-				//double m_MODx[3];
-				//double m_MODy[3];
-				//double m_MODz[3];
-				//double m_cosx[3];
-				//double m_cosy[3];
-				//double m_cosz[3];
-
-				//std::ofstream log_file;
-				//int count;
-
                 ColorSpace m_colorSpace;
-
                 std::shared_ptr<StainProfile> m_stainProfile;
 
 				/// \endcond
+            private:
+                ///return full color images (true) or binary images (false)
+                bool m_fullColorImages;
 			};
 
 		} // namespace tile

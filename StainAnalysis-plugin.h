@@ -90,8 +90,6 @@ private:
     ///Create a text report stating what fraction of the processing area is covered by the filtered output
 	std::string generatePixelFractionReport(void) const;
 
-	//void StainAnalysis::updateIntermediateResult();
-
 private:
     ///Names of the default stain profile files
     inline static const std::string HematoxylinPEosinFilename()     { return "HematoxylinPEosin.xml"; }
@@ -138,14 +136,15 @@ private:
     std::shared_ptr<image::tile::Factory> m_colorDeconvolution_factory;
 
     /// The image factory after thresholding
-    std::shared_ptr<image::tile::Factory> m_threshold_factory;
+    //std::shared_ptr<image::tile::Factory> m_threshold_factory;
     std::ofstream log_file;
 
 private:
     //Member variables
     std::vector<std::string> m_stainVectorProfileOptions;
     std::vector<std::string> m_stainToDisplayOptions;
-
+    double m_thresholdDefaultVal;
+    double m_thresholdMaxVal;
 };
 
 } // namespace algorithm
