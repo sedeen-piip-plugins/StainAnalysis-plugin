@@ -35,6 +35,26 @@
 class StainVectorMath
 {
 public:
+    ///Convert from color space (0 to 255 RGB value) to optical density
+    inline static const double convertRGBtoOD(double color) {
+        double scaleMax = 255.0;
+        //Avoid trying to calculate log(0)
+        color = (color <= 0.0) ? 1.0 : color;
+        double OD = -std::log10(color / scaleMax);
+        //Push negative and 0 values up to small positive value
+        OD = (OD < 1e-6) ? 1e-6 : OD;
+        return OD;
+    }//end convertRGBtoOD
+
+    ///Convert from optical density to color space (0 to 255 RGB value)
+    inline static const double convertODtoRGB(double OD) {
+        double scaleMax = 255.0;
+        //Push negative and 0 values up to small positive value
+        OD = (OD < 1e-6) ? 1e-6 : OD;
+        double color = scaleMax * std::pow(10.0, -OD);
+        return color;
+    }//end convertODtoRGB
+
     ///Return an array of values of type Ty with size N normalized to unit length. Returns input array if norm is 0.
     template<class Ty, std::size_t N> 
     static std::array<Ty, N> NormalizeArray(std::array<Ty, N> arr) {
@@ -51,7 +71,7 @@ public:
             std::copy(arr.begin(), arr.end(), out.begin());
             //Iterate through the out array, divide values by norm
             for (auto p = out.begin(); p != out.end(); ++p) {
-                *p = *p / norm;
+                *p = static_cast<Ty>(*p / norm);
             }
             return out;
         }
@@ -60,7 +80,7 @@ public:
     ///Calculate the norm of all the elements in a container, where each element is of type Ty
     template<typename Iter_T, class Ty>
     static Ty Norm(Iter_T first, Iter_T last) {
-        return sqrt(std::inner_product(first, last, first, Ty{})); //Use C++11 zero initialization of type Ty
+        return static_cast<Ty>(sqrt(std::inner_product(first, last, first, Ty{}))); //Use C++11 zero initialization of type Ty
     }//end Norm
 
     ///Return an array of values of type Ty with size N scaled such that the largest element is 1. Returns input array if norm is 0.
@@ -68,11 +88,12 @@ public:
     static std::array<Ty, N> MaximizeArray(std::array<Ty, N> arr) {
         std::array<Ty, N> out;
         Ty norm = Norm<std::array<Ty, N>::iterator, Ty>(arr.begin(), arr.end());
-        Ty max = std::max<Ty>(arr);
+        std::array<Ty, N>::iterator maxIt = std::max_element<std::array<Ty, N>::iterator>(arr.begin(), arr.end());
+        Ty max = *maxIt;
         //Check if the norm is zero. Return the input array if so.
         //use C++11 zero initialization of the type Ty
         //Also check if the input container is empty
-        if ((norm == Ty{}) || (max == Ty{}) || (arr.empty())) {
+        if ((norm == Ty{}) || (arr.empty())) {
             return arr;
         }
         else {
@@ -80,7 +101,7 @@ public:
             std::copy(arr.begin(), arr.end(), out.begin());
             //Iterate through the out array, divide values by max
             for (auto p = out.begin(); p != out.end(); ++p) {
-                *p = *p / max;
+                *p = static_cast<Ty>(*p / max);
             }
             return out;
         }

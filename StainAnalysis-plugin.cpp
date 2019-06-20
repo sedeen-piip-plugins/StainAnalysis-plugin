@@ -34,6 +34,9 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+#include <vector>
+#include <numeric>
+#include <functional>
 
 // DPTK headers
 #include "Algorithm.h"
@@ -68,8 +71,10 @@ StainAnalysis::StainAnalysis()
     m_result(),
     m_outputText(),
     m_report(""),
-	m_colorDeconvolution_factory(nullptr),
-	m_threshold_factory(nullptr)
+    m_thresholdDefaultVal(20.0),
+    m_thresholdMaxVal(300.0),
+    //m_threshold_factory(nullptr),
+    m_colorDeconvolution_factory(nullptr)
 {
     //Get the path of the current plugin
     sedeen::file::Location pluginLocation = sedeen::file::getWorkingDirectory();
@@ -150,7 +155,7 @@ void StainAnalysis::init(const image::ImageHandle& image) {
         "Select the stain vector profile to use; either from the file, or one of the pre-defined profiles", 0,
         m_stainVectorProfileOptions, false);
 
-    m_regionToProcess = createGraphicItemParameter(*this, "Apply to ROI (None for Whole Slide)",
+    m_regionToProcess = createGraphicItemParameter(*this, "Apply to ROI (None for Display Area)",
         "Choose a Region of Interest on which to apply the stain separation algorithm. Choosing no ROI will apply the stain separation to the whole slide image.",
         true); //optional. None means apply to whole slide
 
@@ -168,13 +173,12 @@ void StainAnalysis::init(const image::ImageHandle& image) {
     auto color = getColorSpace(image);
     auto max_value = (1 << bitsPerChannel(color)) - 1;
     m_threshold = createDoubleParameter(*this,
-        "OD x100 Threshold", // Widget label
-        "A Threshold value", // Widget tooltip
-        50.0,         // Initial value
-        0.0,          // minimum value
-        300.0,        // maximum value
+        "OD x100 Threshold",   // Widget label
+        "A Threshold value",   // Widget tooltip
+        m_thresholdDefaultVal, // Initial value
+        0.0,                   // minimum value
+        m_thresholdMaxVal,     // maximum value
         false);
-
 
     // Bind result
     m_outputText = createTextResult(*this, "Text Result");
@@ -420,7 +424,6 @@ std::string StainAnalysis::generateStainProfileReport(std::shared_ptr<StainProfi
 
 
 std::string StainAnalysis::generatePixelFractionReport() const {
-
 	assert(nullptr != m_colorDeconvolution_factory);
 
 	using namespace image::tile;
@@ -446,19 +449,25 @@ std::string StainAnalysis::generatePixelFractionReport() const {
 	}
 
 	// Determine number of pixels above threshold
-	unsigned int totalNumPixels = output_image.width()*output_image.height();
-	unsigned int numPixels=0;
-	int j = 0;
+    //Try to count quickly, taking RGB components into account
+    unsigned int totalNumPixels = output_image.width()*output_image.height();
+    std::vector<unsigned short> pixelSetArray;
+    int j = 0;
+    int iWidth = output_image.width();
+    int jHeight = output_image.height();
 	#pragma omp parallel for private(j)
-	for (int i=0;i<output_image.width();i++){
-		for (int j=0;j<output_image.height();j++){
-			if(!(output_image.at(i,j, 0).as<uint8_t>() == 0))
-			{
-				numPixels++;
-			}
+	for (int i = 0; i < iWidth; ++i){
+        for (j = 0; j < jHeight; ++j){
+            //This relies on implicit conversion from boolean operators to integers 0/1
+            pixelSetArray.push_back(
+                 output_image.at(i, j, 0).as<uint8_t>() 
+              || output_image.at(i, j, 1).as<uint8_t>() 
+              || output_image.at(i, j, 2).as<uint8_t>() );
 		}
 	}
-    float coveredFraction = ((float)numPixels) / ((float)totalNumPixels);
+    //Using accumulate means no need for comparison operations to 0/1
+    int numPixels = std::accumulate(pixelSetArray.begin(), pixelSetArray.end(), 0);
+    double coveredFraction = ((double)numPixels) / ((double)totalNumPixels);
 
 	// Calculate results
 	std::ostringstream ss;
@@ -471,167 +480,8 @@ std::string StainAnalysis::generatePixelFractionReport() const {
 	ss << std::endl;
 
 	return ss.str();
-}
-
+}//end generatePixelFractionReport
 
 } // namespace algorithm
 } // namespace sedeen
 
-
-/****
-bool StainAnalysis::buildPipeline() {
-    using namespace image::tile;
-    bool pipeline_changed = false;
-
-    // Get source image properties
-    auto source_factory = image()->getFactory();
-    auto source_color = source_factory->getColorSpace();
-    double conv_matrix[9]= {0.0};
-    bool ROIIsdefined = (m_region_interest.at(0).isUserDefined() &&
-        m_region_interest.at(1).isUserDefined() &&
-        m_region_interest.at(2).isUserDefined() ) &&
-        (m_region_interest.at(0).isChanged() ||
-        m_region_interest.at(1).isChanged() ||
-        m_region_interest.at(2).isChanged() );
-
-    bool doProcessing = false;
-    if (m_retainment.isChanged() || m_displayOptions.isChanged() ||
-        ROIIsdefined || m_threshold.isChanged() || m_regionToProcess.isChanged()  ||
-        m_displayArea.isChanged() ||
-        (nullptr == m_colorDeconvolution_factory) || pipeline_changed) {
-            // Build Color Deconvolution Kernel
-            image::tile::ColorDeconvolution::Behavior retainment;
-            switch (m_retainment)
-            {
-            case 0:
-                retainment = image::tile::ColorDeconvolution::Behavior::RegionOfInterest;
-                break;
-            case 1:
-                retainment = image::tile::ColorDeconvolution::Behavior::HematoxylinPEosin;
-                break;
-            case 2:
-                retainment = image::tile::ColorDeconvolution::Behavior::HematoxylinPDAB;
-                break;
-            case 3:
-                retainment = image::tile::ColorDeconvolution::Behavior::HematoxylinPEosinPDAB;
-                break;
-            case 4:
-                retainment = image::tile::ColorDeconvolution::Behavior::LoadFromFile;
-                break;
-            default:
-                break;
-            }
-
-            //if(retainment == image::tile::ColorDeconvolution::Behavior::LoadFromFile)
-            //{
-            //	std::string path_to_image =
-            //		image()->getMetaData()->get(image::StringTags::SOURCE_DESCRIPTION, 0);
-            //	auto found = path_to_image.find_last_of(".");
-            //	m_pathToRoot = path_to_image.substr(0, found);
-            //	m_path_to_stainfile = openFile(m_pathToRoot);
-            //}
-
-            if (retainment == image::tile::ColorDeconvolution::Behavior::RegionOfInterest) {
-
-                std::vector<std::shared_ptr<GraphicItemBase>> region_of_interests;
-
-                if(m_region_interest.at(0).isUserDefined() && m_region_interest.at(1).isUserDefined()
-                    && m_region_interest.at(2).isUserDefined() )
-                {
-                    auto display_resolution = getDisplayResolution(image(), m_displayArea);
-                    for(int i=0; i < 3; i++)
-                    {
-                        std::shared_ptr<GraphicItemBase> region = m_region_interest.at(i);
-                        region_of_interests.push_back( region ); //region->graphic()
-
-                        Rect rect = containingRect(region_of_interests.at(i)->graphic());
-                    }
-
-                    image::getStainsComponents(source_factory,
-                        region_of_interests,
-                        display_resolution, conv_matrix);
-
-                    m_report = generateReport(conv_matrix);
-                }
-                else
-                {
-                    doProcessing = false;
-                    retainment = image::tile::ColorDeconvolution::Behavior::HematoxylinPEosin;
-
-                }
-            }
-
-            //m_report = generateReport(conv_matrix);
-
-            image::tile::ColorDeconvolution::DisplayOptions DisplayOption;
-            switch (m_displayOptions)
-            {
-            case 0:
-                DisplayOption = image::tile::ColorDeconvolution::DisplayOptions::STAIN1;
-                break;
-            case 1:
-                DisplayOption = image::tile::ColorDeconvolution::DisplayOptions::STAIN2;
-                break;
-            case 2:
-                DisplayOption = image::tile::ColorDeconvolution::DisplayOptions::STAIN3;
-                break;
-            default:
-                break;
-            }
-
-                auto colorDeconvolution_kernel =
-                    std::make_shared<image::tile::ColorDeconvolution>(retainment, DisplayOption, conv_matrix, m_threshold, m_pathToRoot);
-
-                // Create a Factory for the composition of these Kernels
-                auto non_cached_factory =
-                    std::make_shared<FilterFactory>(source_factory,  colorDeconvolution_kernel);
-
-                // Wrap resulting Factory in a Cache for speedy results
-                m_colorDeconvolution_factory =
-                    std::make_shared<Cache>(non_cached_factory, RecentCachePolicy(30));
-
-                pipeline_changed = true;
-    }
-
-    //
-    // Constrain processing to the region of interest provided
-    //
-    //
-    std::shared_ptr<GraphicItemBase> region = m_regionToProcess;
-    if (pipeline_changed && (nullptr != region)) {
-        // Constrain the output of the pipeline to the region of interest provided
-        auto constained_factory =
-            std::make_shared<RegionFactory>(m_colorDeconvolution_factory,
-            region->graphic());
-
-        // Wrap resulting Factory in a Cache for speedy results
-        m_colorDeconvolution_factory =
-            std::make_shared<Cache>(constained_factory, RecentCachePolicy(30));
-    }
-
-    return pipeline_changed;
-}
-****/
-
-/****
-void StainAnalysis::updateIntermediateResult()
-{
-    // Update UI with the results of the given factory
-    auto update_result = [&](const std::shared_ptr<image::tile::Factory> &factory) {
-        // Create a compositor
-        auto compositor = std::unique_ptr<image::tile::Compositor>(new image::tile::Compositor(factory));
-
-        // Extract image from it
-        //auto source_region = image()->getFactory()->getLevelRegion(0);
-        //auto image = compositor->getImage(source_region, Size(source_region.width(), source_region.height()));
-
-        DisplayRegion region = m_displayArea;
-        auto image = compositor->getImage(region.source_region, region.output_size);
-
-        // Update UI
-        m_result.update(image, region.source_region);
-    };
-
-    update_result(m_colorDeconvolution_factory);
-}
-****/

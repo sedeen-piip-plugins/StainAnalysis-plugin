@@ -23,6 +23,7 @@
  *=============================================================================*/
 
 #include "ColorDeconvolutionKernel.h"
+#include "StainVectorMath.h"
 
 namespace sedeen {
 	namespace image {
@@ -33,69 +34,15 @@ namespace sedeen {
                 m_applyThreshold(applyThreshold),
 				m_threshold(threshold),
 				m_behaviorType(behavior),
-				//log255(std::log(255.0)),
 				m_DisplayOption(displayOption),
                 m_stainProfile(theProfile),
-                m_colorSpace(ColorModel::RGBA, ChannelType::UInt8)
+                m_colorSpace(ColorModel::RGBA, ChannelType::UInt8),
+                m_fullColorImages(true) //return full color images (true) or binary images (false)
 			{
-                //Get the stain profile values as a 9-element array
-                //double conv_matrix[9];
-                //theProfile->GetProfileAsDoubleArray(conv_matrix);
-                //SetStainMatrix(m_behaviorType, conv_matrix);
-				//setDisplayOptions(displayOption);
 			}//end constructor
-
 
             ColorDeconvolution::~ColorDeconvolution(void) {
             }//end destructor
-
-			//void ColorDeconvolution::setDisplayOptions(DisplayOptions displayOption)
-			//{
-   //             if (displayOption == DisplayOptions::STAIN1) {
-   //                 m_DisplayOption = DisplayOptions::STAIN1;
-   //             }
-
-   //             if (displayOption == DisplayOptions::STAIN2) {
-   //                 m_DisplayOption = DisplayOptions::STAIN2;
-   //             }
-
-   //             if (displayOption == DisplayOptions::STAIN3) {
-   //                 m_DisplayOption = DisplayOptions::STAIN3;
-   //             }
-			//}//end setDisplayOptions
-
-			//void ColorDeconvolution::SetStainMatrix(Behavior behavior, double conv_matrix[9])
-			//{
-   //             //std::filesystem::path dir_path = path_to_root +"sedeen/";
-			//	if(behavior == Behavior::RegionOfInterest)
-			//	{
-			//		for (int i=0; i < 3; i++)
-			//		{
-			//			m_MODx[i]= conv_matrix[i*3];
-			//			m_MODy[i]= conv_matrix[i*3+1];
-			//			m_MODz[i]= conv_matrix[i*3+2];
-			//		}
-
-   //                 m_stainProfile->SetProfileFromDoubleArray(conv_matrix);
-			//	}
-
-			//	if(behavior == Behavior::LoadFromProfile){
-   //                 //Fill conv_matrix with the stain profile values, then assign to member MOD arrays
-   //                 bool checkResult = m_stainProfile->GetProfileAsDoubleArray(conv_matrix);
-   //                 //If checkResult is false, assign zeros to everything
-   //                 m_MODx[0] = checkResult ? conv_matrix[0] : 0.0;
-			//		m_MODy[0] = checkResult ? conv_matrix[1] : 0.0;
-			//		m_MODz[0] = checkResult ? conv_matrix[2] : 0.0;
-
-   //                 m_MODx[1] = checkResult ? conv_matrix[3] : 0.0;
-			//		m_MODy[1] = checkResult ? conv_matrix[4] : 0.0;
-			//		m_MODz[1] = checkResult ? conv_matrix[5] : 0.0;
-
-   //                 m_MODx[2] = checkResult ? conv_matrix[6] : 0.0;
-			//		m_MODy[2] = checkResult ? conv_matrix[7] : 0.0;
-			//		m_MODz[2] = checkResult ? conv_matrix[8] : 0.0;
-			//	}
-			//}//end SetStainMatrix
 
 			void ColorDeconvolution::computeMatrixInverse( double inputMat[9], double inversionMat[9] )
 			{
@@ -175,92 +122,109 @@ namespace sedeen {
 				inversionMat[6] = -inversionMat[7] * cosy[0] / cosx[0] - inversionMat[8] * cosz[0] / cosx[0];
 			}//end computeMatrixInverse
 
-
-			RawImage ColorDeconvolution::separate_stains(const RawImage &source, double conv_matrix[9])
+			RawImage ColorDeconvolution::separate_stains(const RawImage &source, double stainVec_matrix[9])
 			{
+                int scaleMax = 255;
+                double inverse_matrix[9] = { 0.0 };
+                //Get the inverse of the matrix
+                computeMatrixInverse(stainVec_matrix, inverse_matrix);
+
 				// initialize 3 output colour images
 				sedeen::Size imageSize = source.size();
 				std::vector<RawImage> binaryImages;
-                //std::vector<RawImage> fullColorImages;
+                std::vector<RawImage> colorImages;
 				for (int i=0; i<3; i++){
                     //The binary images: all or nothing
-					binaryImages.push_back( RawImage(imageSize, ColorSpace(ColorModel::RGBA, ChannelType::UInt8)) );
+					binaryImages.push_back(RawImage(imageSize, ColorSpace(ColorModel::RGBA, ChannelType::UInt8)));
 					binaryImages[i].fill(0);
-				}
-				
-				// translate ------------------				
-				int y=0, x =0;
-				for (int j=0;j<imageSize.width()*imageSize.height();j++){
+                    //Color images: adjust pixel value, assign
+                    colorImages.push_back(RawImage(imageSize, ColorSpace(ColorModel::RGBA, ChannelType::UInt8)));
+                    colorImages[i].fill(0);
+                }
 
+                //Get colors to assign to binary images from stainVec_matrix
+                std::vector<std::array<double, 3>> binaryStainColors;
+                for (int i = 0; i < 3; i++) {
+                    std::array<double, 3> rgb;
+                    rgb[0] = StainVectorMath::convertODtoRGB(stainVec_matrix[i * 3    ]);
+                    rgb[1] = StainVectorMath::convertODtoRGB(stainVec_matrix[i * 3 + 1]);
+                    rgb[2] = StainVectorMath::convertODtoRGB(stainVec_matrix[i * 3 + 2]);
+                    //brighten the color (MaximizeArray returns values from 0 to 1
+                    std::array<double, 3> rgb_max = StainVectorMath::MaximizeArray(rgb);
+                    for (auto p = rgb_max.begin(); p != rgb_max.end(); ++p) { *p = *p * static_cast<double>(scaleMax); }
+                    //push to the vector
+                    binaryStainColors.push_back(rgb);
+                }
+
+				// translate ------------------				
+				int y = 0, x = 0;
+				for (int j=0;j<imageSize.width()*imageSize.height();j++){
 					x = j%imageSize.width();
 					y = j/imageSize.width();
-					/*if( x == 0 && j!=0)
-						y++;*/
 
 					// log transform the RGB data
                     double R = source.at(x, y, 0).as<double>();
                     double G = source.at(x, y, 1).as<double>();
                     double B = source.at(x, y, 2).as<double>();
-					double Rlog = -((255.0*log((R+1)/255.0))/log(255));
-					double Glog = -((255.0*log((G+1)/255.0))/log(255));
-					double Blog = -((255.0*log((B+1)/255.0))/log(255));
 
-					double Rlogn = -log( (R/255.0 + 0.001)/1.001 );
-					double Glogn = -log( (G/255.0 + 0.001)/1.001 );
-					double Blogn = -log( (B/255.0 + 0.001)/1.001 );
+					double OD_R = StainVectorMath::convertRGBtoOD(R);
+					double OD_G = StainVectorMath::convertRGBtoOD(G);
+					double OD_B = StainVectorMath::convertRGBtoOD(B);
 
 					for (int i=0; i<3; i++){
 						// rescale to match original paper values
-						double Rscaled = Rlog * conv_matrix[i*3];
-						double Gscaled = Glog * conv_matrix[i*3+1];
-						double Bscaled = Blog * conv_matrix[i*3+2];
-
-						double Rlogscaled = Rlogn * conv_matrix[i*3];
-						double Glogscaled = Glogn * conv_matrix[i*3+1];
-						double Blogscaled = Blogn * conv_matrix[i*3+2];
+                        double OD_Rscaled = OD_R * inverse_matrix[i * 3    ];
+                        double OD_Gscaled = OD_G * inverse_matrix[i * 3 + 1];
+                        double OD_Bscaled = OD_B * inverse_matrix[i * 3 + 2];
 
                         //Create display colors
-                        int Rvector = static_cast<int>(255.0 * conv_matrix[i * 3]);
-                        int Gvector = static_cast<int>(255.0 * conv_matrix[i * 3 + 1]);
-                        int Bvector = static_cast<int>(255.0 * conv_matrix[i * 3 + 2]);
+                        std::array<double, 3> RGB_sep;
+                        RGB_sep[0] = StainVectorMath::convertODtoRGB(OD_Rscaled);
+                        RGB_sep[1] = StainVectorMath::convertODtoRGB(OD_Gscaled);
+                        RGB_sep[2] = StainVectorMath::convertODtoRGB(OD_Bscaled);
 
-                        //Need a condition around this using m_applyThreshold
                         unsigned char binaryValue;
                         if (m_applyThreshold) {
-                            binaryValue = ((Rlogscaled + Glogscaled + Blogscaled) > m_threshold) ? 255 : 0; 
+                            binaryValue = ((OD_Rscaled + OD_Gscaled + OD_Bscaled) > m_threshold) ? 1 : 0;
                         }
                         else {
-                            binaryValue = ((Rlogscaled + Glogscaled + Blogscaled) > 0.0001) ? 255 : 0;
+                            binaryValue = 1;
                         }
 
-						//binaryImages.at(i).setValue(x, y, 0, binaryValue);
-						//binaryImages.at(i).setValue(x, y, 1, 0);
-						//binaryImages.at(i).setValue(x, y, 2, 0);
-						//binaryImages.at(i).setValue(x, y, 3, 255);
                         //If the pixel was determined to be above threshold, add it to the image
                         if (binaryValue) {
-                            binaryImages.at(i).setValue(x, y, 0, Rvector);
-                            binaryImages.at(i).setValue(x, y, 1, Gvector);
-                            binaryImages.at(i).setValue(x, y, 2, Bvector);
-                            binaryImages.at(i).setValue(x, y, 3, 255);
+                            binaryImages.at(i).setValue(x, y, 0, static_cast<int>((binaryStainColors[i])[0]));
+                            binaryImages.at(i).setValue(x, y, 1, static_cast<int>((binaryStainColors[i])[1]));
+                            binaryImages.at(i).setValue(x, y, 2, static_cast<int>((binaryStainColors[i])[2]));
+                            binaryImages.at(i).setValue(x, y, 3, scaleMax);
+                            colorImages.at(i).setValue(x, y, 0, static_cast<int>(RGB_sep[0]));
+                            colorImages.at(i).setValue(x, y, 1, static_cast<int>(RGB_sep[1]));
+                            colorImages.at(i).setValue(x, y, 2, static_cast<int>(RGB_sep[2]));
+                            colorImages.at(i).setValue(x, y, 3, scaleMax);
                         }
                         else {
                             binaryImages.at(i).setValue(x, y, 0, 0);
                             binaryImages.at(i).setValue(x, y, 1, 0);
                             binaryImages.at(i).setValue(x, y, 2, 0);
-                            binaryImages.at(i).setValue(x, y, 3, 255);
+                            binaryImages.at(i).setValue(x, y, 3, scaleMax);
+                            colorImages.at(i).setValue(x, y, 0, 0);
+                            colorImages.at(i).setValue(x, y, 1, 0);
+                            colorImages.at(i).setValue(x, y, 2, 0);
+                            colorImages.at(i).setValue(x, y, 3, scaleMax);
                         }
 					}
 				}
 
-				if( m_DisplayOption == DisplayOptions::STAIN1 ){					
-					return binaryImages[0];
+                //Get the value of the member variable m_fullColorImages to decide return type
+                bool returnFullColor = m_fullColorImages;
+				if( m_DisplayOption == DisplayOptions::STAIN1 ){
+					return returnFullColor ? colorImages[0] : binaryImages[0];
                 }
 				else if( m_DisplayOption == DisplayOptions::STAIN2 ){
-					return binaryImages[1];
+					return returnFullColor ? colorImages[1] : binaryImages[1];
                 }
 				else if( m_DisplayOption == DisplayOptions::STAIN3 ){
-					return binaryImages[2];
+					return returnFullColor ? colorImages[2] : binaryImages[2];
                 }
                 else {
                     return source;
@@ -270,15 +234,15 @@ namespace sedeen {
 			RawImage ColorDeconvolution::doProcessData(const RawImage &source)
 			{
                 double stainVec_matrix[9] = { 0.0 };
-                double inverse_matrix[9] = { 0.0 };
-
                 //Fill stainVec_matrix with the stain vector profile values
                 bool checkResult = m_stainProfile->GetNormalizedProfilesAsDoubleArray(stainVec_matrix);
-                //Get the inverse of the matrix
-                computeMatrixInverse(stainVec_matrix, inverse_matrix );
-
-				//Stain Separation and combination
-				return separate_stains( source, inverse_matrix );
+                if (checkResult) {
+                    //Stain separation and thresholding
+                    return separate_stains(source, stainVec_matrix);
+                }
+                else {
+                    return source;
+                }
 			}//end doProcessData
 
 			const ColorSpace& ColorDeconvolution::doGetColorSpace() const
@@ -293,24 +257,26 @@ namespace sedeen {
 		{
 			if( ROI.isNull() )
 				return;
+            //temporary array
+            double tempOD[3] = { 0.0 };
 
 			int imageSize = ROI.size().width()*ROI.size().height();
 			double log255= log(255.0);
 			int y = 0, x = 0;
-			for (int i = 0; i < imageSize ; i++){
+			for (int i = 0; i < imageSize; i++){
 				x = i%ROI.size().width();
                 if (x == 0 && i != 0) {
                     y++;
                 }
-
-				// rescale to match original paper values
-				rgbOD[0] = rgbOD[0] + (-((255.0*log(((ROI.at(x, y, 0).as<double>() +1)/255.0))/log255)));
-				rgbOD[1] = rgbOD[1] + (-((255.0*log(((ROI.at(x, y, 1).as<double>() +1)/255.0))/log255)));
-				rgbOD[2] = rgbOD[2] + (-((255.0*log(((ROI.at(x, y, 2).as<double>() +1)/255.0))/log255)));
+                //Convert RGB vals to optical density, sum over all pixels
+                tempOD[0] = tempOD[0] + StainVectorMath::convertRGBtoOD(ROI.at(x, y, 0).as<double>());
+                tempOD[1] = tempOD[1] + StainVectorMath::convertRGBtoOD(ROI.at(x, y, 1).as<double>());
+                tempOD[2] = tempOD[2] + StainVectorMath::convertRGBtoOD(ROI.at(x, y, 2).as<double>());
 			}
-			rgbOD[0] = rgbOD[0] / imageSize;
-			rgbOD[1] = rgbOD[1] / imageSize;
-			rgbOD[2] = rgbOD[2] / imageSize;
+            //average of all pixels in region of interest
+            rgbOD[0] = tempOD[0] / imageSize;
+			rgbOD[1] = tempOD[1] / imageSize;
+			rgbOD[2] = tempOD[2] / imageSize;
 		}//end getmeanRGBODfromROI
 
 		void getStainsComponents(std::shared_ptr<tile::Factory> source,
