@@ -4,7 +4,7 @@ CMAKE_MINIMUM_REQUIRED( VERSION 3.8 )
 SET(CMAKE_CXX_STANDARD 17)
 
 # Define project description variables
-SET( DISPLAY_NAME_TEXT "Stain Analysis" CACHE STRING "Name of the plugin as it should be displayed in Sedeen Viewer")
+SET( DISPLAY_NAME_TEXT "Stain Analysis 5.4.1.20190327" CACHE STRING "Name of the plugin as it should be displayed in Sedeen Viewer")
 SET( SUPPORT_URL_TEXT "http://pathcore.com/support/plugin/info/${PROJECT_NAME}" CACHE STRING "Location users can find help with the plugin" )
 SET( DEVELOPER_TEXT "Sunnybrook Research Institute" CACHE STRING "Name of the author or organization that created the plugin" )
 
@@ -15,6 +15,23 @@ FIND_PACKAGE( SEDEENSDK REQUIRED
                   "$ENV{${PROGRAMFILESX86}}/Sedeen Viewer SDK/v5.4.1.20190327/msvc2017"
                   "$ENV{PROGRAMFILES}/Sedeen Viewer SDK/v5.4.1.20190327/msvc2017" )
 
+#Add OpenMP for parallel programming
+#This is not essential to the plugin and can be removed
+FIND_PACKAGE(OPENMP)
+IF(OPENMP_FOUND)
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+ENDIF()
+
+IF(NOT BOOST_ROOT)
+  SET(BOOST_ROOT "BOOST_ROOT-NOTFOUND" CACHE PATH "Preferred installation prefix of the Boost C++ library")
+ENDIF()
+IF(NOT BOOST_VERSION)
+  SET(BOOST_VERSION "BOOST_VERSION-NOTFOUND" CACHE STRING "Boost library version number")
+ENDIF()
+FIND_PACKAGE(Boost ${BOOST_VERSION} )
+
 #Inlude TinyXML2 for XML file reading and writing
 IF(NOT TinyXML2_INCLUDE_DIR)
   SET(TinyXML2_INCLUDE_DIR "TinyXML2_INCLUDE_DIR-NOTFOUND" CACHE PATH "Location of include files for TinyXML2")
@@ -24,15 +41,15 @@ IF(NOT TinyXML2_LIB_DIR)
 ENDIF()
 FIND_PACKAGE(TinyXML2)
 
-INCLUDE_DIRECTORIES( ${INCLUDE_DIRECTORIES} ${SEDEENSDK_INCLUDE_DIR} ${TinyXML2_INCLUDE_DIR})
+INCLUDE_DIRECTORIES( ${INCLUDE_DIRECTORIES} ${SEDEENSDK_INCLUDE_DIR} ${BOOST_ROOT} ${TinyXML2_INCLUDE_DIR})
 LINK_DIRECTORIES( ${LINK_DIRECTORIES} ${SEDEENSDK_LIBRARY_DIR} ${TinyXML2_LIB_DIR})
-
 
 # Build the code into a module library
 ADD_LIBRARY( ${PROJECT_NAME} MODULE 
                  ${PROJECT_NAME}.cpp ${PROJECT_NAME}.h 
                  StainProfile.h StainProfile.cpp 
                  ColorDeconvolutionKernel.h ColorDeconvolutionKernel.cpp
+				 StainVectorMath.h StainVectorMath.cpp
                  )
 
 # Link the library against the Sedeen SDK libraries

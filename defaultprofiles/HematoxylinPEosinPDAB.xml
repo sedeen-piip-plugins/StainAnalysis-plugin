@@ -1,19 +1,19 @@
-<stain-profile profile-name="Hematoxylin + Eosin + DAB">
+<stain-profile profile-name="Hematoxylin+Eosin+DAB (R+J)">
     <components numstains="3">
         <stain index="1" stain-name="Hematoxylin">
-            <stain-value value-type="r">0.650</stain-value>
-            <stain-value value-type="g">0.704</stain-value>
-            <stain-value value-type="b">0.286</stain-value>
+            <stain-value value-type="r">0.65</stain-value>
+            <stain-value value-type="g">0.70</stain-value>
+            <stain-value value-type="b">0.29</stain-value>
         </stain>
         <stain index="2" stain-name="Eosin">
-            <stain-value value-type="r">0.072</stain-value>
-            <stain-value value-type="g">0.990</stain-value>
-            <stain-value value-type="b">0.105</stain-value>
+            <stain-value value-type="r">0.07</stain-value>
+            <stain-value value-type="g">0.99</stain-value>
+            <stain-value value-type="b">0.11</stain-value>
         </stain>
         <stain index="3" stain-name="DAB">
-            <stain-value value-type="r">0.268</stain-value>
-            <stain-value value-type="g">0.570</stain-value>
-            <stain-value value-type="b">0.776</stain-value>
+            <stain-value value-type="r">0.27</stain-value>
+            <stain-value value-type="g">0.57</stain-value>
+            <stain-value value-type="b">0.78</stain-value>
         </stain>
     </components>
     <algorithm alg-name="Ruifrok+Johnston Deconvolution">

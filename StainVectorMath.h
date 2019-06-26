@@ -26,6 +26,7 @@
 #define SEDEEN_SRC_PLUGINS_STAINANALYSIS_STAINVECTORMATH_H
 
 #include <string>
+#include <vector>
 #include <array>
 #include <cmath>
 #include <numeric>
@@ -35,25 +36,46 @@
 class StainVectorMath
 {
 public:
+    ///Compute the inverse of a 3x3 matrix using Boost qvm
+    static void Compute3x3MatrixInverse(double inputMat[9], double inversionMat[9]);
+
+    ///Make a 3x3 matrix, expressed as a 9-element array, have unitary rows. Preserve rows of zeros
+    static void Make3x3MatrixUnitary(double inputMat[9], double unitaryMat[9]);
+
+    ///Check the Norm values of sets of three input elements, replace with unitary rows
+    static void ConvertZeroRowsToUnitary(double inputMat[9], double unitaryMat[9]);
+
+    ///Check the norm values of sets of elements, normalize the row of values in the third argument and replace zero rows with that
+    static void ConvertZeroRowsToUnitary(double inputMat[9], double unitaryMat[9], double replacementVals[3]);
+
+    ///Check whether rows of the given matrix sum to zero, but do not have all zero values
+    static std::array<bool, 3> RowSumZeroCheck(double inputMat[9]);
+
+    ///Multiply a 3x3 matrix and a 3x1 vector to produce a 3x1 vector
+    static void Multiply3x3MatrixAndVector(double inputMat[9], double inputVec[3], double outputVec[3]);
+
     ///Convert from color space (0 to 255 RGB value) to optical density
-    inline static const double convertRGBtoOD(double color) {
+    inline static const double ConvertRGBtoOD(double color) {
         double scaleMax = 255.0;
         //Avoid trying to calculate log(0)
-        color = (color <= 0.0) ? 1.0 : color;
+        color = (color <= 0.0) ? StainVectorMath::GetODMinValue() : color;
         double OD = -std::log10(color / scaleMax);
         //Push negative and 0 values up to small positive value
-        OD = (OD < 1e-6) ? 1e-6 : OD;
+        OD = (OD < StainVectorMath::GetODMinValue()) ? StainVectorMath::GetODMinValue() : OD;
         return OD;
-    }//end convertRGBtoOD
+    }//end ConvertRGBtoOD
 
     ///Convert from optical density to color space (0 to 255 RGB value)
-    inline static const double convertODtoRGB(double OD) {
+    inline static const double ConvertODtoRGB(double OD) {
         double scaleMax = 255.0;
         //Push negative and 0 values up to small positive value
-        OD = (OD < 1e-6) ? 1e-6 : OD;
-        double color = scaleMax * std::pow(10.0, -OD);
+        OD = (OD < StainVectorMath::GetODMinValue()) ? StainVectorMath::GetODMinValue() : OD;
+        double color = std::round(scaleMax * std::pow(10.0, -OD)); //rounds values away from 0
+        //Valid range is 0 to scaleMax
+        color = (color < 0.0) ? 0.0 : color;
+        color = (color > 255.0) ? 255.0 : color;
         return color;
-    }//end convertODtoRGB
+    }//end ConvertODtoRGB
 
     ///Return an array of values of type Ty with size N normalized to unit length. Returns input array if norm is 0.
     template<class Ty, std::size_t N> 
@@ -61,7 +83,7 @@ public:
         std::array<Ty, N> out;
         Ty norm = Norm<std::array<Ty, N>::iterator, Ty>(arr.begin(), arr.end());
         //Check if the norm is zero. Return the input array if so.
-        //use C++11 zero initialization of the type Ty
+        //Compare against C++11 zero initialization of the type Ty
         //Also check if the input container is empty
         if ((norm == Ty{}) || (arr.empty())) {
             return arr;
@@ -91,7 +113,7 @@ public:
         std::array<Ty, N>::iterator maxIt = std::max_element<std::array<Ty, N>::iterator>(arr.begin(), arr.end());
         Ty max = *maxIt;
         //Check if the norm is zero. Return the input array if so.
-        //use C++11 zero initialization of the type Ty
+        //Compare against C++11 zero initialization of the type Ty
         //Also check if the input container is empty
         if ((norm == Ty{}) || (arr.empty())) {
             return arr;
@@ -106,6 +128,10 @@ public:
             return out;
         }
     }//end MaximizeArray
+
+public:
+    ///Choose a value to represent near-zero in this class
+    inline static const double GetODMinValue() { return 1e-6; }
 };
 
 #endif

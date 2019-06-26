@@ -28,137 +28,87 @@
 namespace sedeen {
 	namespace image {
 		namespace tile {
-			ColorDeconvolution::ColorDeconvolution( Behavior behavior, DisplayOptions displayOption, 
+			ColorDeconvolution::ColorDeconvolution( DisplayOptions displayOption, 
                 std::shared_ptr<StainProfile> theProfile, 
                 bool applyThreshold, double threshold) :
                 m_applyThreshold(applyThreshold),
 				m_threshold(threshold),
-				m_behaviorType(behavior),
 				m_DisplayOption(displayOption),
                 m_stainProfile(theProfile),
-                m_colorSpace(ColorModel::RGBA, ChannelType::UInt8),
-                m_fullColorImages(true) //return full color images (true) or binary images (false)
+                m_colorSpace(ColorModel::RGBA, ChannelType::UInt8)
 			{
 			}//end constructor
 
             ColorDeconvolution::~ColorDeconvolution(void) {
             }//end destructor
 
-			void ColorDeconvolution::computeMatrixInverse( double inputMat[9], double inversionMat[9] )
-			{
-				double leng, A, V, C;
-				double  len[3];
-                double MODx[3];
-                double MODy[3];
-                double MODz[3];
-                double cosx[3];
-                double cosy[3];
-                double cosz[3];
-
-                for (int i = 0; i < 3; i++) {
-                    MODx[i] = inputMat[i * 3    ];
-                    MODy[i] = inputMat[i * 3 + 1];
-                    MODz[i] = inputMat[i * 3 + 2];
-                }
-
-                for (int i = 0; i < 3; i++) {
-                    //normalize vector length
-                    cosx[i] = cosy[i] = cosz[i] = 0.0;
-                    len[i] = std::sqrt(MODx[i] * MODx[i] + MODy[i] * MODy[i] + MODz[i] * MODz[i]);
-                    if (len[i] != 0.0) {
-                        cosx[i] = MODx[i] / len[i];
-                        cosy[i] = MODy[i] / len[i];
-                        cosz[i] = MODz[i] / len[i];
-                    }
-                }
-
-				// translation matrix
-                if (cosx[1] == 0.0) { //2nd colour is unspecified
-                    if (cosy[1] == 0.0) {
-                        if (cosz[1] == 0.0) {
-                            cosx[1] = cosz[0];
-                            cosy[1] = cosx[0];
-                            cosz[1] = cosy[0];
-                        }
-                    }
-                }
-
-				if (cosx[2] == 0.0) { // 3rd colour is unspecified
-					if (cosy[2] == 0.0) {
-						if (cosz[2] == 0.0) {
-                            cosx[2]= cosy[0]*cosz[1] - cosy[1]*cosz[0];
-                            cosy[2]= cosz[0]*cosx[1] - cosz[1]*cosx[0];
-                            cosz[2]= cosx[0]*cosy[1] - cosx[1]*cosy[0];
-						}
-					}
-				}
-
-				leng=std::sqrt(cosx[2]*cosx[2] + cosy[2]*cosy[2] + cosz[2]*cosz[2]);
-
-				cosx[2]= cosx[2]/leng;
-				cosy[2]= cosy[2]/leng;
-				cosz[2]= cosz[2]/leng;
-
-				for (int i=0; i<3; i++) {
-					if (cosx[i] == 0.0) cosx[i] = 0.001;
-					if (cosy[i] == 0.0) cosy[i] = 0.001;
-					if (cosz[i] == 0.0) cosz[i] = 0.001;
-				}
-
-				//matrix inversion
-				A = cosy[1] - cosx[1] * cosy[0] / cosx[0];
-				//if(A==0) A=0.001;
-				V = cosz[1] - cosx[1] * cosz[0] / cosx[0];
-				C = cosz[2] - cosy[2] * V/A + cosx[2] * (V/A * cosy[0] / cosx[0] - cosz[0] / cosx[0]);
-				//if(C==0) C=0.001;
-				inversionMat[2] = (-cosx[2] / cosx[0] - cosx[2] / A * cosx[1] / cosx[0] * cosy[0] / cosx[0] + cosy[2] / A * cosx[1] / cosx[0]) / C;
-				inversionMat[1] = -inversionMat[2] * V / A - cosx[1] / (cosx[0] * A);
-				inversionMat[0] = 1.0 / cosx[0] - inversionMat[1] * cosy[0] / cosx[0] - inversionMat[2] * cosz[0] / cosx[0];
-				inversionMat[5] = (-cosy[2] / A + cosx[2] / A * cosy[0] / cosx[0]) / C;
-				inversionMat[4] = -inversionMat[5] * V / A + 1.0 / A;
-				inversionMat[3] = -inversionMat[4] * cosy[0] / cosx[0] - inversionMat[5] * cosz[0] / cosx[0];
-				inversionMat[8] = 1.0 / C;
-				inversionMat[7] = -inversionMat[8] * V / A;
-				inversionMat[6] = -inversionMat[7] * cosy[0] / cosx[0] - inversionMat[8] * cosz[0] / cosx[0];
-			}//end computeMatrixInverse
-
-			RawImage ColorDeconvolution::separate_stains(const RawImage &source, double stainVec_matrix[9])
+			RawImage ColorDeconvolution::separateStains(const RawImage &source, double stainVec_matrix[9])
 			{
                 int scaleMax = 255;
-                double inverse_matrix[9] = { 0.0 };
-                //Get the inverse of the matrix
-                computeMatrixInverse(stainVec_matrix, inverse_matrix);
-
-				// initialize 3 output colour images
-				sedeen::Size imageSize = source.size();
-				std::vector<RawImage> binaryImages;
+                // initialize 3 output images
+                sedeen::Size imageSize = source.size();
                 std::vector<RawImage> colorImages;
-				for (int i=0; i<3; i++){
-                    //The binary images: all or nothing
-					binaryImages.push_back(RawImage(imageSize, ColorSpace(ColorModel::RGBA, ChannelType::UInt8)));
-					binaryImages[i].fill(0);
+                for (int i = 0; i < 3; i++) {
                     //Color images: adjust pixel value, assign
                     colorImages.push_back(RawImage(imageSize, ColorSpace(ColorModel::RGBA, ChannelType::UInt8)));
                     colorImages[i].fill(0);
                 }
+                //Get the number of stains in the profile
+                //int numStains = m_stainProfile->GetNumberOfStainComponents();
 
-                //Get colors to assign to binary images from stainVec_matrix
-                std::vector<std::array<double, 3>> binaryStainColors;
-                for (int i = 0; i < 3; i++) {
-                    std::array<double, 3> rgb;
-                    rgb[0] = StainVectorMath::convertODtoRGB(stainVec_matrix[i * 3    ]);
-                    rgb[1] = StainVectorMath::convertODtoRGB(stainVec_matrix[i * 3 + 1]);
-                    rgb[2] = StainVectorMath::convertODtoRGB(stainVec_matrix[i * 3 + 2]);
-                    //brighten the color (MaximizeArray returns values from 0 to 1
-                    std::array<double, 3> rgb_max = StainVectorMath::MaximizeArray(rgb);
-                    for (auto p = rgb_max.begin(); p != rgb_max.end(); ++p) { *p = *p * static_cast<double>(scaleMax); }
-                    //push to the vector
-                    binaryStainColors.push_back(rgb);
-                }
+                //The inverse can't be calculated if there is a row of zeros. Replace these values first.
+                //If there is a row of zeros, replace it. Use the default replacement row.
+                double noZeroRowsMatrix[9] = { 0.0 };
+                StainVectorMath::ConvertZeroRowsToUnitary(stainVec_matrix, noZeroRowsMatrix);
 
-				// translate ------------------				
+                //Get the inverse of the noZeroRowsMatrix
+                double inverse_matrix[9] = { 0.0 };
+                StainVectorMath::Compute3x3MatrixInverse(noZeroRowsMatrix, inverse_matrix);
+
+                //double normalized_inverse_matrix[9] = { 0.0 };
+                //StainVectorMath::Make3x3MatrixUnitary(inverse_matrix, normalized_inverse_matrix);
+
+
+//                //Open a file for temporary output
+//#include <fstream>
+//                std::fstream tempOut;
+//                tempOut.open("D:\\mschumaker\\projects\\Sedeen\\testData\\output\\tempout.txt", std::fstream::out);
+//
+//                std::stringstream sv;
+//                sv << "The stain vector matrix:\n";
+//                sv << stainVec_matrix[0] << ", " << stainVec_matrix[1] << ", " << stainVec_matrix[2] << "\n";
+//                sv << stainVec_matrix[3] << ", " << stainVec_matrix[4] << ", " << stainVec_matrix[5] << "\n";
+//                sv << stainVec_matrix[6] << ", " << stainVec_matrix[7] << ", " << stainVec_matrix[8];
+//                tempOut << sv.str() << std::endl;
+//
+//                std::stringstream sz;
+//                sz << "The no-zero-rows matrix:\n";
+//                sz << noZeroRowsMatrix[0] << ", " << noZeroRowsMatrix[1] << ", " << noZeroRowsMatrix[2] << "\n";
+//                sz << noZeroRowsMatrix[3] << ", " << noZeroRowsMatrix[4] << ", " << noZeroRowsMatrix[5] << "\n";
+//                sz << noZeroRowsMatrix[6] << ", " << noZeroRowsMatrix[7] << ", " << noZeroRowsMatrix[8];
+//                tempOut << sz.str() << std::endl;
+//
+//                std::stringstream si;
+//                si << "The inverse matrix:\n";
+//                si << inverse_matrix[0] << ", " << inverse_matrix[1] << ", " << inverse_matrix[2] << "\n";
+//                si << inverse_matrix[3] << ", " << inverse_matrix[4] << ", " << inverse_matrix[5] << "\n";
+//                si << inverse_matrix[6] << ", " << inverse_matrix[7] << ", " << inverse_matrix[8];
+//                tempOut << si.str() << std::endl;
+//
+//                std::stringstream sn;
+//                sn << "The normalized inverse matrix:\n";
+//                sn << normalized_inverse_matrix[0] << ", " << normalized_inverse_matrix[1] << ", " << normalized_inverse_matrix[2] << "\n";
+//                sn << normalized_inverse_matrix[3] << ", " << normalized_inverse_matrix[4] << ", " << normalized_inverse_matrix[5] << "\n";
+//                sn << normalized_inverse_matrix[6] << ", " << normalized_inverse_matrix[7] << ", " << normalized_inverse_matrix[8];
+//                tempOut << sn.str() << std::endl;
+//
+//                //close the temporary output file
+//                tempOut.close();
+
+
+                //loop over all pixels in the given RawImage		
 				int y = 0, x = 0;
-				for (int j=0;j<imageSize.width()*imageSize.height();j++){
+                for (int j = 0; j < imageSize.width()*imageSize.height(); j++) {
 					x = j%imageSize.width();
 					y = j/imageSize.width();
 
@@ -166,79 +116,164 @@ namespace sedeen {
                     double R = source.at(x, y, 0).as<double>();
                     double G = source.at(x, y, 1).as<double>();
                     double B = source.at(x, y, 2).as<double>();
+                    double pixelOD[3]; //index is color channel
+                    pixelOD[0] = StainVectorMath::ConvertRGBtoOD(R);
+                    pixelOD[1] = StainVectorMath::ConvertRGBtoOD(G);
+                    pixelOD[2] = StainVectorMath::ConvertRGBtoOD(B);
 
-					double OD_R = StainVectorMath::convertRGBtoOD(R);
-					double OD_G = StainVectorMath::convertRGBtoOD(G);
-					double OD_B = StainVectorMath::convertRGBtoOD(B);
+                    //The resulting RGB values for the three images
+                    double RGB_sep[9] = { 0.0 };
+                    GetSeparateColorsForPixel(pixelOD, RGB_sep, stainVec_matrix, inverse_matrix);
 
-					for (int i=0; i<3; i++){
-						// rescale to match original paper values
-                        double OD_Rscaled = OD_R * inverse_matrix[i * 3    ];
-                        double OD_Gscaled = OD_G * inverse_matrix[i * 3 + 1];
-                        double OD_Bscaled = OD_B * inverse_matrix[i * 3 + 2];
+                    for (int i = 0; i < 3; i++) { //i index is stain
+                        colorImages.at(i).setValue(x, y, 0, static_cast<int>(RGB_sep[i * 3    ]));
+                        colorImages.at(i).setValue(x, y, 1, static_cast<int>(RGB_sep[i * 3 + 1]));
+                        colorImages.at(i).setValue(x, y, 2, static_cast<int>(RGB_sep[i * 3 + 2]));
+                        colorImages.at(i).setValue(x, y, 3, scaleMax);
+                    }
+				}//end for each pixel
 
-                        //Create display colors
-                        std::array<double, 3> RGB_sep;
-                        RGB_sep[0] = StainVectorMath::convertODtoRGB(OD_Rscaled);
-                        RGB_sep[1] = StainVectorMath::convertODtoRGB(OD_Gscaled);
-                        RGB_sep[2] = StainVectorMath::convertODtoRGB(OD_Bscaled);
+                //Return the requested stain image
+				if( m_DisplayOption == DisplayOptions::STAIN1 ){
+					return colorImages[0];
+                }
+				else if( m_DisplayOption == DisplayOptions::STAIN2 ){
+					return colorImages[1];
+                }
+				else if( m_DisplayOption == DisplayOptions::STAIN3 ){
+					return colorImages[2];
+                }
+                else {
+                    return source;
+                }
+			}//end separateStains
 
-                        unsigned char binaryValue;
-                        if (m_applyThreshold) {
-                            binaryValue = ((OD_Rscaled + OD_Gscaled + OD_Bscaled) > m_threshold) ? 1 : 0;
-                        }
-                        else {
-                            binaryValue = 1;
-                        }
+            void ColorDeconvolution::GetSeparateColorsForPixel(double pixelOD[3], double RGB_sep[9], double stainVec_matrix[9], double inverse_matrix[9]) {
+                //Determine how much of each stain is present at a pixel
+                double stainSaturation[3] = { 0.0 }; //index is stain number
+                StainVectorMath::Multiply3x3MatrixAndVector(inverse_matrix, pixelOD, stainSaturation);
 
-                        //If the pixel was determined to be above threshold, add it to the image
-                        if (binaryValue) {
-                            binaryImages.at(i).setValue(x, y, 0, static_cast<int>((binaryStainColors[i])[0]));
-                            binaryImages.at(i).setValue(x, y, 1, static_cast<int>((binaryStainColors[i])[1]));
-                            binaryImages.at(i).setValue(x, y, 2, static_cast<int>((binaryStainColors[i])[2]));
-                            binaryImages.at(i).setValue(x, y, 3, scaleMax);
-                            colorImages.at(i).setValue(x, y, 0, static_cast<int>(RGB_sep[0]));
-                            colorImages.at(i).setValue(x, y, 1, static_cast<int>(RGB_sep[1]));
-                            colorImages.at(i).setValue(x, y, 2, static_cast<int>(RGB_sep[2]));
+                for (int i = 0; i < 3; i++) { //i index is stain
+                    //Scale the stain's OD by the amount of stain at this pixel, get the RGB values
+                    double OD_scaled[3]; //index is color channel
+
+                    //Don't allow negative stain saturations
+                    stainSaturation[i] = (stainSaturation[i] > 0.0) ? stainSaturation[i] : 0.0;
+
+                    OD_scaled[0] = (stainSaturation[i]) * stainVec_matrix[i * 3];
+                    OD_scaled[1] = (stainSaturation[i]) * stainVec_matrix[i * 3 + 1];
+                    OD_scaled[2] = (stainSaturation[i]) * stainVec_matrix[i * 3 + 2];
+
+                    double OD_sum = OD_scaled[0] + OD_scaled[1] + OD_scaled[2];
+                    //Determine if the threshold should be applied to this stain's pixel value
+                    bool isAboveThreshold;
+                    if (m_applyThreshold) {
+                        isAboveThreshold = (OD_sum > m_threshold) ? true : false;
+                    }
+                    else {
+                        isAboveThreshold = true;
+                    }
+
+                    if (isAboveThreshold) {
+                        RGB_sep[i * 3    ] = StainVectorMath::ConvertODtoRGB(OD_scaled[0]);
+                        RGB_sep[i * 3 + 1] = StainVectorMath::ConvertODtoRGB(OD_scaled[1]);
+                        RGB_sep[i * 3 + 2] = StainVectorMath::ConvertODtoRGB(OD_scaled[2]);
+                    }
+                    else {
+                        RGB_sep[i * 3    ] = 0.0;
+                        RGB_sep[i * 3 + 1] = 0.0;
+                        RGB_sep[i * 3 + 2] = 0.0;
+                    }
+                }
+            }//end GetSeparateColorsForPixel
+
+            RawImage ColorDeconvolution::thresholdOnly(const RawImage &source) {
+                int scaleMax = 255;
+                // initialize 3 output images
+                sedeen::Size imageSize = source.size();
+                std::vector<RawImage> colorImages;
+                for (int i = 0; i < 3; i++) {
+                    //Color images: adjust pixel value, assign
+                    colorImages.push_back(RawImage(imageSize, ColorSpace(ColorModel::RGBA, ChannelType::UInt8)));
+                    colorImages[i].fill(0);
+                }
+
+                // translate ------------------				
+                int y = 0, x = 0;
+                for (int j = 0; j < imageSize.width()*imageSize.height(); j++) {
+                    x = j % imageSize.width();
+                    y = j / imageSize.width();
+
+                    // log transform the RGB data
+                    double R = source.at(x, y, 0).as<double>();
+                    double G = source.at(x, y, 1).as<double>();
+                    double B = source.at(x, y, 2).as<double>();
+                    double pixelOD[3]; //index is color channel
+                    pixelOD[0] = StainVectorMath::ConvertRGBtoOD(R);
+                    pixelOD[1] = StainVectorMath::ConvertRGBtoOD(G);
+                    pixelOD[2] = StainVectorMath::ConvertRGBtoOD(B);
+                    //Get the total OD at the pixel
+                    double OD_sum = pixelOD[0] + pixelOD[1] + pixelOD[2];
+
+                    bool isAboveThreshold;
+                    if (m_applyThreshold) {
+                        isAboveThreshold = (OD_sum > m_threshold) ? true : false;
+                    }
+                    else {
+                        isAboveThreshold = true;
+                    }
+
+                    //If the pixel was determined to be above threshold, add it to the images
+                    for (int i = 0; i < 3; i++) {
+                        if (isAboveThreshold) {
+                            colorImages.at(i).setValue(x, y, 0, static_cast<int>(R));
+                            colorImages.at(i).setValue(x, y, 1, static_cast<int>(G));
+                            colorImages.at(i).setValue(x, y, 2, static_cast<int>(B));
                             colorImages.at(i).setValue(x, y, 3, scaleMax);
                         }
                         else {
-                            binaryImages.at(i).setValue(x, y, 0, 0);
-                            binaryImages.at(i).setValue(x, y, 1, 0);
-                            binaryImages.at(i).setValue(x, y, 2, 0);
-                            binaryImages.at(i).setValue(x, y, 3, scaleMax);
                             colorImages.at(i).setValue(x, y, 0, 0);
                             colorImages.at(i).setValue(x, y, 1, 0);
                             colorImages.at(i).setValue(x, y, 2, 0);
                             colorImages.at(i).setValue(x, y, 3, scaleMax);
                         }
-					}
-				}
+                    }
+                }
 
-                //Get the value of the member variable m_fullColorImages to decide return type
-                bool returnFullColor = m_fullColorImages;
-				if( m_DisplayOption == DisplayOptions::STAIN1 ){
-					return returnFullColor ? colorImages[0] : binaryImages[0];
+                //Return the requested stain image
+                if (m_DisplayOption == DisplayOptions::STAIN1) {
+                    return colorImages[0];
                 }
-				else if( m_DisplayOption == DisplayOptions::STAIN2 ){
-					return returnFullColor ? colorImages[1] : binaryImages[1];
+                else if (m_DisplayOption == DisplayOptions::STAIN2) {
+                    return colorImages[1];
                 }
-				else if( m_DisplayOption == DisplayOptions::STAIN3 ){
-					return returnFullColor ? colorImages[2] : binaryImages[2];
+                else if (m_DisplayOption == DisplayOptions::STAIN3) {
+                    return colorImages[2];
                 }
                 else {
                     return source;
                 }
-			}//end separate_stains
+            }//end thresholdOnly
 
 			RawImage ColorDeconvolution::doProcessData(const RawImage &source)
 			{
                 double stainVec_matrix[9] = { 0.0 };
                 //Fill stainVec_matrix with the stain vector profile values
                 bool checkResult = m_stainProfile->GetNormalizedProfilesAsDoubleArray(stainVec_matrix);
+                //Get the number of stains in the profile
+                int numStains = m_stainProfile->GetNumberOfStainComponents();
                 if (checkResult) {
-                    //Stain separation and thresholding
-                    return separate_stains(source, stainVec_matrix);
+                    //Is number of stains set to 1? Threshold only if so
+                    if (numStains == 1) {
+                        return thresholdOnly(source);
+                    }
+                    else if (numStains == 2 || numStains == 3) {
+                        //Stain separation and thresholding
+                        return separateStains(source, stainVec_matrix);
+                    }
+                    else {
+                        return source;
+                    }
                 }
                 else {
                     return source;
@@ -269,9 +304,9 @@ namespace sedeen {
                     y++;
                 }
                 //Convert RGB vals to optical density, sum over all pixels
-                tempOD[0] = tempOD[0] + StainVectorMath::convertRGBtoOD(ROI.at(x, y, 0).as<double>());
-                tempOD[1] = tempOD[1] + StainVectorMath::convertRGBtoOD(ROI.at(x, y, 1).as<double>());
-                tempOD[2] = tempOD[2] + StainVectorMath::convertRGBtoOD(ROI.at(x, y, 2).as<double>());
+                tempOD[0] = tempOD[0] + StainVectorMath::ConvertRGBtoOD(ROI.at(x, y, 0).as<double>());
+                tempOD[1] = tempOD[1] + StainVectorMath::ConvertRGBtoOD(ROI.at(x, y, 1).as<double>());
+                tempOD[2] = tempOD[2] + StainVectorMath::ConvertRGBtoOD(ROI.at(x, y, 2).as<double>());
 			}
             //average of all pixels in region of interest
             rgbOD[0] = tempOD[0] / imageSize;

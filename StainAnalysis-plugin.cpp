@@ -73,7 +73,6 @@ StainAnalysis::StainAnalysis()
     m_report(""),
     m_thresholdDefaultVal(20.0),
     m_thresholdMaxVal(300.0),
-    //m_threshold_factory(nullptr),
     m_colorDeconvolution_factory(nullptr)
 {
     //Get the path of the current plugin
@@ -229,6 +228,7 @@ void StainAnalysis::run() {
 
 		m_result.update(m_colorDeconvolution_factory, m_displayArea, *this);
 
+        //Intermediate result just creates a blurry temporary image during calculations
         //updateIntermediateResult();
 
 		// Update the output text report
@@ -289,9 +289,6 @@ bool StainAnalysis::LoadStainProfileFromFileDialog() {
 bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfile, bool somethingChanged) {
     using namespace image::tile;
     bool pipeline_changed = false;
-    //There are two possible behaviors: RegionOfInterest, and LoadFromProfile
-    //This plugin only uses LoadFromProfile
-    image::tile::ColorDeconvolution::Behavior behaviorType = image::tile::ColorDeconvolution::Behavior::LoadFromProfile;
 
     // Get source image properties
     auto source_factory = image()->getFactory();
@@ -308,11 +305,6 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
          || m_displayArea.isChanged()
          || (nullptr == m_colorDeconvolution_factory) )
     {
-        //Build the color deconvolution channel
-        if (behaviorType == image::tile::ColorDeconvolution::Behavior::RegionOfInterest) {
-            //Do nothing
-        }//end Behavior is RegionOfInterest
-
         //Choose value from the enumeration in ColorDeconvolution
         image::tile::ColorDeconvolution::DisplayOptions DisplayOption;
         switch (m_stainToDisplay)
@@ -329,10 +321,10 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
         default:
             break;
         }
-
+           
 		//TEMPORARY!!! Scale down the threshold to create more precision
         auto colorDeconvolution_kernel =
-            std::make_shared<image::tile::ColorDeconvolution>(behaviorType, DisplayOption, chosenStainProfile, 
+            std::make_shared<image::tile::ColorDeconvolution>(DisplayOption, chosenStainProfile, 
                 m_applyThreshold, m_threshold/100.0);  //Need to tell it whether to use the threshold or not
 
         // Create a Factory for the composition of these Kernels
@@ -387,9 +379,12 @@ std::string StainAnalysis::generateStainProfileReport(std::shared_ptr<StainProfi
     ss << "Number of component stains: " << numStains << std::endl;
     ss << std::endl;
     
+    //TEMPORARY!!!  Show them all so I can troubleshoot
+
     //These are cumulative, not if...else
     //Stain one
-    if (numStains >= 1) {
+    //if (numStains >= 1) {
+    if(true){
         std::array<double, 3> rgb = theProfile->GetStainOneRGB();
         ss << std::left;
         ss << "Stain 1: " << theProfile->GetNameOfStainOne() << std::endl;
@@ -399,7 +394,8 @@ std::string StainAnalysis::generateStainProfileReport(std::shared_ptr<StainProfi
               std::endl;
     }
     //Stain two
-    if (numStains >= 2) {
+    //if (numStains >= 2) {
+    if(true){
         std::array<double, 3> rgb = theProfile->GetStainTwoRGB();
         ss << std::left;
         ss << "Stain 2: " << theProfile->GetNameOfStainTwo() << std::endl;
@@ -409,7 +405,8 @@ std::string StainAnalysis::generateStainProfileReport(std::shared_ptr<StainProfi
               std::endl;
     }
     //Stain three
-    if (numStains == 3) {
+    //if (numStains == 3) {
+    if(true){
         std::array<double, 3> rgb = theProfile->GetStainThreeRGB();
         ss << std::left;
         ss << "Stain 3: " << theProfile->GetNameOfStainThree() << std::endl;
@@ -451,20 +448,23 @@ std::string StainAnalysis::generatePixelFractionReport() const {
 	// Determine number of pixels above threshold
     //Try to count quickly, taking RGB components into account
     unsigned int totalNumPixels = output_image.width()*output_image.height();
-    std::vector<unsigned short> pixelSetArray;
-    int j = 0;
+    std::vector<unsigned short> pixelSetArray(totalNumPixels,0);
     int iWidth = output_image.width();
     int jHeight = output_image.height();
-	#pragma omp parallel for private(j)
-	for (int i = 0; i < iWidth; ++i){
-        for (j = 0; j < jHeight; ++j){
-            //This relies on implicit conversion from boolean operators to integers 0/1
-            pixelSetArray.push_back(
-                 output_image.at(i, j, 0).as<uint8_t>() 
-              || output_image.at(i, j, 1).as<uint8_t>() 
-              || output_image.at(i, j, 2).as<uint8_t>() );
-		}
-	}
+    int i, j = 0;
+	#pragma omp parallel
+    {
+        #pragma omp for private(i) private(j) //collapse(2) is not available in Visual Studio 2017
+        for (i = 0; i < iWidth; ++i) {
+            for (j = 0; j < jHeight; ++j) {
+                //This relies on implicit conversion from boolean operators to integers 0/1
+                pixelSetArray[i*jHeight + j] 
+                    = (   output_image.at(i, j, 0).as<uint8_t>()
+                       || output_image.at(i, j, 1).as<uint8_t>()
+                       || output_image.at(i, j, 2).as<uint8_t>() );
+            }
+        }
+    }
     //Using accumulate means no need for comparison operations to 0/1
     int numPixels = std::accumulate(pixelSetArray.begin(), pixelSetArray.end(), 0);
     double coveredFraction = ((double)numPixels) / ((double)totalNumPixels);
