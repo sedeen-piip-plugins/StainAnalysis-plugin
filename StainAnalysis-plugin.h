@@ -35,7 +35,6 @@
 #define PLUGIN_RELATIVE_DIR_STRING MacroToString(PLUGIN_RELATIVE_DIR)
 #endif
 
-// DPTK headers - a minimal set 
 #include "algorithm/AlgorithmBase.h"
 #include "algorithm/Parameters.h"
 #include "algorithm/Results.h"
@@ -115,7 +114,6 @@ private:
 private:
 	DisplayAreaParameter m_displayArea;
 
-    //The new parameters!!!
     OpenFileDialogParameter m_openProfile;
     OptionParameter m_stainSeparationAlgorithm;
     OptionParameter m_stainVectorProfile;
@@ -125,7 +123,6 @@ private:
     BoolParameter m_applyThreshold;
     /// User defined Threshold value.
     algorithm::DoubleParameter m_threshold;
-    //End of the new parameters
 
     /// The output result
     ImageResult m_result;			
@@ -135,8 +132,6 @@ private:
     /// The intermediate image factory after color deconvolution
     std::shared_ptr<image::tile::Factory> m_colorDeconvolution_factory;
 
-    /// The image factory after thresholding
-    //std::shared_ptr<image::tile::Factory> m_threshold_factory;
     std::ofstream log_file;
 
 private:

@@ -26,7 +26,7 @@
 #define DPTK_SRC_IMAGE_FILTER_KERNELS_COLORDECONVOLUTION_H
 
 
-#include <stdio.h>
+#include <cstdio>
 
 //#include "image/filter/Kernel.h"
 //#include "image\iterator\Iterator.h"
@@ -43,8 +43,6 @@
 //Plugin includes
 #include "StainProfile.h"
 
-//#include "Eigen\Dense"
-
 namespace sedeen {
 
 	namespace image {
@@ -58,14 +56,6 @@ namespace sedeen {
 			//Cytology & Histology 2001; 23: 291-299
 			class PATHCORE_IMAGE_API ColorDeconvolution : public Kernel {
 			public:
-				/// Stain combination matrices
-				enum Behavior {
-					///User selected ROI
-					RegionOfInterest,
-                    ///Load from the StainProfile
-					LoadFromProfile
-				};
-
 				/// Display options for the output image
 				enum DisplayOptions {
 					STAIN1,
@@ -78,7 +68,7 @@ namespace sedeen {
 				//
 				/// \param 
 				/// 
-                explicit ColorDeconvolution(Behavior behavior, DisplayOptions displayOption, std::shared_ptr<StainProfile>, bool, double);
+                explicit ColorDeconvolution(DisplayOptions displayOption, std::shared_ptr<StainProfile>, bool, double);
 
 				virtual ~ColorDeconvolution();
 
@@ -89,29 +79,20 @@ namespace sedeen {
 
 				virtual const ColorSpace& doGetColorSpace() const;
 
-				//RawImage separate_stains(const RawImage &source, const Eigen::Matrix<double,3,3>);
-				/*Eigen::MatrixXd convertImageToMatrix(const RawImage &source);
-				RawImage convertMatrixToImage(const Eigen::MatrixXd &source);*/
+				RawImage separateStains(const RawImage &source, double[9]);
+                RawImage thresholdOnly(const RawImage &source);
 
-				RawImage separate_stains(const RawImage &source, double[9]);
-				void computeMatrixInverse( double[9], double[9] );
-				///matrix conversion from H&E to RGB (original matrix from Ruifrok, 2001)
+                ///Arguments are: the three OD values for the pixel, the output array, the stain vector matrix, and the inverse of the matrix
+                void GetSeparateColorsForPixel(double pixelOD[3], double RGB_sep[9], double stainVec_matrix[9], double inverse_matrix[9]);
+
 				// rows of matrix are stains, columns are color channels
-				//const Eigen::Matrix<double, 3, 3, Eigen::DontAlign> m_rgb_from_HandE;
-				ColorDeconvolution::Behavior m_behaviorType;
 				ColorDeconvolution::DisplayOptions m_DisplayOption;	
-				//std::vector<RawImage> m_outputImages;
-				//std::vector<RawImage> m_binaryImages;
                 bool m_applyThreshold;
 				double m_threshold;
 
                 ColorSpace m_colorSpace;
                 std::shared_ptr<StainProfile> m_stainProfile;
-
 				/// \endcond
-            private:
-                ///return full color images (true) or binary images (false)
-                bool m_fullColorImages;
 			};
 
 		} // namespace tile

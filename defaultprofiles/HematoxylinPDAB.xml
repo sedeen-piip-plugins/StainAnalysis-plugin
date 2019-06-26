@@ -1,14 +1,14 @@
-<stain-profile profile-name="Hematoxylin + DAB">
+<stain-profile profile-name="Hematoxylin+DAB (R+J)">
     <components numstains="2">
         <stain index="1" stain-name="Hematoxylin">
-            <stain-value value-type="r">0.650</stain-value>
-            <stain-value value-type="g">0.704</stain-value>
-            <stain-value value-type="b">0.286</stain-value>
+            <stain-value value-type="r">0.65</stain-value>
+            <stain-value value-type="g">0.70</stain-value>
+            <stain-value value-type="b">0.29</stain-value>
         </stain>
         <stain index="2" stain-name="DAB">
-            <stain-value value-type="r">0.268</stain-value>
-            <stain-value value-type="g">0.570</stain-value>
-            <stain-value value-type="b">0.776</stain-value>
+            <stain-value value-type="r">0.27</stain-value>
+            <stain-value value-type="g">0.57</stain-value>
+            <stain-value value-type="b">0.78</stain-value>
         </stain>
         <stain index="3" stain-name="">
             <stain-value value-type="r">0</stain-value>
