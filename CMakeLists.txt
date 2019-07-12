@@ -1,7 +1,8 @@
 PROJECT( StainAnalysis-plugin )
-CMAKE_MINIMUM_REQUIRED( VERSION 3.8 )
+CMAKE_MINIMUM_REQUIRED( VERSION 3.13 )
 # Enable C++17 features
 SET(CMAKE_CXX_STANDARD 17)
+INCLUDE(FetchContent)
 
 # Define project description variables
 SET( DISPLAY_NAME_TEXT "Stain Analysis 5.4.1.20190327" CACHE STRING "Name of the plugin as it should be displayed in Sedeen Viewer")
@@ -11,9 +12,9 @@ SET( DEVELOPER_TEXT "Sunnybrook Research Institute" CACHE STRING "Name of the au
 # Load the Sedeen dependencies
 SET(PROGRAMFILESX86 "PROGRAMFILES\(X86\)")
 FIND_PACKAGE( SEDEENSDK REQUIRED 
-                HINTS ../../.. 
-                  "$ENV{${PROGRAMFILESX86}}/Sedeen Viewer SDK/v5.4.1.20190327/msvc2017"
-                  "$ENV{PROGRAMFILES}/Sedeen Viewer SDK/v5.4.1.20190327/msvc2017" )
+  HINTS ../../.. 
+        "$ENV{${PROGRAMFILESX86}}/Sedeen Viewer SDK/v5.4.1.20190327/msvc2017"
+        "$ENV{PROGRAMFILES}/Sedeen Viewer SDK/v5.4.1.20190327/msvc2017" )
 
 #Add OpenMP for parallel programming
 #This is not essential to the plugin and can be removed
@@ -32,29 +33,42 @@ IF(NOT BOOST_VERSION)
 ENDIF()
 FIND_PACKAGE(Boost ${BOOST_VERSION} )
 
-#Inlude TinyXML2 for XML file reading and writing
-IF(NOT TinyXML2_INCLUDE_DIR)
-  SET(TinyXML2_INCLUDE_DIR "TinyXML2_INCLUDE_DIR-NOTFOUND" CACHE PATH "Location of include files for TinyXML2")
-ENDIF()
-IF(NOT TinyXML2_LIB_DIR)
-  SET(TinyXML2_LIB_DIR "TinyXML2_LIB_DIR-NOTFOUND" CACHE PATH "Location of library files for TinyXML2")
-ENDIF()
-FIND_PACKAGE(TinyXML2)
+#Fetch TinyXML2 files
+FetchContent_Declare(
+  TinyXML2
+  GIT_REPOSITORY https://github.com/leethomason/tinyxml2.git
+  GIT_TAG 61a4c7d507322c9f494f5880d4c94b60e4ce9590
+)
+#Check if the tinyxml2 files have already been populated
+FetchContent_GetProperties(TinyXML2)
+STRING(TOLOWER "TinyXML2" TinyXML2Name)
+IF(NOT ${TinyXML2Name}_POPULATED)
+  #Fetch TinyXML2 using the details from the call to FetchContent_Declare 	
+  FetchContent_Populate(TinyXML2)
 
-INCLUDE_DIRECTORIES( ${INCLUDE_DIRECTORIES} ${SEDEENSDK_INCLUDE_DIR} ${BOOST_ROOT} ${TinyXML2_INCLUDE_DIR})
-LINK_DIRECTORIES( ${LINK_DIRECTORIES} ${SEDEENSDK_LIBRARY_DIR} ${TinyXML2_LIB_DIR})
+  ADD_SUBDIRECTORY(${${TinyXML2Name}_SOURCE_DIR} ${${TinyXML2Name}_BINARY_DIR})
+ENDIF()
+
+INCLUDE_DIRECTORIES( ${INCLUDE_DIRECTORIES} 
+                     ${SEDEENSDK_INCLUDE_DIR} 
+					 ${BOOST_ROOT} 
+					 ${${TinyXML2Name}_SOURCE_DIR}
+					 )
+LINK_DIRECTORIES( ${LINK_DIRECTORIES} 
+                  ${SEDEENSDK_LIBRARY_DIR} 
+				  )
 
 # Build the code into a module library
 ADD_LIBRARY( ${PROJECT_NAME} MODULE 
-                 ${PROJECT_NAME}.cpp ${PROJECT_NAME}.h 
-                 StainProfile.h StainProfile.cpp 
-                 ColorDeconvolutionKernel.h ColorDeconvolutionKernel.cpp
-				 StainVectorMath.h StainVectorMath.cpp
-                 )
+             ${PROJECT_NAME}.cpp ${PROJECT_NAME}.h 
+             StainProfile.h StainProfile.cpp 
+             ColorDeconvolutionKernel.h ColorDeconvolutionKernel.cpp
+             StainVectorMath.h StainVectorMath.cpp
+             ${${TinyXML2Name}_SOURCE_DIR}/tinyxml2.h ${${TinyXML2Name}_SOURCE_DIR}/tinyxml2.cpp
+             )
 
 # Link the library against the Sedeen SDK libraries
-TARGET_LINK_LIBRARIES( ${PROJECT_NAME} ${SEDEENSDK_LIBRARIES}
-                         TinyXML2 )
+TARGET_LINK_LIBRARIES( ${PROJECT_NAME} ${SEDEENSDK_LIBRARIES} )
 
 #Create or update the .info file in the build directory
 STRING( TIMESTAMP DATE_CREATED_TEXT "%Y-%m-%d" )
@@ -86,7 +100,11 @@ IF( ${SEDEEN_FOUND} )
                 "defaultprofiles/HematoxylinPDAB.xml"
                 "defaultprofiles/HematoxylinPEosinPDAB.xml"
             DESTINATION "${PLUGIN_DESTINATION_DIR}")
-#  INSTALL(FILES 
-#            DESTINATION "${PLUGIN_DESTINATION_DIR}")
-
 ENDIF()
+
+#For debugging: shows all variables and their values
+#get_cmake_property(_variableNames VARIABLES)
+#list (SORT _variableNames)
+#foreach (_variableName ${_variableNames})
+#    message(STATUS "${_variableName}=${${_variableName}}")
+#endforeach()
