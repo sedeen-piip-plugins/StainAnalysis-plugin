@@ -22,7 +22,7 @@
  *
  *=============================================================================*/
 
-// StainAnalysis.cpp : Defines the exported functions for the DLL application.
+// StainAnalysis-plugin.cpp : Defines the exported functions for the DLL application.
 //
 // Primary header
 #include "StainAnalysis-plugin.h"
