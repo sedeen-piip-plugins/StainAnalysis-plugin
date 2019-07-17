@@ -91,9 +91,10 @@ private:
 
 private:
     ///Names of the default stain profile files
-    inline static const std::string HematoxylinPEosinFilename()     { return "HematoxylinPEosin.xml"; }
-    inline static const std::string HematoxylinPDABFilename()       { return "HematoxylinPDAB.xml"; }
-    inline static const std::string HematoxylinPEosinPDABFilename() { return "HematoxylinPEosinPDAB.xml"; }
+    inline static const std::string HematoxylinPEosinSampleFilename()     { return "HematoxylinPEosinSample.xml"; }
+    inline static const std::string HematoxylinPEosinFromRJFilename()     { return "HematoxylinPEosinFromRJ.xml"; }
+    inline static const std::string HematoxylinPDABFromRJFilename()       { return "HematoxylinPDABFromRJ.xml"; }
+    inline static const std::string HematoxylinPEosinPDABFromRJFilename() { return "HematoxylinPEosinPDABFromRJ.xml"; }
     ///Returns the directory of the plugin relative to the Sedeen Viewer directory as a string
     inline static const std::filesystem::path GetPluginRelativeDirectory() { return std::filesystem::path(PLUGIN_RELATIVE_DIR_STRING); }
 

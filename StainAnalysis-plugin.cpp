@@ -82,12 +82,14 @@ StainAnalysis::StainAnalysis()
         m_pathToPlugin = std::filesystem::path(pluginLocation.getFilename()) / GetPluginRelativeDirectory();
         //Build the list of stain vector file names
         m_stainProfileFullPathNames.push_back(""); //Leave a blank place for the loaded file
-        //HematoxylinPEosin
-        m_stainProfileFullPathNames.push_back(m_pathToPlugin / HematoxylinPEosinFilename());
-        //HematoxylinPDAB
-        m_stainProfileFullPathNames.push_back(m_pathToPlugin / HematoxylinPDABFilename());
-        //HematoxylinPEosinPDAB
-        m_stainProfileFullPathNames.push_back(m_pathToPlugin / HematoxylinPEosinPDABFilename());        
+        //HematoxylinPEosinSample
+        m_stainProfileFullPathNames.push_back(m_pathToPlugin / HematoxylinPEosinSampleFilename());
+        //HematoxylinPEosin from Ruifrok and Johnston
+        m_stainProfileFullPathNames.push_back(m_pathToPlugin / HematoxylinPEosinFromRJFilename());
+        //HematoxylinPDAB from Ruifrok and Johnston
+        m_stainProfileFullPathNames.push_back(m_pathToPlugin / HematoxylinPDABFromRJFilename());
+        //HematoxylinPEosinPDAB from Ruifrok and Johnston
+        m_stainProfileFullPathNames.push_back(m_pathToPlugin / HematoxylinPEosinPDABFromRJFilename());        
     }
     else { //Could not get the plugin's relative directory
         //Location of the default stain profiles is unknown
