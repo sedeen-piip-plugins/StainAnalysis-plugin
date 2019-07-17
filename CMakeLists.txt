@@ -17,7 +17,7 @@ FIND_PACKAGE( SEDEENSDK REQUIRED
         "$ENV{PROGRAMFILES}/Sedeen Viewer SDK/v5.4.1.20190327/msvc2017" )
 
 #Add OpenMP for parallel programming
-#This is not essential to the plugin and can be removed
+#This is not essential to the plugin and can be omitted
 FIND_PACKAGE(OPENMP)
 IF(OPENMP_FOUND)
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -33,20 +33,18 @@ IF(NOT BOOST_VERSION)
 ENDIF()
 FIND_PACKAGE(Boost ${BOOST_VERSION} )
 
-#Fetch TinyXML2 files
+# Fetch TinyXML2 files. Do not build as a subproject
 FetchContent_Declare(
   TinyXML2
   GIT_REPOSITORY https://github.com/leethomason/tinyxml2.git
   GIT_TAG 61a4c7d507322c9f494f5880d4c94b60e4ce9590
 )
-#Check if the tinyxml2 files have already been populated
+# Check if the tinyxml2 files have already been populated
 FetchContent_GetProperties(TinyXML2)
 STRING(TOLOWER "TinyXML2" TinyXML2Name)
 IF(NOT ${TinyXML2Name}_POPULATED)
-  #Fetch TinyXML2 using the details from the call to FetchContent_Declare 	
+  #Fetch TinyXML2 using the details from FetchContent_Declare 	
   FetchContent_Populate(TinyXML2)
-
-  ADD_SUBDIRECTORY(${${TinyXML2Name}_SOURCE_DIR} ${${TinyXML2Name}_BINARY_DIR})
 ENDIF()
 
 INCLUDE_DIRECTORIES( ${INCLUDE_DIRECTORIES} 
@@ -54,17 +52,23 @@ INCLUDE_DIRECTORIES( ${INCLUDE_DIRECTORIES}
 					 ${BOOST_ROOT} 
 					 ${${TinyXML2Name}_SOURCE_DIR}
 					 )
+
 LINK_DIRECTORIES( ${LINK_DIRECTORIES} 
                   ${SEDEENSDK_LIBRARY_DIR} 
 				  )
 
 # Build the code into a module library
 ADD_LIBRARY( ${PROJECT_NAME} MODULE 
-             ${PROJECT_NAME}.cpp ${PROJECT_NAME}.h 
-             StainProfile.h StainProfile.cpp 
-             ColorDeconvolutionKernel.h ColorDeconvolutionKernel.cpp
-             StainVectorMath.h StainVectorMath.cpp
-             ${${TinyXML2Name}_SOURCE_DIR}/tinyxml2.h ${${TinyXML2Name}_SOURCE_DIR}/tinyxml2.cpp
+             ${PROJECT_NAME}.cpp 
+			 ${PROJECT_NAME}.h 
+			 ${${TinyXML2Name}_SOURCE_DIR}/tinyxml2.h 
+			 ${${TinyXML2Name}_SOURCE_DIR}/tinyxml2.cpp
+             StainProfile.h 
+			 StainProfile.cpp 
+             ColorDeconvolutionKernel.h 
+			 ColorDeconvolutionKernel.cpp
+             StainVectorMath.h 
+			 StainVectorMath.cpp
              )
 
 # Link the library against the Sedeen SDK libraries
@@ -96,9 +100,10 @@ IF( ${SEDEEN_FOUND} )
           LIBRARY DESTINATION "${PLUGIN_DESTINATION_DIR}")
   INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.info"
           DESTINATION "${PLUGIN_DESTINATION_DIR}")
-  INSTALL(FILES "defaultprofiles/HematoxylinPEosin.xml"
-                "defaultprofiles/HematoxylinPDAB.xml"
-                "defaultprofiles/HematoxylinPEosinPDAB.xml"
+  INSTALL(FILES "defaultprofiles/HematoxylinPEosinSample.xml"
+				"defaultprofiles/HematoxylinPEosinFromRJ.xml"
+                "defaultprofiles/HematoxylinPDABFromRJ.xml"
+                "defaultprofiles/HematoxylinPEosinPDABFromRJ.xml"
             DESTINATION "${PLUGIN_DESTINATION_DIR}")
 ENDIF()
 
