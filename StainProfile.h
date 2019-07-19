@@ -130,10 +130,12 @@ public:
     //Check if the file exists, and accessible for reading or writing, depending on the second argument
     static bool checkFile(std::string, std::string);
 
-    ///Check if the basic structure of the member XMLDocument has been assembled
-    bool CheckXMLDocument();
-    ///Clear the entire contents of the member XMLDocument
-    bool ClearXMLDocument();
+
+
+    ///Check if the basic structure of the stain profile has been assembled
+    inline bool CheckProfile() { return CheckXMLDocument(); }
+    ///Clear the entire contents of the stain profile
+    inline bool ClearProfile() { return ClearXMLDocument(); }
     ///Clear the stain vector values only (no changes to text fields)
     bool ClearStainVectorValues();
 
@@ -162,6 +164,10 @@ public:
 private:
     ///Build the XMLDocument data structure
     bool BuildXMLDocument();
+    ///Check if the basic structure of the member XMLDocument has been assembled
+    bool CheckXMLDocument();
+    ///Clear the entire contents of the member XMLDocument
+    bool ClearXMLDocument();
 
     ///If file is able to be opened, write the current stain profile to file as XML
     tinyxml2::XMLError writeStainProfileToXML(std::string);
