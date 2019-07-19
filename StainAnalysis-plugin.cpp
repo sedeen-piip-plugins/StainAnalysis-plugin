@@ -141,7 +141,7 @@ void StainAnalysis::init(const image::ImageHandle& image) {
     //Allow the user to choose a stain vector profile xml file
     sedeen::file::FileDialogOptions openFileDialogOptions = defineOpenFileDialogOptions();
     m_openProfile = createOpenFileDialogParameter(*this, "Stain Profile File",
-        "Open a file containing a stain vector profile.",
+        "Open a file containing a stain vector profile",
         openFileDialogOptions, true);
 
 	//Get the list of available stain separation algorithms from a temp StainProfile object
@@ -170,7 +170,7 @@ void StainAnalysis::init(const image::ImageHandle& image) {
         true, false); //default value, optional
 
     // Init the user defined threshold value
-	//TEMPORARY!! Can't set precision on DoubleParameter right now, so use 1/100 downscale
+	//TEMPORARY: Can't set precision on DoubleParameter right now, so use 1/100 downscale
     auto color = getColorSpace(image);
     auto max_value = (1 << bitsPerChannel(color)) - 1;
     m_threshold = createDoubleParameter(*this,
@@ -200,8 +200,8 @@ void StainAnalysis::run() {
     //but if none is chosen, one of the defaults must be selected
     bool loadResult = LoadStainProfileFromFileDialog();
     //Check whether the user selected to load from file and if so, that it loaded correctly
-    if (chosenProfileNum == 0 && !loadResult) {
-        throw std::runtime_error("The stain profile file cannot be read. Choose a default stain profile or try loading a different file.");
+    if (chosenProfileNum == 0 && (loadResult == false)) {
+        m_outputText.sendText("The stain profile file cannot be read. Please click Reset before loading a different file, or choose one of the default profiles.");
         return;
     }
     //else
@@ -218,10 +218,22 @@ void StainAnalysis::run() {
     catch (const std::out_of_range& rangeerr) {
         rangeerr.what();
         //The index is out of range. Throw error message
-        throw std::runtime_error("The stain profile cannot be found. Choose a default stain profile.");
+        m_outputText.sendText("The stain profile cannot be found. Choose a default stain profile.");
+        return;
+    }
+    if (chosenStainProfile == nullptr) {
+        m_outputText.sendText("The stain profile did not load properly. Click Reset and try another stain profile.");
         return;
     }
     
+    //Check the chosenStainProfile to ensure it is built correctly. End running if not
+    bool checkProfile = chosenStainProfile->CheckProfile();
+    if (!checkProfile) {
+        //Something is wrong with the selected stain profile. Show error message, stop running
+        m_outputText.sendText("The chosen stain profile did not load properly. Click Reset and try another stain profile.");
+        return;
+    }
+
     // Build the operational pipeline
     bool pipeline_changed = buildPipeline(chosenStainProfile, (stainProfile_changed || loadedFile_changed));
 
@@ -230,8 +242,8 @@ void StainAnalysis::run() {
 
 		m_result.update(m_colorDeconvolution_factory, m_displayArea, *this);
 
-        //Intermediate result just creates a blurry temporary image during calculations
-        //updateIntermediateResult();
+        //A previous version included an "intermediate result" here, to display
+        //a blurry temporary image (rather than just black) while calculations proceeded
 
 		// Update the output text report
 		if (false == askedToStop()) {
@@ -274,19 +286,22 @@ bool StainAnalysis::LoadStainProfileFromFileDialog() {
     std::string theFile = profileLocation.getFilename();
 
     //Does it exist and can it be read from?
-    if (StainProfile::checkFile(theFile, "r")) {
-        m_stainProfileFullPathNames[0] = theFile;
-        //Clear the loaded stain profile
-        //something here
-
-        m_LoadedStainProfile->readStainProfile(theFile);
-        return true;
+    if (StainProfile::checkFile(theFile, "r")) {     
+        //Read the stain profile, return false if reading fails        
+        bool readFileCheck = m_LoadedStainProfile->readStainProfile(theFile);
+        if (readFileCheck) {
+            m_stainProfileFullPathNames[0] = theFile;
+            return true;
+        }
+        else {
+            m_LoadedStainProfile->ClearProfile();
+            m_stainProfileFullPathNames[0] = "";
+            return false;
+        }
     }
-    else {
-        return false;
-    }
+    //else
+    return false;
 }//end LoadStainProfileFromFileDialog
-
 
 bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfile, bool somethingChanged) {
     using namespace image::tile;
@@ -371,7 +386,6 @@ std::string StainAnalysis::generateStainProfileReport(std::shared_ptr<StainProfi
 
     int numStains = theProfile->GetNumberOfStainComponents();
     if (numStains < 0) {
-        throw std::runtime_error("Error reading the stain profile. Please try a different stain profile or restart.");
         return "Error reading the stain profile. Please try a different stain profile or restart.";
     }
     //Get the profile contents, place in the output stringstream
@@ -380,13 +394,9 @@ std::string StainAnalysis::generateStainProfileReport(std::shared_ptr<StainProfi
     ss << "Using stain profile: " << theProfile->GetNameOfStainProfile() << std::endl;
     ss << "Number of component stains: " << numStains << std::endl;
     ss << std::endl;
-    
-    //TEMPORARY!!!  Show them all so I can troubleshoot
-
     //These are cumulative, not if...else
     //Stain one
-    //if (numStains >= 1) {
-    if(true){
+    if (numStains >= 1) {
         std::array<double, 3> rgb = theProfile->GetStainOneRGB();
         ss << std::left;
         ss << "Stain 1: " << theProfile->GetNameOfStainOne() << std::endl;
@@ -396,8 +406,7 @@ std::string StainAnalysis::generateStainProfileReport(std::shared_ptr<StainProfi
               std::endl;
     }
     //Stain two
-    //if (numStains >= 2) {
-    if(true){
+    if (numStains >= 2) {
         std::array<double, 3> rgb = theProfile->GetStainTwoRGB();
         ss << std::left;
         ss << "Stain 2: " << theProfile->GetNameOfStainTwo() << std::endl;
@@ -407,8 +416,7 @@ std::string StainAnalysis::generateStainProfileReport(std::shared_ptr<StainProfi
               std::endl;
     }
     //Stain three
-    //if (numStains == 3) {
-    if(true){
+    if (numStains == 3) {
         std::array<double, 3> rgb = theProfile->GetStainThreeRGB();
         ss << std::left;
         ss << "Stain 3: " << theProfile->GetNameOfStainThree() << std::endl;
@@ -420,7 +428,6 @@ std::string StainAnalysis::generateStainProfileReport(std::shared_ptr<StainProfi
     //Complete, return the string
     return ss.str();
 }//end generateStainProfileReport
-
 
 std::string StainAnalysis::generatePixelFractionReport() const {
 	assert(nullptr != m_colorDeconvolution_factory);
@@ -487,3 +494,5 @@ std::string StainAnalysis::generatePixelFractionReport() const {
 } // namespace algorithm
 } // namespace sedeen
 
+
+//throw std::runtime_error("The plugin has experienced a serious error and has stopped running.");

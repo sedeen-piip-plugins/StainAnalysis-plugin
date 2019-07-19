@@ -27,6 +27,7 @@
 #include <stdexcept>
 #include <cmath>
 #include <sstream>
+#include <fstream>
 #include <tinyxml2.h>
 
 StainProfile::StainProfile() {
@@ -46,8 +47,13 @@ StainProfile::~StainProfile() {
 
 bool StainProfile::SetNameOfStainProfile(std::string name) {
     //Direct assignment. Add checks if necessary.
-    m_rootElement->SetAttribute(nameOfStainProfileAttribute(), name.c_str());
-    return true;
+    if (m_rootElement == nullptr) {
+        return false;
+    }
+    else {
+        m_rootElement->SetAttribute(nameOfStainProfileAttribute(), name.c_str());
+        return true;
+    }
 }
 
 std::string StainProfile::GetNameOfStainProfile() {
@@ -57,7 +63,7 @@ std::string StainProfile::GetNameOfStainProfile() {
     }
     else {
         const char* name = m_rootElement->Attribute(nameOfStainProfileAttribute());
-        result = std::string(name);
+        result = (name == nullptr) ? "" : std::string(name);
     }
     return result;
 }
@@ -110,7 +116,7 @@ std::string StainProfile::GetNameOfStainOne() {
     }
     else {
         const char* name = m_stainOneElement->Attribute(nameOfStainAttribute());
-        result = std::string(name);
+        result = (name == nullptr) ? "" : std::string(name);
     }
     return result;
 }
@@ -133,7 +139,7 @@ std::string StainProfile::GetNameOfStainTwo() {
     }
     else {
         const char* name = m_stainTwoElement->Attribute(nameOfStainAttribute());
-        result = std::string(name);
+        result = (name == nullptr) ? "" : std::string(name);
     }
     return result;
 }
@@ -156,7 +162,7 @@ std::string StainProfile::GetNameOfStainThree() {
     }
     else {
         const char* name = m_stainThreeElement->Attribute(nameOfStainAttribute());
-        result = std::string(name);
+        result = (name == nullptr) ? "" : std::string(name);
     }
     return result;
 }
@@ -180,8 +186,8 @@ std::string StainProfile::GetNameOfStainSeparationAlgorithm() {
     }
     else {
         const char* alg = m_algorithmElement->Attribute(algorithmNameAttribute());
-        result = std::string(alg);
-   }
+        result = (alg == nullptr) ? "" : std::string(alg);
+    }
     return result;
 }
 
@@ -208,7 +214,7 @@ bool StainProfile::SetStainOneRGB(double rgb[])
             }
             catch (const std::out_of_range& rangeerr) {
                 rangeerr.what();
-                //The index is out of range. Return ""
+                //The index is out of range. Return false
                 return false;
             }
         }
@@ -291,7 +297,7 @@ bool StainProfile::SetStainTwoRGB(double rgb[]) {
             }
             catch (const std::out_of_range& rangeerr) {
                 rangeerr.what();
-                //The index is out of range. Return ""
+                //The index is out of range. Return false
                 return false;
             }
         }
@@ -374,7 +380,7 @@ bool StainProfile::SetStainThreeRGB(double rgb[])
             }
             catch (const std::out_of_range& rangeerr) {
                 rangeerr.what();
-                //The index is out of range. Return ""
+                //The index is out of range. Return false
                 return false;
             }
         }
@@ -446,6 +452,10 @@ bool StainProfile::GetProfilesAsDoubleArray(double profileArray[9], bool normali
     //This method fills the values of profileArray from local stain profile
     //Assigns 0.0 for elements corresponding to components beyond the number set in the profile
     int components = this->GetNumberOfStainComponents();
+    if (components <= 0) {
+        for (int i = 0; i < 9; i++) { profileArray[i] = 0.0; }
+        return false;
+    }
     std::array<double, 3> raw_rgb1 = this->GetStainOneRGB();
     std::array<double, 3> raw_rgb2 = this->GetStainTwoRGB();
     std::array<double, 3> raw_rgb3 = this->GetStainThreeRGB();
@@ -482,14 +492,35 @@ bool StainProfile::SetProfilesFromDoubleArray(double profileArray[9]) {
     return (check1 && check2 && check3);
 }//end SetProfileFromDoubleArray
 
-
-
 bool StainProfile::checkFile(std::string fileString, std::string op) {
-    //If read, check file exists and is readable
-    //If write, check file is not read-only if it exists
-    return true;
-}
+    if (fileString.empty()) {
+        return false;
+    }
+    //Check if the file exists
+    std::fstream theFile(fileString.c_str());
+    bool fileExists = (bool)theFile;
 
+    //If read, check file is readable
+    //If write, check that the file can be created or written to
+    if (!op.compare("r")) {
+        std::ifstream inFile(fileString.c_str());
+        return (inFile.good() && fileExists);
+    }
+    else if (!op.compare("w")) {
+        std::ofstream outFile(fileString.c_str());
+        bool outFileGood = outFile.good();
+        bool outFileWritable = outFile.is_open();
+        //If the file can be written to, return true
+        if (outFileGood && outFileWritable) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    //else
+    return false;
+}//end checkFile
 
 ///Public write method, calls private write method
 bool StainProfile::writeStainProfile(std::string fileString) {
@@ -699,30 +730,47 @@ bool StainProfile::BuildXMLDocument() {
     return true;
 }//end BuildXMLDocument
 
-
 bool StainProfile::CheckXMLDocument() {
     //Check if the basic structure of this XMLDocument is complete
     //Get the pointer to the xmldocument
     std::shared_ptr<tinyxml2::XMLDocument> docPtr = this->GetXMLDoc();
+    if (docPtr == nullptr) {
+        return false;
+    }
     if (docPtr->NoChildren()) {
         return false;
     }
     //else
 
-    //TODO: deeper checks
-
+    //Check that all of the 'Get' operations from this class will be successful
+    //TODO: additional checks
+    try {
+        auto a = this->GetNameOfStainProfile();
+        auto b = this->GetNumberOfStainComponents();
+        auto c = this->GetNameOfStainOne();
+        auto d = this->GetNameOfStainTwo();
+        auto e = this->GetNameOfStainThree();
+        auto f = this->GetNameOfStainSeparationAlgorithm();
+        auto g = this->GetStainOneRGB();
+        auto h = this->GetStainTwoRGB();
+        auto i = this->GetStainThreeRGB();
+        double j[9] = { 0.0 };
+        bool k = this->GetProfilesAsDoubleArray(j, true);
+        bool l = this->GetProfilesAsDoubleArray(j, false);
+        if (!k || !l) {
+            return false;
+        }
+    }
+    catch (...) {
+        return false;
+    }
+    //else
     return true;
 }//end CheckXMLDocument
-
 
 bool StainProfile::ClearXMLDocument() {
     //Set all of the values in the member XML document to their null values
     std::shared_ptr<tinyxml2::XMLDocument> docPtr = this->GetXMLDoc();
-    //Use the CheckXMLDocument to make sure all elements exist
-    bool checkDoc = this->CheckXMLDocument();
-    if (!checkDoc) {
-        return false;
-    }
     //else
     //Use the member methods
     this->SetNameOfStainProfile("");
@@ -742,12 +790,6 @@ bool StainProfile::ClearXMLDocument() {
 bool StainProfile::ClearStainVectorValues() {
     //Set the stain vector values in the member XML document to 0
     std::shared_ptr<tinyxml2::XMLDocument> docPtr = this->GetXMLDoc();
-    //Use the CheckXMLDocument to make sure all elements exist
-    bool checkDoc = this->CheckXMLDocument();
-    if (!checkDoc) {
-        return false;
-    }
-    //else
     this->SetStainOneRGB(0, 0, 0);
     this->SetStainTwoRGB(0, 0, 0);
     this->SetStainThreeRGB(0, 0, 0);

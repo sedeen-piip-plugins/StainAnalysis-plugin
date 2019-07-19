@@ -25,16 +25,11 @@
 #ifndef DPTK_SRC_IMAGE_FILTER_KERNELS_COLORDECONVOLUTION_H
 #define DPTK_SRC_IMAGE_FILTER_KERNELS_COLORDECONVOLUTION_H
 
-
-#include <cstdio>
-
-//#include "image/filter/Kernel.h"
-//#include "image\iterator\Iterator.h"
-//#include "image\tile\Compositor.h"
 #include "Global.h"
 #include "Geometry.h"
 #include "Image.h"
 
+#include <cstdio>
 #include <fstream>
 #include <sstream>
 #include <memory>

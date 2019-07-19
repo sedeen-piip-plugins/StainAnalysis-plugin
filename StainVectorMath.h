@@ -42,7 +42,7 @@ public:
     ///Make a 3x3 matrix, expressed as a 9-element array, have unitary rows. Preserve rows of zeros
     static void Make3x3MatrixUnitary(double inputMat[9], double unitaryMat[9]);
 
-    ///Check the Norm values of sets of three input elements, replace with unitary rows
+    ///Check the Norm values of sets of three input elements, replace with a unitary row if zero
     static void ConvertZeroRowsToUnitary(double inputMat[9], double unitaryMat[9]);
 
     ///Check the norm values of sets of elements, normalize the row of values in the third argument and replace zero rows with that

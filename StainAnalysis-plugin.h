@@ -54,7 +54,7 @@ namespace tile {
 } // namespace tile
 
 namespace algorithm {
-#define round(x) ( x >= 0.0f ? floor(x + 0.5f) : ceil(x - 0.5f) )
+//#define round(x) ( x >= 0.0f ? floor(x + 0.5f) : ceil(x - 0.5f) )
 
 /// Stain Analysis
 /// This plugin implements stain separation using the colour deconvolution
@@ -118,7 +118,7 @@ private:
     OpenFileDialogParameter m_openProfile;
     OptionParameter m_stainSeparationAlgorithm;
     OptionParameter m_stainVectorProfile;
-    GraphicItemParameter m_regionToProcess; //ONE output region
+    GraphicItemParameter m_regionToProcess; //single output region
 
     OptionParameter m_stainToDisplay;
     BoolParameter m_applyThreshold;
