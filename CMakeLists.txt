@@ -4,8 +4,11 @@ CMAKE_MINIMUM_REQUIRED( VERSION 3.13 )
 SET(CMAKE_CXX_STANDARD 17)
 INCLUDE(FetchContent)
 
+#Note which version of Sedeen Viewer this plugin was last compiled and tested with
+SET(SEDEEN_LAST_COMPILED_VERSION "5.4.2.20190715" CACHE STRING "Last version of Sedeen Viewer the plugin was compiled and tested with")
+
 # Define project description variables
-SET( DISPLAY_NAME_TEXT "Stain Analysis 5.4.1.20190327" CACHE STRING "Name of the plugin as it should be displayed in Sedeen Viewer")
+SET( DISPLAY_NAME_TEXT "Stain Analysis and Separation" CACHE STRING "Name of the plugin as it should be displayed in Sedeen Viewer")
 SET( SUPPORT_URL_TEXT "http://pathcore.com/support/plugin/info/${PROJECT_NAME}" CACHE STRING "Location users can find help with the plugin" )
 SET( DEVELOPER_TEXT "Sunnybrook Research Institute" CACHE STRING "Name of the author or organization that created the plugin" )
 
@@ -13,8 +16,8 @@ SET( DEVELOPER_TEXT "Sunnybrook Research Institute" CACHE STRING "Name of the au
 SET(PROGRAMFILESX86 "PROGRAMFILES\(X86\)")
 FIND_PACKAGE( SEDEENSDK REQUIRED 
   HINTS ../../.. 
-        "$ENV{${PROGRAMFILESX86}}/Sedeen Viewer SDK/v5.4.1.20190327/msvc2017"
-        "$ENV{PROGRAMFILES}/Sedeen Viewer SDK/v5.4.1.20190327/msvc2017" )
+        "$ENV{${PROGRAMFILESX86}}/Sedeen Viewer SDK/v5.4.2.20190715/msvc2017"
+        "$ENV{PROGRAMFILES}/Sedeen Viewer SDK/v5.4.2.20190715/msvc2017" )
 
 #Add OpenMP for parallel programming
 #This is not essential to the plugin and can be omitted
@@ -49,26 +52,26 @@ ENDIF()
 
 INCLUDE_DIRECTORIES( ${INCLUDE_DIRECTORIES} 
                      ${SEDEENSDK_INCLUDE_DIR} 
-					 ${BOOST_ROOT} 
-					 ${${TinyXML2Name}_SOURCE_DIR}
-					 )
+                     ${BOOST_ROOT} 
+                     ${${TinyXML2Name}_SOURCE_DIR}
+                     )
 
 LINK_DIRECTORIES( ${LINK_DIRECTORIES} 
                   ${SEDEENSDK_LIBRARY_DIR} 
-				  )
+                  )
 
 # Build the code into a module library
 ADD_LIBRARY( ${PROJECT_NAME} MODULE 
              ${PROJECT_NAME}.cpp 
-			 ${PROJECT_NAME}.h 
-			 ${${TinyXML2Name}_SOURCE_DIR}/tinyxml2.h 
-			 ${${TinyXML2Name}_SOURCE_DIR}/tinyxml2.cpp
+             ${PROJECT_NAME}.h 
+             ${${TinyXML2Name}_SOURCE_DIR}/tinyxml2.h 
+             ${${TinyXML2Name}_SOURCE_DIR}/tinyxml2.cpp
              StainProfile.h 
-			 StainProfile.cpp 
+             StainProfile.cpp 
              ColorDeconvolutionKernel.h 
-			 ColorDeconvolutionKernel.cpp
+             ColorDeconvolutionKernel.cpp
              StainVectorMath.h 
-			 StainVectorMath.cpp
+             StainVectorMath.cpp
              )
 
 # Link the library against the Sedeen SDK libraries
@@ -101,10 +104,10 @@ IF( ${SEDEEN_FOUND} )
   INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.info"
           DESTINATION "${PLUGIN_DESTINATION_DIR}")
   INSTALL(FILES "defaultprofiles/HematoxylinPEosinSample.xml"
-				"defaultprofiles/HematoxylinPEosinFromRJ.xml"
+                "defaultprofiles/HematoxylinPEosinFromRJ.xml"
                 "defaultprofiles/HematoxylinPDABFromRJ.xml"
                 "defaultprofiles/HematoxylinPEosinPDABFromRJ.xml"
-            DESTINATION "${PLUGIN_DESTINATION_DIR}")
+          DESTINATION "${PLUGIN_DESTINATION_DIR}")
 ENDIF()
 
 #For debugging: shows all variables and their values

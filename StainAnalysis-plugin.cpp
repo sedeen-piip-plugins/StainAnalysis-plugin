@@ -494,5 +494,4 @@ std::string StainAnalysis::generatePixelFractionReport() const {
 } // namespace algorithm
 } // namespace sedeen
 
-
 //throw std::runtime_error("The plugin has experienced a serious error and has stopped running.");
