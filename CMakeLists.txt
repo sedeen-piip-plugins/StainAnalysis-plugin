@@ -4,8 +4,11 @@ CMAKE_MINIMUM_REQUIRED( VERSION 3.13 )
 SET(CMAKE_CXX_STANDARD 17)
 INCLUDE(FetchContent)
 
+#Note which version of Sedeen Viewer this plugin was last compiled and tested with
+SET(SEDEEN_LAST_COMPILED_VERSION CACHE STRING "5.4.1.20190327")
+
 # Define project description variables
-SET( DISPLAY_NAME_TEXT "Stain Analysis 5.4.1.20190327" CACHE STRING "Name of the plugin as it should be displayed in Sedeen Viewer")
+SET( DISPLAY_NAME_TEXT "Stain Analysis and Separation" CACHE STRING "Name of the plugin as it should be displayed in Sedeen Viewer")
 SET( SUPPORT_URL_TEXT "http://pathcore.com/support/plugin/info/${PROJECT_NAME}" CACHE STRING "Location users can find help with the plugin" )
 SET( DEVELOPER_TEXT "Sunnybrook Research Institute" CACHE STRING "Name of the author or organization that created the plugin" )
 
