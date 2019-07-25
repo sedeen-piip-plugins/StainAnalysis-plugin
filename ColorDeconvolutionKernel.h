@@ -25,24 +25,18 @@
 #ifndef DPTK_SRC_IMAGE_FILTER_KERNELS_COLORDECONVOLUTION_H
 #define DPTK_SRC_IMAGE_FILTER_KERNELS_COLORDECONVOLUTION_H
 
-
-#include <stdio.h>
-
-//#include "image/filter/Kernel.h"
-//#include "image\iterator\Iterator.h"
-//#include "image\tile\Compositor.h"
 #include "Global.h"
 #include "Geometry.h"
 #include "Image.h"
 
+#include <cstdio>
 #include <fstream>
 #include <sstream>
-#include <boost/filesystem.hpp>
+#include <memory>
+#include <filesystem> //Requires C++17
 
-using namespace boost::filesystem;
-
-
-//#include "Eigen\Dense"
+//Plugin includes
+#include "StainProfile.h"
 
 namespace sedeen {
 
@@ -57,22 +51,8 @@ namespace sedeen {
 			//Cytology & Histology 2001; 23: 291-299
 			class PATHCORE_IMAGE_API ColorDeconvolution : public Kernel {
 			public:
-				/// Stain combination matrices
-				enum Behavior {
-					///User selected ROI
-					RegionOfInterest,
-					///rgb_from_hex: Hematoxylin + Eosin
-					HematoxylinPEosin,
-					///rgb_from_hdx: Hematoxylin + DAB
-					HematoxylinPDAB,
-					///rgb_from_hed: Hematoxylin + Eosin + DAB
-					HematoxylinPEosinPDAB,
-					///Load from previously saved file
-					LoadFromFile
-				};
-
-				/// Disply options for the output image
-				enum DisplyOptions {
+				/// Display options for the output image
+				enum DisplayOptions {
 					STAIN1,
 					STAIN2,
 					STAIN3
@@ -83,26 +63,9 @@ namespace sedeen {
 				//
 				/// \param 
 				/// 
-				explicit ColorDeconvolution(Behavior behavior, DisplyOptions displyOption, double[9], double, const std::string& );
+                explicit ColorDeconvolution(DisplayOptions displayOption, std::shared_ptr<StainProfile>, bool, double);
 
 				virtual ~ColorDeconvolution();
-
-
-				/// Set the display option of the kernel
-				/// \param t
-				/// The stain name
-				/// \post
-				///  is updated. If  is changed, update() is called to notify
-				/// the observers
-				void setDisplayOptions(DisplyOptions displyOption);
-
-				/// Set the Stain combination matrices of the kernel
-				/// \param t
-				/// The Stain combination matrice name
-				/// \post
-				/// m_StainMatrice is updated. If m_StainMatrice is changed, update() is called to notify
-				/// the observers.
-				void SetStainMatrice(Behavior behavior, double[9], const std::string&);
 
 			private:
 				/// \cond INTERNAL
@@ -111,40 +74,19 @@ namespace sedeen {
 
 				virtual const ColorSpace& doGetColorSpace() const;
 
-				//RawImage separate_stains(const RawImage &source, const Eigen::Matrix<double,3,3>);
-				/*Eigen::MatrixXd convertImageToMatrix(const RawImage &source);
-				RawImage convertMatrixToImage(const Eigen::MatrixXd &source);*/
+				RawImage separateStains(const RawImage &source, double[9]);
+                RawImage thresholdOnly(const RawImage &source);
 
-				RawImage separate_stains(const RawImage &source, double[9]);
-				void computeMatrixInvers( double[9] );
-				bool saveToCSVfile(const std::string& );
-				void loadFromCSV( const std::string&, const std::string&);
-				/*void getmeanRGBODfromROI(std::shared_ptr<tile::Factory> source,
-					const Rect &region_of_interest,
-					const Size &rescaled_resolution);*/
-				///matrix conversion from H&E to RGB (original matrix from Ruifrok, 2001)
+                ///Arguments are: the three OD values for the pixel, the output array, the stain vector matrix, and the inverse of the matrix
+                void GetSeparateColorsForPixel(double pixelOD[3], double RGB_sep[9], double stainVec_matrix[9], double inverse_matrix[9]);
+
 				// rows of matrix are stains, columns are color channels
-				//const Eigen::Matrix<double, 3, 3, Eigen::DontAlign> m_rgb_from_HandE;
-				ColorDeconvolution::Behavior m_Stain;
-				ColorDeconvolution::DisplyOptions m_displyOption;	
-				//std::vector<RawImage> m_outputImages;
-				//std::vector<RawImage> m_binaryImages;
+				ColorDeconvolution::DisplayOptions m_DisplayOption;	
+                bool m_applyThreshold;
 				double m_threshold;
 
-				static const int NumOfStains =3;
-				double log255;
-				double MODx[3];
-				double MODy[3];
-				double MODz[3];
-				double cosx[3];
-				double cosy[3];
-				double cosz[3];
-
-				//std::ofstream log_file;
-				int count;
-
-        ColorSpace m_colorSpace;
-
+                ColorSpace m_colorSpace;
+                std::shared_ptr<StainProfile> m_stainProfile;
 				/// \endcond
 			};
 
@@ -152,17 +94,11 @@ namespace sedeen {
 
 		PATHCORE_IMAGE_API
 			void getStainsComponents(std::shared_ptr<tile::Factory> source,
-								const std::vector<std::shared_ptr<GraphicItemBase>> region_of_interests,
+								const std::vector<std::shared_ptr<GraphicItemBase>> regions_of_interest,
 								const Size& rescaled_resolutions, double[9]);
 
 		PATHCORE_IMAGE_API
 			void getmeanRGBODfromROI(RawImage, double[3]);
-
-		PATHCORE_IMAGE_API
-		bool serachForfile( const path&, const std::string&, path& ); 
-
-		PATHCORE_IMAGE_API
-		void setImagePath( const std::string& ); 
 
 	} // namespace image
 } // namespace sedeen

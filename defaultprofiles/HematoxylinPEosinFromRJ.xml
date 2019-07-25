@@ -1,0 +1,22 @@
+<stain-profile profile-name="Hematoxylin+Eosin (R+J)">
+    <components numstains="2">
+        <stain index="1" stain-name="Hematoxylin">
+            <stain-value value-type="r">0.65</stain-value>
+            <stain-value value-type="g">0.70</stain-value>
+            <stain-value value-type="b">0.29</stain-value>
+        </stain>
+        <stain index="2" stain-name="Eosin">
+            <stain-value value-type="r">0.07</stain-value>
+            <stain-value value-type="g">0.99</stain-value>
+            <stain-value value-type="b">0.11</stain-value>
+        </stain>
+        <stain index="3" stain-name="">
+            <stain-value value-type="r">0</stain-value>
+            <stain-value value-type="g">0</stain-value>
+            <stain-value value-type="b">0</stain-value>
+        </stain>
+    </components>
+    <algorithm alg-name="Ruifrok+Johnston Deconvolution">
+        <parameter/>
+    </algorithm>
+</stain-profile>
