@@ -30,7 +30,6 @@
 #include <array>
 #include <cmath>
 #include <numeric>
-#include <algorithm>
 
  ///A class with static methods to operate on stain vectors
 class StainVectorMath

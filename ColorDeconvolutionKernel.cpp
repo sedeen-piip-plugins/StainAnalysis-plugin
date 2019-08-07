@@ -68,44 +68,6 @@ namespace sedeen {
                 //double normalized_inverse_matrix[9] = { 0.0 };
                 //StainVectorMath::Make3x3MatrixUnitary(inverse_matrix, normalized_inverse_matrix);
 
-
-//                //Open a file for temporary output
-//#include <fstream>
-//                std::fstream tempOut;
-//                tempOut.open("D:\\mschumaker\\projects\\Sedeen\\testData\\output\\tempout.txt", std::fstream::out);
-//
-//                std::stringstream sv;
-//                sv << "The stain vector matrix:\n";
-//                sv << stainVec_matrix[0] << ", " << stainVec_matrix[1] << ", " << stainVec_matrix[2] << "\n";
-//                sv << stainVec_matrix[3] << ", " << stainVec_matrix[4] << ", " << stainVec_matrix[5] << "\n";
-//                sv << stainVec_matrix[6] << ", " << stainVec_matrix[7] << ", " << stainVec_matrix[8];
-//                tempOut << sv.str() << std::endl;
-//
-//                std::stringstream sz;
-//                sz << "The no-zero-rows matrix:\n";
-//                sz << noZeroRowsMatrix[0] << ", " << noZeroRowsMatrix[1] << ", " << noZeroRowsMatrix[2] << "\n";
-//                sz << noZeroRowsMatrix[3] << ", " << noZeroRowsMatrix[4] << ", " << noZeroRowsMatrix[5] << "\n";
-//                sz << noZeroRowsMatrix[6] << ", " << noZeroRowsMatrix[7] << ", " << noZeroRowsMatrix[8];
-//                tempOut << sz.str() << std::endl;
-//
-//                std::stringstream si;
-//                si << "The inverse matrix:\n";
-//                si << inverse_matrix[0] << ", " << inverse_matrix[1] << ", " << inverse_matrix[2] << "\n";
-//                si << inverse_matrix[3] << ", " << inverse_matrix[4] << ", " << inverse_matrix[5] << "\n";
-//                si << inverse_matrix[6] << ", " << inverse_matrix[7] << ", " << inverse_matrix[8];
-//                tempOut << si.str() << std::endl;
-//
-//                std::stringstream sn;
-//                sn << "The normalized inverse matrix:\n";
-//                sn << normalized_inverse_matrix[0] << ", " << normalized_inverse_matrix[1] << ", " << normalized_inverse_matrix[2] << "\n";
-//                sn << normalized_inverse_matrix[3] << ", " << normalized_inverse_matrix[4] << ", " << normalized_inverse_matrix[5] << "\n";
-//                sn << normalized_inverse_matrix[6] << ", " << normalized_inverse_matrix[7] << ", " << normalized_inverse_matrix[8];
-//                tempOut << sn.str() << std::endl;
-//
-//                //close the temporary output file
-//                tempOut.close();
-
-
                 //loop over all pixels in the given RawImage		
 				int y = 0, x = 0;
                 for (int j = 0; j < imageSize.width()*imageSize.height(); j++) {
@@ -286,63 +248,5 @@ namespace sedeen {
 			}
 
 		} // namespace tile
-
-
-		void getmeanRGBODfromROI(RawImage ROI, double rgbOD[3])
-		{
-			if( ROI.isNull() )
-				return;
-            //temporary array
-            double tempOD[3] = { 0.0 };
-
-			int imageSize = ROI.size().width()*ROI.size().height();
-			double log255= log(255.0);
-			int y = 0, x = 0;
-			for (int i = 0; i < imageSize; i++){
-				x = i%ROI.size().width();
-                if (x == 0 && i != 0) {
-                    y++;
-                }
-                //Convert RGB vals to optical density, sum over all pixels
-                tempOD[0] = tempOD[0] + StainVectorMath::ConvertRGBtoOD(ROI.at(x, y, 0).as<double>());
-                tempOD[1] = tempOD[1] + StainVectorMath::ConvertRGBtoOD(ROI.at(x, y, 1).as<double>());
-                tempOD[2] = tempOD[2] + StainVectorMath::ConvertRGBtoOD(ROI.at(x, y, 2).as<double>());
-			}
-            //average of all pixels in region of interest
-            rgbOD[0] = tempOD[0] / imageSize;
-			rgbOD[1] = tempOD[1] / imageSize;
-			rgbOD[2] = tempOD[2] / imageSize;
-		}//end getmeanRGBODfromROI
-
-		void getStainsComponents(std::shared_ptr<tile::Factory> source,
-			const std::vector<std::shared_ptr<GraphicItemBase>> region_of_interests,
-			const Size &rescaled_resolutions, double stainVec_matrix[9])
-		{
-            for (int i = 0; i < 9; i++) {
-                stainVec_matrix[i] = 0;
-            }
-
-            //Get the length of the region_of_interests vector, though we want at most 3
-            size_t numberOfRegions = region_of_interests.size();
-            numberOfRegions = (numberOfRegions > 3) ? 3 : numberOfRegions;
-
-			// Get image from the output factory
-			auto compositor = image::tile::Compositor(source);
-			double  rgbOD[3];
-			for(size_t j=0; j < numberOfRegions; j++)
-			{
-				rgbOD[0]=0.0;
-				rgbOD[1]=0.0;
-				rgbOD[2]=0.0;
-				Rect rect = containingRect(region_of_interests.at(j)->graphic());
-				RawImage ROI = compositor.getImage(rect, Size(rect.width(), rect.height()));
-				getmeanRGBODfromROI(ROI, rgbOD);
-
-                stainVec_matrix[j * 3    ] = rgbOD[0];
-                stainVec_matrix[j * 3 + 1] = rgbOD[1];
-                stainVec_matrix[j * 3 + 2] = rgbOD[2];
-			}
-		}//end getStainsComponents
-
 	} // namespace image
 } // namespace sedeen

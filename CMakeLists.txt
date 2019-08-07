@@ -5,7 +5,7 @@ SET(CMAKE_CXX_STANDARD 17)
 INCLUDE(FetchContent)
 
 #Note which version of Sedeen Viewer this plugin was last compiled and tested with
-SET(SEDEENSDK_VERSION "5.4.2.20190715" CACHE STRING "Last version of Sedeen Viewer the plugin was compiled and tested with")
+SET(SEDEENSDK_VERSION "5.4.3.20190808" CACHE STRING "Last version of Sedeen Viewer the plugin was compiled and tested with")
 
 # Define project description variables
 SET( DISPLAY_NAME_TEXT "Stain Analysis and Separation" CACHE STRING "Name of the plugin as it should be displayed in Sedeen Viewer")
@@ -16,8 +16,8 @@ SET( DEVELOPER_TEXT "Sunnybrook Research Institute" CACHE STRING "Name of the au
 SET(PROGRAMFILESX86 "PROGRAMFILES\(X86\)")
 FIND_PACKAGE( SEDEENSDK REQUIRED 
   HINTS ../../.. 
-        "$ENV{${PROGRAMFILESX86}}/Sedeen Viewer SDK/v5.4.2.20190715/msvc2017"
-        "$ENV{PROGRAMFILES}/Sedeen Viewer SDK/v5.4.2.20190715/msvc2017" )
+        "$ENV{${PROGRAMFILESX86}}/Sedeen Viewer SDK/v5.4.3.20190808/msvc2017"
+        "$ENV{PROGRAMFILES}/Sedeen Viewer SDK/v5.4.3.20190808/msvc2017" )
 
 #Add OpenMP for parallel programming
 #This is not essential to the plugin and can be omitted
@@ -27,6 +27,12 @@ IF(OPENMP_FOUND)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
   SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 ENDIF()
+
+# Load the included OpenCV libs
+FIND_PACKAGE(SEDEENSDK_OPENCV REQUIRED
+             HINTS ../../..
+                  "$ENV{${PROGRAMFILESX86}}/Sedeen Viewer SDK/v5.4.2.20190715/msvc2017"
+                  "$ENV{PROGRAMFILES}/Sedeen Viewer SDK/v5.4.2.20190715/msvc2017" )
 
 IF(NOT BOOST_ROOT)
   SET(BOOST_ROOT "BOOST_ROOT-NOTFOUND" CACHE PATH "Preferred installation prefix of the Boost C++ library")
@@ -52,12 +58,14 @@ ENDIF()
 
 INCLUDE_DIRECTORIES( ${INCLUDE_DIRECTORIES} 
                      ${SEDEENSDK_INCLUDE_DIR} 
+                     ${SEDEENSDK_OPENCV_INCLUDE_DIR}
                      ${BOOST_ROOT} 
                      ${${TinyXML2Name}_SOURCE_DIR}
                      )
 
 LINK_DIRECTORIES( ${LINK_DIRECTORIES} 
                   ${SEDEENSDK_LIBRARY_DIR} 
+                  ${SEDEENSDK_OPENCV_LIBRARY_DIR}
                   )
 
 # Build the code into a module library
@@ -72,10 +80,15 @@ ADD_LIBRARY( ${PROJECT_NAME} MODULE
              ColorDeconvolutionKernel.cpp
              StainVectorMath.h 
              StainVectorMath.cpp
+             StainRGBFromROI.h
+             StainRGBFromROI.cpp
+             StainVectorFromSVD.h
+             StainVectorFromSVD.cpp
              )
 
 # Link the library against the Sedeen SDK libraries
-TARGET_LINK_LIBRARIES( ${PROJECT_NAME} ${SEDEENSDK_LIBRARIES} )
+TARGET_LINK_LIBRARIES( ${PROJECT_NAME} ${SEDEENSDK_LIBRARIES} 
+                       ${SEDEENSDK_OPENCV_LIBRARIES} )
 
 #Create or update the .info file in the build directory
 STRING( TIMESTAMP DATE_CREATED_TEXT "%Y-%m-%d" )
@@ -100,14 +113,17 @@ ENDIF()
 # Install the plugin and .info file in the PLUGIN_DESTINATION_DIR directory
 IF( ${SEDEEN_FOUND} )
   INSTALL(TARGETS ${PROJECT_NAME}
-          LIBRARY DESTINATION "${PLUGIN_DESTINATION_DIR}")
+      LIBRARY DESTINATION "${PLUGIN_DESTINATION_DIR}")
   INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.info"
-          DESTINATION "${PLUGIN_DESTINATION_DIR}")
+      DESTINATION "${PLUGIN_DESTINATION_DIR}")
   INSTALL(FILES "defaultprofiles/HematoxylinPEosinSample.xml"
                 "defaultprofiles/HematoxylinPEosinFromRJ.xml"
                 "defaultprofiles/HematoxylinPDABFromRJ.xml"
                 "defaultprofiles/HematoxylinPEosinPDABFromRJ.xml"
-          DESTINATION "${PLUGIN_DESTINATION_DIR}")
+      DESTINATION "${PLUGIN_DESTINATION_DIR}")
+  INSTALL(DIRECTORY "${SEDEENSDK_DIR}/bin/" 
+      DESTINATION "${PLUGIN_DESTINATION_DIR}" 
+      FILES_MATCHING PATTERN "opencv*0.dll" )
 ENDIF()
 
 #For debugging: shows all variables and their values

@@ -26,8 +26,8 @@
 //
 // Primary header
 #include "StainAnalysis-plugin.h"
+#include "StainVectorFromSVD.h"
 
-#include <algorithm>
 #include <cassert>
 #include <sstream>
 #include <string>
@@ -35,10 +35,8 @@
 #include <iomanip>
 #include <cmath>
 #include <vector>
-#include <numeric>
-#include <functional>
 
-// DPTK headers
+// Sedeen headers
 #include "Algorithm.h"
 #include "Geometry.h"
 #include "Global.h"
@@ -248,7 +246,9 @@ void StainAnalysis::run() {
 		// Update the output text report
 		if (false == askedToStop()) {
 			auto report = generateCompleteReport(chosenStainProfile);
-			m_outputText.sendText(report);
+			
+            //TEMPORARY!!!
+            //m_outputText.sendText(report);
 		}
 	}
 
@@ -338,7 +338,53 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
         default:
             break;
         }
-           
+
+
+
+        //Do this to test out the Macenko method of getting stain vectors
+        //Reorganize the UI later
+
+
+        //Values to use in getting the stain vectors
+        double conv_matrix[9] = { 0.0 };
+        auto display_resolution = getDisplayResolution(image(), m_displayArea);
+
+        ////Build the color deconvolution channel
+        int numStains = 2;   //TEMPORARY! m_numberOfStainComponents;
+
+
+        if ((numStains <= 0) || (numStains > 3)) {
+            return false;
+        }
+        else if (numStains == 2) {
+
+            //Get the two stain vectors from the SVD of the image
+            //I also want to know how long this takes to run. This function returns time required
+
+
+            //long long timeToGetBasisVectors = 0;
+            long long timeToGetBasisVectors = sedeen::image::doSomethingWithSVD(source_factory,
+                display_resolution, conv_matrix);
+
+        //    //TEMPORARY!
+            std::ostringstream ss;
+            ss << "Here is the output from getting the vectors by SVD: " << std::endl;
+            for (int i = 0; i < 9; i++) {
+                ss << conv_matrix[i] << ", ";
+            }
+            ss << std::endl;
+            ss << "And here's how many microseconds it took: " << timeToGetBasisVectors << std::endl;
+            m_outputText.sendText(ss.str());
+
+
+
+        }
+        else {
+            m_outputText.sendText("Currently testing algorithms that only accept two stains. Set the number of stains to 2.");
+            return false;
+        }
+
+
 		//TEMPORARY!!! Scale down the threshold to create more precision
         auto colorDeconvolution_kernel =
             std::make_shared<image::tile::ColorDeconvolution>(DisplayOption, chosenStainProfile, 

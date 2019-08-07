@@ -33,7 +33,7 @@
 StainProfile::StainProfile() {
     //Keep a list of possible stain separation algorithm names here
     m_stainSeparationAlgorithmOptions.push_back("Ruifrok+Johnston Deconvolution");
-    //Just one for now
+    m_stainSeparationAlgorithmOptions.push_back("Macenko 2-Stain Decomposition");
 
     //Build the XML document structure
     BuildXMLDocument();

@@ -130,8 +130,6 @@ public:
     //Check if the file exists, and accessible for reading or writing, depending on the second argument
     static bool checkFile(std::string, std::string);
 
-
-
     ///Check if the basic structure of the stain profile has been assembled
     inline bool CheckProfile() { return CheckXMLDocument(); }
     ///Clear the entire contents of the stain profile

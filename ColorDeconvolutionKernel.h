@@ -22,8 +22,8 @@
  *
  *=============================================================================*/
 
-#ifndef DPTK_SRC_IMAGE_FILTER_KERNELS_COLORDECONVOLUTION_H
-#define DPTK_SRC_IMAGE_FILTER_KERNELS_COLORDECONVOLUTION_H
+#ifndef SEDEEN_SRC_IMAGE_FILTER_KERNELS_COLORDECONVOLUTION_H
+#define SEDEEN_SRC_IMAGE_FILTER_KERNELS_COLORDECONVOLUTION_H
 
 #include "Global.h"
 #include "Geometry.h"
@@ -91,15 +91,6 @@ namespace sedeen {
 			};
 
 		} // namespace tile
-
-		PATHCORE_IMAGE_API
-			void getStainsComponents(std::shared_ptr<tile::Factory> source,
-								const std::vector<std::shared_ptr<GraphicItemBase>> regions_of_interest,
-								const Size& rescaled_resolutions, double[9]);
-
-		PATHCORE_IMAGE_API
-			void getmeanRGBODfromROI(RawImage, double[3]);
-
 	} // namespace image
 } // namespace sedeen
 #endif
