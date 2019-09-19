@@ -361,10 +361,20 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
             //Get the two stain vectors from the SVD of the image
             //I also want to know how long this takes to run. This function returns time required
 
-
-            //long long timeToGetBasisVectors = 0;
-            long long timeToGetBasisVectors = sedeen::image::doSomethingWithSVD(source_factory,
+            long long timeToGetBasisVectors = 0;
+            
+            
+            
+            
+            timeToGetBasisVectors = sedeen::image::doSomethingWithSVD(source_factory,
                 display_resolution, conv_matrix);
+
+
+            //here!!! here's the place for trying the next new thing.
+
+
+
+
 
         //    //TEMPORARY!
             std::ostringstream ss;
@@ -383,6 +393,8 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
             m_outputText.sendText("Currently testing algorithms that only accept two stains. Set the number of stains to 2.");
             return false;
         }
+
+
 
 
 		//TEMPORARY!!! Scale down the threshold to create more precision

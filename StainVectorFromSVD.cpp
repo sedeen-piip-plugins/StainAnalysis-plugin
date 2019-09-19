@@ -207,6 +207,9 @@ namespace image {
         sampledPixelsMatrix.resize(numPixelsAddedToMatrix);
 
 
+        //Get column means. Use those as the mean input to calcCovarMatrix
+
+
         //use PCA to simplify math
         cv::PCA pcAnalysis(sampledPixelsMatrix, cv::noArray(), cv::PCA::DATA_AS_ROW, 2); //2 components to project onto a plane
         //Project all of the sampled pixels into the new basis
@@ -219,17 +222,44 @@ namespace image {
         scov << "The first projected point is: " << projectedPoints.row(0) << std::endl;
         //scov << "What's different I think is the mean array that's used: " << pcAnalysis.mean << std::endl;
 
+
+        //Is projecting into the new basis all that difficult?
+        cv::Mat basisVectors;
+        cv::transpose(pcAnalysis.eigenvectors, basisVectors);
+
+
+        if (basisVectors.at<double>(0, 0) < 0.0) {
+            basisVectors.at<double>(0, 0) *= -1.0;
+            basisVectors.at<double>(1, 0) *= -1.0;
+            basisVectors.at<double>(2, 0) *= -1.0;
+        }
+        if (basisVectors.at<double>(0, 1) < 0.0) {
+            basisVectors.at<double>(0, 1) *= -1.0;
+            basisVectors.at<double>(1, 1) *= -1.0;
+            basisVectors.at<double>(2, 1) *= -1.0;
+        }
+
+        scov << "The basisVectors: " << std::endl;
+        scov << basisVectors << std::endl;
+
+
+        cv::Mat projectedPointsByMM;
+        cv::gemm(sampledPixelsMatrix, basisVectors, 1, cv::Mat(), 0, projectedPointsByMM, 0);
+
+        scov << "The gemm output: " << std::endl;
+        scov << projectedPointsByMM << std::endl;
+
         //Get angular coordinates with respect to the eigenvectors (the new orthogonal basis)
-        cv::Mat angularCoords(projectedPoints.rows, 1, cv::DataType<float>::type);
+        cv::Mat angularCoords(projectedPointsByMM.rows, 1, cv::DataType<float>::type);
 
         for (auto p = angularCoords.begin<float>(); p != angularCoords.end<float>(); p++) {
             int row = static_cast<int>(p.lpos());
-            bool angleUndef = (projectedPoints.at<float>(row, 0) == 0.0)
-                && (projectedPoints.at<float>(row, 1) == 0.0);
+            bool angleUndef = (projectedPointsByMM.at<float>(row, 0) == 0.0)
+                && (projectedPointsByMM.at<float>(row, 1) == 0.0);
             //Use maximum float value as undefined value
             float undefined = std::numeric_limits<float>::max();
             *p = angleUndef ? undefined
-                : std::atan2(projectedPoints.at<float>(row, 1), projectedPoints.at<float>(row, 0));
+                : std::atan2(projectedPointsByMM.at<float>(row, 1), projectedPointsByMM.at<float>(row, 0));
         }
 
         //Create a histogram of values between -pi and pi
@@ -268,7 +298,7 @@ namespace image {
             cumulativeSum += static_cast<double>(angleHist.at<float>(bin, 0));
             double currentFraction = cumulativeSum / histoCountTotal;
 
-            scov << bin << " currentFraction: " << currentFraction << std::endl;
+            //scov << bin << " currentFraction: " << currentFraction << std::endl;
 
             if (!lowerPassed && (currentFraction >= lowerFraction)) {
                 lowerPassed = true;
@@ -303,7 +333,15 @@ namespace image {
 
 
 
-        //pick up here!!!
+        //pick up here!!!  Do the backprojection using my basisVectors
+
+
+
+
+        
+        scov << "Well, here are what it calculates as the stain vectors:" << std::endl;
+        scov << stainVectorOutput;
+
 
 
 
