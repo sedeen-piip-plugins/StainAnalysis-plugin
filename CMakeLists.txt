@@ -84,6 +84,16 @@ ADD_LIBRARY( ${PROJECT_NAME} MODULE
              StainRGBFromROI.cpp
              StainVectorFromSVD.h
              StainVectorFromSVD.cpp
+             RandomPixelChooser.h
+             RandomPixelChooser.cpp
+             StainVectorBase.h
+             StainVectorBase.cpp
+             StainVectorPixelROI.h
+             StainVectorPixelROI.cpp
+             StainVectorMacenko.h
+             StainVectorMacenko.cpp
+             StainVectorNiethammer.h
+             StainVectorNiethammer.cpp
              )
 
 # Link the library against the Sedeen SDK libraries

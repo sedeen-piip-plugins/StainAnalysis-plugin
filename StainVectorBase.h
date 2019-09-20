@@ -22,39 +22,34 @@
  *
  *=============================================================================*/
 
-#include "RandomPixelChooser.h"
+#ifndef SEDEEN_SRC_FILTER_STAINVECTORBASE_H
+#define SEDEEN_SRC_FILTER_STAINVECTORBASE_H
 
-#include <chrono>
-#include <random>
+#include "Global.h"
+#include "Geometry.h"
+#include "Image.h"
 
-//For now, include StainVectorMath here, but try to do the OD conversion and thresholding
-//in a kernel, and use a factory to apply it before passing the factory to this class
-#include "StainVectorMath.h"
+ //OpenCV include
+#include <opencv2/core/core.hpp>
 
 namespace sedeen {
 namespace image {
 
-RandomPixelChooser::RandomPixelChooser(std::shared_ptr<tile::Factory> source) 
-    : m_sourceFactory(source), m_avgODThreshold(0.15)
-{
-    //Initialize 64-bit random number generator
-    std::random_device rd;
-    std::mt19937_64 rgen(rd()); //64-bit Mersenne Twister
+class PATHCORE_IMAGE_API StainVectorBase {
+public:
+    StainVectorBase(std::shared_ptr<tile::Factory> source);
+    ~StainVectorBase();
 
-}//end constructor
+    long long ChooseRandomPixels(cv::Mat outputMatrix, int numberOfPixels, bool suppressZeros);
 
-RandomPixelChooser::~RandomPixelChooser(void) {
-}//end destructor
+private:
+    std::shared_ptr<tile::Factory> m_sourceFactory;
 
-
-long long RandomPixelChooser::ChooseRandomPixels(cv::Mat outputMatrix, int numberOfPixels, bool suppressZeros) {
-    assert(nullptr != m_sourceFactory);
-
-
-    return 0;
-}//end ChooseRandomPixels
-
-
+private:
+    //TODO: replace this with a threshold factory applied BEFORE creating an instance of this class
+    double m_avgODThreshold;
+};
 
 } // namespace image
 } // namespace sedeen
+#endif

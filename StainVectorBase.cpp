@@ -22,19 +22,19 @@
  *
  *=============================================================================*/
 
-#include "RandomPixelChooser.h"
+#include "StainVectorBase.h"
 
 #include <chrono>
 #include <random>
 
-//For now, include StainVectorMath here, but try to do the OD conversion and thresholding
-//in a kernel, and use a factory to apply it before passing the factory to this class
+ //For now, include StainVectorMath here, but try to do the OD conversion and thresholding
+ //in a kernel, and use a factory to apply it before passing the factory to this class
 #include "StainVectorMath.h"
 
 namespace sedeen {
 namespace image {
 
-RandomPixelChooser::RandomPixelChooser(std::shared_ptr<tile::Factory> source) 
+StainVectorBase::StainVectorBase(std::shared_ptr<tile::Factory> source)
     : m_sourceFactory(source), m_avgODThreshold(0.15)
 {
     //Initialize 64-bit random number generator
@@ -43,11 +43,11 @@ RandomPixelChooser::RandomPixelChooser(std::shared_ptr<tile::Factory> source)
 
 }//end constructor
 
-RandomPixelChooser::~RandomPixelChooser(void) {
+StainVectorBase::~StainVectorBase(void) {
 }//end destructor
 
 
-long long RandomPixelChooser::ChooseRandomPixels(cv::Mat outputMatrix, int numberOfPixels, bool suppressZeros) {
+long long StainVectorBase::ChooseRandomPixels(cv::Mat outputMatrix, int numberOfPixels, bool suppressZeros) {
     assert(nullptr != m_sourceFactory);
 
 

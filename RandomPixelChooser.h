@@ -40,7 +40,7 @@ public:
     RandomPixelChooser(std::shared_ptr<tile::Factory> source);
     ~RandomPixelChooser();
 
-    ChooseRandomPixels(cv::Mat outputMatrix, int numberOfPixels, bool suppressZeros);
+    long long ChooseRandomPixels(cv::Mat outputMatrix, int numberOfPixels, bool suppressZeros);
 
 private:
     std::shared_ptr<tile::Factory> m_sourceFactory;
