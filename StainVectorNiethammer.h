@@ -37,7 +37,7 @@
 namespace sedeen {
 namespace image {
 
-    class PATHCORE_IMAGE_API StainVectorNiethammer : StainVectorBase {
+    class PATHCORE_IMAGE_API StainVectorNiethammer : public StainVectorBase {
     public:
         StainVectorNiethammer(std::shared_ptr<tile::Factory> source);
         ~StainVectorNiethammer();

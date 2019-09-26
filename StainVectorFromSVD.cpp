@@ -108,10 +108,6 @@ namespace image {
         long numPixelsAddedToMatrix = 0;
         for (int tl = 0; tl < numHighResTiles; tl++) {
             if (tileSamplingCountArray[tl] > 0) {
-
-
-
-
                 //Create an array of pixel indices
                 std::unique_ptr<u8[]> pixelSamplingArray = std::make_unique<u8[]>(numTilePixels);
                 //Initialize a uniform random distribution

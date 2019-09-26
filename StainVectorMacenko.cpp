@@ -35,24 +35,34 @@ namespace sedeen {
 namespace image {
 
 StainVectorMacenko::StainVectorMacenko(std::shared_ptr<tile::Factory> source)
-    : StainVectorBase(source), m_sourceFactory(source), m_avgODThreshold(0.15)
+    : StainVectorBase(source)
 {
-    //Initialize 64-bit random number generator
-    std::random_device rd;
-    std::mt19937_64 rgen(rd()); //64-bit Mersenne Twister
+
 
 }//end constructor
 
 StainVectorMacenko::~StainVectorMacenko(void) {
 }//end destructor
 
+void StainVectorMacenko::ComputeStainVectors(double outputVectors[9]) {
 
-long long StainVectorMacenko::ChooseRandomPixels(cv::Mat outputMatrix, int numberOfPixels, bool suppressZeros) {
-    assert(nullptr != m_sourceFactory);
+}
 
 
-    return 0;
-}//end ChooseRandomPixels
+void StainVectorMacenko::ComputeStainVectors(double outputVectors[9], int sampleSize,
+    double ODthreshold /* = 0.15 */, double percentileThreshold /* = 1.0 */) {
+    assert(nullptr != this->GetSourceFactory());
+
+
+    //Sample a set of pixel values from the source
+    cv::Mat samplePixels;
+    auto theSampler = this->GetRandomWSISampler();
+    assert(nullptr != theSampler);
+    bool samplingSuccess = theSampler->ChooseRandomPixels(samplePixels, sampleSize, ODthreshold);
+    //move this to the other overload
+
+}//end ComputeStainVectors
+
 
 
 

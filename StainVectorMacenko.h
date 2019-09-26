@@ -31,25 +31,46 @@
 
 #include "StainVectorBase.h"
 
+#include <cassert>
+
  //OpenCV include
 #include <opencv2/core/core.hpp>
 
 namespace sedeen {
 namespace image {
 
-class PATHCORE_IMAGE_API StainVectorMacenko : StainVectorBase {
+class PATHCORE_IMAGE_API StainVectorMacenko : public StainVectorBase {
 public:
     StainVectorMacenko(std::shared_ptr<tile::Factory> source);
     ~StainVectorMacenko();
 
-    long long ChooseRandomPixels(cv::Mat outputMatrix, int numberOfPixels, bool suppressZeros);
+    ///Fill the 9-element array with three stain vectors
+    virtual void ComputeStainVectors(double outputVectors[9]);
+    ///Overload of the basic method, includes parameters needed by the algorithm
+    void ComputeStainVectors(double outputVectors[9], int sampleSize, 
+        double ODthreshold = 0.15, double percentileThreshold = 1.0);
+
+    ///Get/Set the average optical density threshold
+    inline double GetODThreshold() { return m_avgODThreshold; }
+    ///Get/Set the average optical density threshold
+    inline void SetODThreshold(double t) { m_avgODThreshold = t; }
+
+    ///Get/Set the percentile threshold
+    inline double GetPercentileThreshold() { return m_percentileThreshold; }
+    ///Get/Set the percentile threshold
+    inline void SetPercentileThreshold(double p) { m_percentileThreshold = p; }
+
+    ///Get/Set the sample size, the number of pixels to choose
+    inline int GetSampleSize() { return m_sampleSize; }
+    ///Get/Set the sample size, the number of pixels to choose
+    inline void SetSampleSize(int s) { m_sampleSize = s; }
 
 private:
-    std::shared_ptr<tile::Factory> m_sourceFactory;
-
-private:
-    //TODO: replace this with a threshold factory applied BEFORE creating an instance of this class
     double m_avgODThreshold;
+    double m_percentileThreshold;
+
+    ///The number of pixels that should be used to calculate the stain vectors
+    int m_sampleSize;
 };
 
 } // namespace image

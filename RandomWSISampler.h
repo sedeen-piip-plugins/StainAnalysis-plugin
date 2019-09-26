@@ -22,39 +22,44 @@
  *
  *=============================================================================*/
 
-#include "RandomPixelChooser.h"
+#ifndef SEDEEN_SRC_FILTER_RANDOMWSISAMPLER_H
+#define SEDEEN_SRC_FILTER_RANDOMWSISAMPLER_H
+
+#include "Global.h"
+#include "Geometry.h"
+#include "Image.h"
 
 #include <chrono>
 #include <random>
 
-//For now, include StainVectorMath here, but try to do the OD conversion and thresholding
-//in a kernel, and use a factory to apply it before passing the factory to this class
-#include "StainVectorMath.h"
+//OpenCV include
+#include <opencv2/core/core.hpp>
 
 namespace sedeen {
 namespace image {
 
-RandomPixelChooser::RandomPixelChooser(std::shared_ptr<tile::Factory> source) 
-    : m_sourceFactory(source), m_avgODThreshold(0.15)
-{
-    //Initialize 64-bit random number generator
-    std::random_device rd;
-    std::mt19937_64 rgen(rd()); //64-bit Mersenne Twister
+class PATHCORE_IMAGE_API RandomWSISampler {
+public:
+    RandomWSISampler(std::shared_ptr<tile::Factory> source);
+    ~RandomWSISampler();
 
-}//end constructor
+    ///Populate a cv::Mat with pixels chosen without duplication from the source tile factory
+    bool ChooseRandomPixels(cv::Mat outputMatrix, int numberOfPixels, double ODthreshold,
+        int level = 0, int focusPlane = -1, int band = -1); //Negative indicates to use the source default values
 
-RandomPixelChooser::~RandomPixelChooser(void) {
-}//end destructor
+    //This will probably need a random tile chooser too
 
+protected:
+    ///Allow derived classes to get the source factory pointer
+    inline std::shared_ptr<tile::Factory> GetSourceFactory() { return m_sourceFactory; }
+    ///Allow derived classes access to the random number generator member
+    std::mt19937_64 m_rgen; //64-bit Mersenne Twister
 
-long long RandomPixelChooser::ChooseRandomPixels(cv::Mat outputMatrix, int numberOfPixels, bool suppressZeros) {
-    assert(nullptr != m_sourceFactory);
+private:
+    std::shared_ptr<tile::Factory> m_sourceFactory;
 
-
-    return 0;
-}//end ChooseRandomPixels
-
-
+};
 
 } // namespace image
 } // namespace sedeen
+#endif

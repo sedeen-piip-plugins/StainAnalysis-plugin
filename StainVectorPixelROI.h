@@ -37,7 +37,7 @@
 namespace sedeen {
 namespace image {
 
-class PATHCORE_IMAGE_API StainVectorPixelROI : StainVectorBase {
+class PATHCORE_IMAGE_API StainVectorPixelROI : public StainVectorBase {
 public:
     StainVectorPixelROI(std::shared_ptr<tile::Factory> source);
     ~StainVectorPixelROI();

@@ -29,8 +29,7 @@
 #include "Geometry.h"
 #include "Image.h"
 
- //OpenCV include
-#include <opencv2/core/core.hpp>
+#include "RandomWSISampler.h"
 
 namespace sedeen {
 namespace image {
@@ -40,14 +39,20 @@ public:
     StainVectorBase(std::shared_ptr<tile::Factory> source);
     ~StainVectorBase();
 
-    long long ChooseRandomPixels(cv::Mat outputMatrix, int numberOfPixels, bool suppressZeros);
+    ///The core functionality of a stain vector class; fills the 9-element array with three stain vectors
+    virtual void ComputeStainVectors(double outputVectors[9]);
+
+protected:
+    ///Returns a shared pointer to the source factory, protected so only derived classes may access it
+    inline std::shared_ptr<tile::Factory> GetSourceFactory() { return m_sourceFactory; }
+    ///Sets the source factory, protected so only derived classes may modify it
+    inline void SetSourceFactory(std::shared_ptr<tile::Factory> source) { m_sourceFactory = source; }
+    ///Access the random pixel chooser
+    inline std::shared_ptr<RandomWSISampler> GetRandomWSISampler() { return m_randomWSISampler; }
 
 private:
     std::shared_ptr<tile::Factory> m_sourceFactory;
-
-private:
-    //TODO: replace this with a threshold factory applied BEFORE creating an instance of this class
-    double m_avgODThreshold;
+    std::shared_ptr<RandomWSISampler> m_randomWSISampler;
 };
 
 } // namespace image

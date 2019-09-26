@@ -24,9 +24,9 @@
 
 // StainAnalysis-plugin.cpp : Defines the exported functions for the DLL application.
 //
-// Primary header
 #include "StainAnalysis-plugin.h"
 #include "StainVectorFromSVD.h"
+#include "StainVectorMacenko.h"
 
 #include <cassert>
 #include <sstream>
@@ -366,19 +366,21 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
             
             
             
-            timeToGetBasisVectors = sedeen::image::doSomethingWithSVD(source_factory,
-                display_resolution, conv_matrix);
+            //timeToGetBasisVectors = sedeen::image::doSomethingWithSVD(source_factory,
+            //    display_resolution, conv_matrix);
 
 
             //here!!! here's the place for trying the next new thing.
 
-
-
+            //Create an object to get stain vectors from, using the Macenko algorithm
+            std::shared_ptr<sedeen::image::StainVectorMacenko> stainsFromMacenko 
+                = std::shared_ptr<sedeen::image::StainVectorMacenko>(new sedeen::image::StainVectorMacenko(source_factory));
+            stainsFromMacenko->ComputeStainVectors(conv_matrix, 1000, 0.15);
 
 
         //    //TEMPORARY!
             std::ostringstream ss;
-            ss << "Here is the output from getting the vectors by SVD: " << std::endl;
+            ss << "Here is the output from getting the vectors by Macenko: " << std::endl;
             for (int i = 0; i < 9; i++) {
                 ss << conv_matrix[i] << ", ";
             }

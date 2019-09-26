@@ -47,6 +47,7 @@
 //Plugin headers
 #include "StainProfile.h"
 #include "ColorDeconvolutionKernel.h"
+#include "StainVectorMacenko.h"
 
 namespace sedeen {
 namespace tile {

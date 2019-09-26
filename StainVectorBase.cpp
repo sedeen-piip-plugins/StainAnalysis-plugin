@@ -24,37 +24,20 @@
 
 #include "StainVectorBase.h"
 
-#include <chrono>
-#include <random>
-
- //For now, include StainVectorMath here, but try to do the OD conversion and thresholding
- //in a kernel, and use a factory to apply it before passing the factory to this class
-#include "StainVectorMath.h"
-
 namespace sedeen {
 namespace image {
 
-StainVectorBase::StainVectorBase(std::shared_ptr<tile::Factory> source)
-    : m_sourceFactory(source), m_avgODThreshold(0.15)
+StainVectorBase::StainVectorBase(std::shared_ptr<tile::Factory> source) 
+    : m_sourceFactory(source),
+    m_randomWSISampler(new RandomWSISampler(source))
 {
-    //Initialize 64-bit random number generator
-    std::random_device rd;
-    std::mt19937_64 rgen(rd()); //64-bit Mersenne Twister
-
 }//end constructor
 
 StainVectorBase::~StainVectorBase(void) {
 }//end destructor
 
-
-long long StainVectorBase::ChooseRandomPixels(cv::Mat outputMatrix, int numberOfPixels, bool suppressZeros) {
-    assert(nullptr != m_sourceFactory);
-
-
-    return 0;
-}//end ChooseRandomPixels
-
-
+void StainVectorBase::ComputeStainVectors(double outputVectors[9]) {
+}//end ComputeStainVectors
 
 } // namespace image
 } // namespace sedeen
