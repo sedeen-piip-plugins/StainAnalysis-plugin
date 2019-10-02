@@ -25,7 +25,6 @@
 // StainAnalysis-plugin.cpp : Defines the exported functions for the DLL application.
 //
 #include "StainAnalysis-plugin.h"
-#include "StainVectorFromSVD.h"
 #include "StainVectorMacenko.h"
 
 #include <cassert>
@@ -353,6 +352,9 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
         int numStains = 2;   //TEMPORARY! m_numberOfStainComponents;
 
 
+        std::shared_ptr<StainProfile> MacenkoStainProfile = std::make_shared<StainProfile>();
+
+
         if ((numStains <= 0) || (numStains > 3)) {
             return false;
         }
@@ -374,7 +376,7 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
 
             //Create an object to get stain vectors from, using the Macenko algorithm
             std::shared_ptr<sedeen::image::StainVectorMacenko> stainsFromMacenko 
-                = std::shared_ptr<sedeen::image::StainVectorMacenko>(new sedeen::image::StainVectorMacenko(source_factory));
+                = std::make_shared<sedeen::image::StainVectorMacenko>(source_factory);
             stainsFromMacenko->ComputeStainVectors(conv_matrix, 1000, 0.15);
 
 
@@ -385,9 +387,8 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
                 ss << conv_matrix[i] << ", ";
             }
             ss << std::endl;
-            ss << "And here's how many microseconds it took: " << timeToGetBasisVectors << std::endl;
+            //ss << "And here's how many microseconds it took: " << timeToGetBasisVectors << std::endl;
             m_outputText.sendText(ss.str());
-
 
 
         }
@@ -495,15 +496,13 @@ std::string StainAnalysis::generatePixelFractionReport() const {
 	using namespace image::tile;
 
 	// Get image from the output factory
-	auto compositor =
-		std::unique_ptr<Compositor>(new Compositor(m_colorDeconvolution_factory));
+	auto compositor = std::make_unique<Compositor>(m_colorDeconvolution_factory);
 
 	DisplayRegion region = m_displayArea;
 	auto output_image = compositor->getImage(region.source_region, region.output_size);
 
 	// Get image from the input factory
-	auto compositorsource =
-		std::unique_ptr<Compositor>(new Compositor(image()->getFactory()));
+	auto compositorsource = std::make_unique<Compositor>(image()->getFactory());
 	auto input_image = compositorsource->getImage(region.source_region, region.output_size);
 
 	if (m_regionToProcess.isUserDefined()) {

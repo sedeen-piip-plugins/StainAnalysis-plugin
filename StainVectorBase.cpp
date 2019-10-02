@@ -29,7 +29,7 @@ namespace image {
 
 StainVectorBase::StainVectorBase(std::shared_ptr<tile::Factory> source) 
     : m_sourceFactory(source),
-    m_randomWSISampler(new RandomWSISampler(source))
+    m_randomWSISampler(std::make_shared<RandomWSISampler>(source))
 {
 }//end constructor
 

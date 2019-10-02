@@ -23,6 +23,7 @@
  *=============================================================================*/
 
 #include "StainVectorMath.h"
+#include "ODConversion.h"
 
 //Boost includes
 #include <boost/qvm/vec.hpp>
@@ -54,7 +55,7 @@ void StainVectorMath::Compute3x3MatrixInverse(double inputMat[9], double inversi
     double theDeterminant = boost::qvm::determinant(reshapedInput);
     //Get the inverse of the reshapedInput matrix if the determinant is not zero
     //Return matrix of all zeros if the determinant is zero
-    if (abs(theDeterminant) < StainVectorMath::GetODMinValue()) {
+    if (abs(theDeterminant) < ODConversion::GetODMinValue()) {
         outputMatrix = boost::qvm::zero_mat<double, 3, 3>();
     }
     else {
@@ -88,7 +89,7 @@ void StainVectorMath::Make3x3MatrixUnitary(double inputMat[9], double unitaryMat
     //Create output rows
     std::vector<std::array<double, 3>> outputRows;
     for (auto it = normVals.begin(); it != normVals.end(); ++it) {
-        bool smallValue = (*it < 10.0*StainVectorMath::GetODMinValue());
+        bool smallValue = (*it < 10.0*ODConversion::GetODMinValue());
         std::array<double, 3> addRow = inputRows[it - normVals.begin()];
         if (smallValue) {
             //do not modify
@@ -129,7 +130,7 @@ void StainVectorMath::ConvertZeroRowsToUnitary(double inputMat[9], double unitar
     auto unitaryRow = StainVectorMath::NormalizeArray(replacementArray);
     std::vector<std::array<double, 3>> outputRows;
     for (auto it = normVals.begin(); it != normVals.end(); ++it) {
-        bool smallValue = (*it < 10.0*StainVectorMath::GetODMinValue());
+        bool smallValue = (*it < 10.0*ODConversion::GetODMinValue());
         auto addRow = smallValue ? unitaryRow : inputRows[it-normVals.begin()];
         outputRows.push_back(addRow);
     }
@@ -161,7 +162,7 @@ std::array<bool, 3> StainVectorMath::RowSumZeroCheck(double inputMat[9]) {
 
     //For each, if rowSums is zero and normVals is non-zero, returnVals is true
     for (int i = 0; i < 3; i++) {
-        bool checkVal = ((abs(rowSums[i]) < StainVectorMath::GetODMinValue()) && (normVals[i] > 0.0));
+        bool checkVal = ((abs(rowSums[i]) < ODConversion::GetODMinValue()) && (normVals[i] > 0.0));
         returnVals[i] = checkVal ? true : false;
     }
     return returnVals;

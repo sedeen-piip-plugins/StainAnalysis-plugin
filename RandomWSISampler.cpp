@@ -24,9 +24,9 @@
 
 #include "RandomWSISampler.h"
 
-//For now, include StainVectorMath here, but try to do the OD conversion and thresholding
+//For now, include ODConversion here, but try to do the OD conversion and thresholding
 //in a kernel, and use a factory to apply it before passing the factory to this class
-#include "StainVectorMath.h"
+#include "ODConversion.h"
 
 #include <fstream>
 #include <sstream>
@@ -38,13 +38,19 @@ RandomWSISampler::RandomWSISampler(std::shared_ptr<tile::Factory> source)
     : m_sourceFactory(source),
     m_rgen((std::random_device())()) //Initialize random number generation
 {
+    //Things to try next: put the source factory in a cache
+    //create a threshold kernel, apply OD threshold factory before passing to this class
+    //create a struct to hold which tile and pixel should be accessed, the RGB vals, and the global tile index val
+    //use a SparseMat to keep the whole index map at once
+    //use foreach to get a speed boost from parallelism
+    //also parallel_for_ and whatever else can be used for parallelism
+
 }//end constructor
 
 RandomWSISampler::~RandomWSISampler(void) {
 }//end destructor
 
-
-bool RandomWSISampler::ChooseRandomPixels(cv::Mat outputMatrix, int numberOfPixels, double ODthreshold,
+bool RandomWSISampler::ChooseRandomPixels(cv::OutputArray outputArray, int numberOfPixels, double ODthreshold,
     int level /* = 0 */, int focusPlane /* = -1 */, int band /* = -1 */) {
     assert(nullptr != GetSourceFactory());
     auto source = this->GetSourceFactory();
@@ -61,22 +67,28 @@ bool RandomWSISampler::ChooseRandomPixels(cv::Mat outputMatrix, int numberOfPixe
     //Highest resolution level is 0, level must be within range
     if ((level < 0) || (level >= numResolutionLevels)) { return false; }
     //If focusPlane is -1, choose the default focus plane
+    if (focusPlane >= numFocusPlanes) { return false; }
     s32 chosenFocusPlane = static_cast<s32>((focusPlane < 0) ? defaultFocusPlane : focusPlane);
-    if (chosenFocusPlane >= numFocusPlanes) { return false; }
     //If band is -1, choose the default band
+    if (band >= numBands) { return false; }
     s32 chosenBand = static_cast<s32>((band < 0) ? defaultBand : band);
-    if (chosenBand >= numBands) { return false; }
 
     //Get the number of tiles on the chosen level, and the pixels per tile
     s32 numTilesOnLevel = source->getNumTiles(level);
+    //The tile server pads tiles at the edges to keep all tiles the same size
     s32 numTilePixels = static_cast<s32>(source->getTileSize().width() * source->getTileSize().height());
+
+
+
+    //Ok! Start optimizing from here.
 
 
     //Temp file output
     std::fstream tempOut;
     tempOut.open("D:\\mschumaker\\projects\\Sedeen\\testData\\output\\tempout.txt", std::fstream::out);
 
-    tempOut << "We're at least getting into ChooseRandomPixels" << std::endl;
+
+
 
 
 
@@ -88,22 +100,17 @@ bool RandomWSISampler::ChooseRandomPixels(cv::Mat outputMatrix, int numberOfPixe
     for (int spx = 0; spx < numberOfPixels; spx++) {
         s32 newIndex = randTileIndex(m_rgen);
         tileSamplingCountArray[newIndex]++;
-        tempOut << newIndex << std::endl;
     }
 
+    //Wrap the source factory in a cache
+    std::shared_ptr<image::tile::Factory> cacheSource =
+        std::make_shared<image::tile::Cache>(m_sourceFactory, image::tile::RecentCachePolicy(30));
+
     //Create a TileServer to be able to access tiles from the factory
-    std::unique_ptr<tile::TileServer> theTileServer
-        = std::unique_ptr<tile::TileServer>(new tile::TileServer(source));
+    std::unique_ptr<tile::TileServer> theTileServer = std::make_unique<tile::TileServer>(cacheSource);
 
     //Define OpenCV Mat structure with numberOfSamplePixels rows, RGB columns, elements are type double
     cv::Mat sampledPixelsMatrix(numberOfPixels, 3, cv::DataType<double>::type);
-
-
-
-
-
-
-
 
     //Loop over the tiles in the high res image
     long numPixelsAddedToMatrix = 0;
@@ -138,7 +145,8 @@ bool RandomWSISampler::ChooseRandomPixels(cv::Mat outputMatrix, int numberOfPixe
             }
 
             //Retrieve this tile, place in a RawImage so that pixel values are accessible
-            auto tileIndex = tile::getTileIndex(*source, level, tl, defaultFocusPlane, defaultBand);
+            auto tileIndex = tile::getTileIndex(*source, level, tl, chosenFocusPlane, chosenBand);
+
             RawImage tileImage = theTileServer->getTile(tileIndex);
             auto numPixels = tileImage.width() * tileImage.height();
             auto numChannels = sedeen::image::channels(tileImage);
@@ -172,23 +180,15 @@ bool RandomWSISampler::ChooseRandomPixels(cv::Mat outputMatrix, int numberOfPixe
                         break;
                     }
                     //Get the optical density values
-                    rgbOD[0] = StainVectorMath::ConvertRGBtoOD(static_cast<double>((tileImage[Rindex]).as<s32>()));
-                    rgbOD[1] = StainVectorMath::ConvertRGBtoOD(static_cast<double>((tileImage[Gindex]).as<s32>()));
-                    rgbOD[2] = StainVectorMath::ConvertRGBtoOD(static_cast<double>((tileImage[Bindex]).as<s32>()));
+                    rgbOD[0] = ODConversion::ConvertRGBtoOD(static_cast<double>((tileImage[Rindex]).as<s32>()));
+                    rgbOD[1] = ODConversion::ConvertRGBtoOD(static_cast<double>((tileImage[Gindex]).as<s32>()));
+                    rgbOD[2] = ODConversion::ConvertRGBtoOD(static_cast<double>((tileImage[Bindex]).as<s32>()));
 
                     if (rgbOD[0] + rgbOD[1] + rgbOD[2] > ODthreshold) {
                         sampledPixelsMatrix.at<double>(numPixelsAddedToMatrix, 0) = rgbOD[0];
                         sampledPixelsMatrix.at<double>(numPixelsAddedToMatrix, 1) = rgbOD[1];
                         sampledPixelsMatrix.at<double>(numPixelsAddedToMatrix, 2) = rgbOD[2];
                         numPixelsAddedToMatrix++;
-
-                        //Let's write these to a file to check that something's happening
-                        //std::stringstream sv;
-                        //sv << numPixelsAddedToMatrix-1 << ") Tile " << tl << ", Pixel " << px << ": ";
-                        //sv << sampledPixelsMatrix.at<double>(numPixelsAddedToMatrix-1, 0) << ", ";
-                        //sv << sampledPixelsMatrix.at<double>(numPixelsAddedToMatrix-1, 1) << ", ";
-                        //sv << sampledPixelsMatrix.at<double>(numPixelsAddedToMatrix-1, 2);
-                        //tempOut << sv.str() << std::endl;
                     }
                 }
             }
@@ -198,33 +198,15 @@ bool RandomWSISampler::ChooseRandomPixels(cv::Mat outputMatrix, int numberOfPixe
             //tileImage should go out of scope
         }
     }//end for each tile
+    tileSamplingCountArray.release();
 
-
-
-
-
-    tempOut.close();
-
-
-
-
-
-
-
-
-
-
-
-    //Copy the pixel data from the temp matrix to the output matrix
-    outputMatrix = cv::Mat(numPixelsAddedToMatrix, 3, cv::DataType<double>::type);
-
-
-
+    //Resize the sampledPixelsMatrix
+    sampledPixelsMatrix.resize(numPixelsAddedToMatrix);
+    //Assign to outputArray
+    outputArray.assign(sampledPixelsMatrix);
 
     return true;
 }//end ChooseRandomPixels
-
-
 
 } // namespace image
 } // namespace sedeen

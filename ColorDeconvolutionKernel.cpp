@@ -23,6 +23,7 @@
  *=============================================================================*/
 
 #include "ColorDeconvolutionKernel.h"
+#include "ODConversion.h"
 #include "StainVectorMath.h"
 
 namespace sedeen {
@@ -79,9 +80,9 @@ namespace sedeen {
                     double G = source.at(x, y, 1).as<double>();
                     double B = source.at(x, y, 2).as<double>();
                     double pixelOD[3]; //index is color channel
-                    pixelOD[0] = StainVectorMath::ConvertRGBtoOD(R);
-                    pixelOD[1] = StainVectorMath::ConvertRGBtoOD(G);
-                    pixelOD[2] = StainVectorMath::ConvertRGBtoOD(B);
+                    pixelOD[0] = ODConversion::ConvertRGBtoOD(R);
+                    pixelOD[1] = ODConversion::ConvertRGBtoOD(G);
+                    pixelOD[2] = ODConversion::ConvertRGBtoOD(B);
 
                     //The resulting RGB values for the three images
                     double RGB_sep[9] = { 0.0 };
@@ -137,9 +138,9 @@ namespace sedeen {
                     }
 
                     if (isAboveThreshold) {
-                        RGB_sep[i * 3    ] = StainVectorMath::ConvertODtoRGB(OD_scaled[0]);
-                        RGB_sep[i * 3 + 1] = StainVectorMath::ConvertODtoRGB(OD_scaled[1]);
-                        RGB_sep[i * 3 + 2] = StainVectorMath::ConvertODtoRGB(OD_scaled[2]);
+                        RGB_sep[i * 3    ] = ODConversion::ConvertODtoRGB(OD_scaled[0]);
+                        RGB_sep[i * 3 + 1] = ODConversion::ConvertODtoRGB(OD_scaled[1]);
+                        RGB_sep[i * 3 + 2] = ODConversion::ConvertODtoRGB(OD_scaled[2]);
                     }
                     else {
                         RGB_sep[i * 3    ] = 0.0;
@@ -171,9 +172,9 @@ namespace sedeen {
                     double G = source.at(x, y, 1).as<double>();
                     double B = source.at(x, y, 2).as<double>();
                     double pixelOD[3]; //index is color channel
-                    pixelOD[0] = StainVectorMath::ConvertRGBtoOD(R);
-                    pixelOD[1] = StainVectorMath::ConvertRGBtoOD(G);
-                    pixelOD[2] = StainVectorMath::ConvertRGBtoOD(B);
+                    pixelOD[0] = ODConversion::ConvertRGBtoOD(R);
+                    pixelOD[1] = ODConversion::ConvertRGBtoOD(G);
+                    pixelOD[2] = ODConversion::ConvertRGBtoOD(B);
                     //Get the total OD at the pixel
                     double OD_sum = pixelOD[0] + pixelOD[1] + pixelOD[2];
 

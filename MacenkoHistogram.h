@@ -22,43 +22,54 @@
  *
  *=============================================================================*/
 
-#ifndef SEDEEN_SRC_FILTER_RANDOMWSISAMPLER_H
-#define SEDEEN_SRC_FILTER_RANDOMWSISAMPLER_H
+#ifndef STAINANALYSIS_MACENKOHISTOGRAM_H
+#define STAINANALYSIS_MACENKOHISTOGRAM_H
 
-#include "Global.h"
-#include "Geometry.h"
-#include "Image.h"
-
-#include <chrono>
-#include <random>
 #include <cassert>
+#include <random>
 
 //OpenCV include
 #include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
+
 
 namespace sedeen {
 namespace image {
 
-class PATHCORE_IMAGE_API RandomWSISampler {
+class MacenkoHistogram {
+public:
+    ///An enum to identify which axis the input vectors are arranged in (outputs will match)
+    enum VectorDirection {
+        COLUMNVECTORS,
+        ROWVECTORS
+    };
 
 public:
-    RandomWSISampler(std::shared_ptr<tile::Factory> source);
-    ~RandomWSISampler();
+    MacenkoHistogram();
+    ~MacenkoHistogram();
 
-    ///Populate an OutputArray with pixels chosen without duplication from the source tile factory
-    virtual bool ChooseRandomPixels(cv::OutputArray outputMatrix, int numberOfPixels, double ODthreshold,
-        int level = 0, int focusPlane = -1, int band = -1); //Negative indicates to use the source default values
+    ///Which signs should be used for the basis vectors? Test projecting some source points, try to get ++ quadrant projections
+    void OptimizeBasisVectorSigns(cv::InputArray sourcePixels, 
+        cv::InputArray inputVectors, cv::OutputArray outputVectors, 
+        VectorDirection basisVecDir = VectorDirection::COLUMNVECTORS);
 
-    //TODO: make a random tile and sub-tile chooser too
+    ///Set/Get the numTestingPixels member variable
+    inline void SetNumTestingPixels(int n) { m_numTestingPixels = n; }
+    ///Set/Get the numTestingPixels member variable
+    inline  int GetNumTestingPixels() { return m_numTestingPixels; }
 
 protected:
-    ///Allow derived classes to get the source factory pointer
-    inline std::shared_ptr<tile::Factory> GetSourceFactory() { return m_sourceFactory; }
+    ///Randomly choose numberOfPixels rows from sourcePixels, copy them to the subsample OutputArray.
+    void CreatePixelSubsample(cv::InputArray sourcePixels, cv::OutputArray subsample, int numberOfPixels);
+
+
+protected:
     ///Allow derived classes access to the random number generator (64-bit Mersenne Twister)
     std::mt19937_64 m_rgen; //64-bit Mersenne Twister
 
 private:
-    std::shared_ptr<tile::Factory> m_sourceFactory;
+    int m_numTestingPixels;
 
 };
 

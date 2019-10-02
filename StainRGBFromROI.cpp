@@ -25,6 +25,7 @@
 #include "ColorDeconvolutionKernel.h"
 #include "StainRGBFromROI.h"
 #include "StainVectorMath.h"
+#include "ODConversion.h"
 
 namespace sedeen {
     namespace image {
@@ -46,9 +47,9 @@ namespace sedeen {
                     y++;
                 }
                 //Convert RGB vals to optical density, sum over all pixels
-                tempOD[0] = tempOD[0] + StainVectorMath::ConvertRGBtoOD(ROI.at(x, y, 0).as<double>());
-                tempOD[1] = tempOD[1] + StainVectorMath::ConvertRGBtoOD(ROI.at(x, y, 1).as<double>());
-                tempOD[2] = tempOD[2] + StainVectorMath::ConvertRGBtoOD(ROI.at(x, y, 2).as<double>());
+                tempOD[0] = tempOD[0] + ODConversion::ConvertRGBtoOD(ROI.at(x, y, 0).as<double>());
+                tempOD[1] = tempOD[1] + ODConversion::ConvertRGBtoOD(ROI.at(x, y, 1).as<double>());
+                tempOD[2] = tempOD[2] + ODConversion::ConvertRGBtoOD(ROI.at(x, y, 2).as<double>());
             }
             //average of all pixels in region of interest
             rgbOD[0] = tempOD[0] / imageSize;

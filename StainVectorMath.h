@@ -25,13 +25,12 @@
 #ifndef SEDEEN_SRC_PLUGINS_STAINANALYSIS_STAINVECTORMATH_H
 #define SEDEEN_SRC_PLUGINS_STAINANALYSIS_STAINVECTORMATH_H
 
-#include <string>
 #include <vector>
 #include <array>
 #include <cmath>
 #include <numeric>
 
- ///A class with static methods to operate on stain vectors
+///A class with static methods to operate on stain vectors
 class StainVectorMath
 {
 public:
@@ -52,29 +51,6 @@ public:
 
     ///Multiply a 3x3 matrix and a 3x1 vector to produce a 3x1 vector
     static void Multiply3x3MatrixAndVector(double inputMat[9], double inputVec[3], double outputVec[3]);
-
-    ///Convert from color space (0 to 255 RGB value) to optical density
-    inline static const double ConvertRGBtoOD(double color) {
-        double scaleMax = 255.0;
-        //Avoid trying to calculate log(0)
-        color = (color <= 0.0) ? StainVectorMath::GetODMinValue() : color;
-        double OD = -std::log10(color / scaleMax);
-        //Push negative and 0 values up to small positive value
-        OD = (OD < StainVectorMath::GetODMinValue()) ? StainVectorMath::GetODMinValue() : OD;
-        return OD;
-    }//end ConvertRGBtoOD
-
-    ///Convert from optical density to color space (0 to 255 RGB value)
-    inline static const double ConvertODtoRGB(double OD) {
-        double scaleMax = 255.0;
-        //Push negative and 0 values up to small positive value
-        OD = (OD < StainVectorMath::GetODMinValue()) ? StainVectorMath::GetODMinValue() : OD;
-        double color = std::round(scaleMax * std::pow(10.0, -OD)); //rounds values away from 0
-        //Valid range is 0 to scaleMax
-        color = (color < 0.0) ? 0.0 : color;
-        color = (color > 255.0) ? 255.0 : color;
-        return color;
-    }//end ConvertODtoRGB
 
     ///Return an array of values of type Ty with size N normalized to unit length. Returns input array if norm is 0.
     template<class Ty, std::size_t N> 
@@ -103,34 +79,6 @@ public:
     static Ty Norm(Iter_T first, Iter_T last) {
         return static_cast<Ty>(sqrt(std::inner_product(first, last, first, Ty{}))); //Use C++11 zero initialization of type Ty
     }//end Norm
-
-    ///Return an array of values of type Ty with size N scaled such that the largest element is 1. Returns input array if norm is 0.
-    template<class Ty, std::size_t N>
-    static std::array<Ty, N> MaximizeArray(std::array<Ty, N> arr) {
-        std::array<Ty, N> out;
-        Ty norm = Norm<std::array<Ty, N>::iterator, Ty>(arr.begin(), arr.end());
-        std::array<Ty, N>::iterator maxIt = std::max_element<std::array<Ty, N>::iterator>(arr.begin(), arr.end());
-        Ty max = *maxIt;
-        //Check if the norm is zero. Return the input array if so.
-        //Compare against C++11 zero initialization of the type Ty
-        //Also check if the input container is empty
-        if ((norm == Ty{}) || (arr.empty())) {
-            return arr;
-        }
-        else {
-            //Copy the input array to the out array
-            std::copy(arr.begin(), arr.end(), out.begin());
-            //Iterate through the out array, divide values by max
-            for (auto p = out.begin(); p != out.end(); ++p) {
-                *p = static_cast<Ty>(*p / max);
-            }
-            return out;
-        }
-    }//end MaximizeArray
-
-public:
-    ///Choose a value to represent near-zero in this class
-    inline static const double GetODMinValue() { return 1e-6; }
 };
 
 #endif

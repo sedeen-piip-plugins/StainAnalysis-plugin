@@ -76,14 +76,15 @@ ADD_LIBRARY( ${PROJECT_NAME} MODULE
              ${${TinyXML2Name}_SOURCE_DIR}/tinyxml2.cpp
              StainProfile.h StainProfile.cpp 
              ColorDeconvolutionKernel.h ColorDeconvolutionKernel.cpp
+             ODConversion.h
              StainVectorMath.h StainVectorMath.cpp
              StainRGBFromROI.h StainRGBFromROI.cpp
-             StainVectorFromSVD.h StainVectorFromSVD.cpp
              RandomWSISampler.h RandomWSISampler.cpp
              StainVectorBase.h StainVectorBase.cpp
              StainVectorPixelROI.h StainVectorPixelROI.cpp
              StainVectorMacenko.h StainVectorMacenko.cpp
              StainVectorNiethammer.h StainVectorNiethammer.cpp
+             MacenkoHistogram.h MacenkoHistogram.cpp
              )
 
 # Link the library against the Sedeen SDK libraries
