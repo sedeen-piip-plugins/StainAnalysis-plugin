@@ -30,14 +30,27 @@
 #include <fstream>
 #include <tinyxml2.h>
 
-StainProfile::StainProfile() {
-    //Keep a list of possible stain separation algorithm names here
-    m_stainSeparationAlgorithmOptions.push_back("Ruifrok+Johnston Deconvolution");
-    m_stainSeparationAlgorithmOptions.push_back("Macenko 2-Stain Decomposition");
-
+StainProfile::StainProfile() : m_stainSeparationAlgorithmOptions( 
+    { "Ruifrok+Johnston Deconvolution",
+      "Macenko 2-Stain Decomposition"   })
+{
     //Build the XML document structure
     BuildXMLDocument();
 }//end constructor
+
+StainProfile::StainProfile(StainProfile &s) 
+    : StainProfile()  //invoking the no-parameter constructor will build the XML document
+{
+    this->SetNameOfStainProfile(s.GetNameOfStainProfile());
+    this->SetNumberOfStainComponents(s.GetNumberOfStainComponents());
+    this->SetNameOfStainOne(s.GetNameOfStainOne());
+    this->SetNameOfStainTwo(s.GetNameOfStainTwo());
+    this->SetNameOfStainThree(s.GetNameOfStainThree());
+    this->SetNameOfStainSeparationAlgorithm(s.GetNameOfStainSeparationAlgorithm());
+    this->SetStainOneRGB(s.GetStainOneRGB());
+    this->SetStainTwoRGB(s.GetStainTwoRGB());
+    this->SetStainThreeRGB(s.GetStainThreeRGB());
+}//end copy constructor
 
 StainProfile::~StainProfile() {
     //Smartpointer used for m_xmlDoc, 
@@ -45,7 +58,7 @@ StainProfile::~StainProfile() {
     //No explicit delete required. reset() is an option, though.
 }
 
-bool StainProfile::SetNameOfStainProfile(std::string name) {
+bool StainProfile::SetNameOfStainProfile(const std::string &name) {
     //Direct assignment. Add checks if necessary.
     if (m_rootElement == nullptr) {
         return false;
@@ -56,7 +69,7 @@ bool StainProfile::SetNameOfStainProfile(std::string name) {
     }
 }
 
-std::string StainProfile::GetNameOfStainProfile() {
+const std::string StainProfile::GetNameOfStainProfile() {
     std::string result("");
     if (m_rootElement == nullptr) {
         return "";
@@ -68,7 +81,7 @@ std::string StainProfile::GetNameOfStainProfile() {
     return result;
 }
 
-bool StainProfile::SetNumberOfStainComponents(int components) {
+bool StainProfile::SetNumberOfStainComponents(const int &components) {
     if (m_componentsElement == nullptr) {
         return false;
     }
@@ -84,7 +97,7 @@ bool StainProfile::SetNumberOfStainComponents(int components) {
     }
 }
 
-int StainProfile::GetNumberOfStainComponents() {
+const int StainProfile::GetNumberOfStainComponents() {
     int components(-1);
     if (m_componentsElement == nullptr) {
         return -1;
@@ -98,7 +111,7 @@ int StainProfile::GetNumberOfStainComponents() {
     return components;
 }
 
-bool StainProfile::SetNameOfStainOne(std::string name) {
+bool StainProfile::SetNameOfStainOne(const std::string &name) {
     //Direct assignment.
     if (m_stainOneElement == nullptr) {
         return false;
@@ -109,7 +122,7 @@ bool StainProfile::SetNameOfStainOne(std::string name) {
     }
 }
 
-std::string StainProfile::GetNameOfStainOne() {
+const std::string StainProfile::GetNameOfStainOne() {
     std::string result("");
     if (m_stainOneElement == nullptr) {
         return "";
@@ -121,7 +134,7 @@ std::string StainProfile::GetNameOfStainOne() {
     return result;
 }
 
-bool StainProfile::SetNameOfStainTwo(std::string name) {
+bool StainProfile::SetNameOfStainTwo(const std::string &name) {
     //Direct assignment.
     if (m_stainTwoElement == nullptr) {
         return false;
@@ -132,7 +145,7 @@ bool StainProfile::SetNameOfStainTwo(std::string name) {
     }
 }
 
-std::string StainProfile::GetNameOfStainTwo() {
+const std::string StainProfile::GetNameOfStainTwo() {
     std::string result("");
     if (m_stainTwoElement == nullptr) {
         return "";
@@ -144,7 +157,7 @@ std::string StainProfile::GetNameOfStainTwo() {
     return result;
 }
 
-bool StainProfile::SetNameOfStainThree(std::string name) {
+bool StainProfile::SetNameOfStainThree(const std::string &name) {
     //Direct assignment
     if (m_stainThreeElement == nullptr) {
         return false;
@@ -155,7 +168,7 @@ bool StainProfile::SetNameOfStainThree(std::string name) {
     }
 }
 
-std::string StainProfile::GetNameOfStainThree() {
+const std::string StainProfile::GetNameOfStainThree() {
     std::string result("");
     if (m_stainThreeElement == nullptr) {
         return "";
@@ -167,7 +180,7 @@ std::string StainProfile::GetNameOfStainThree() {
     return result;
 }
 
-bool StainProfile::SetNameOfStainSeparationAlgorithm(std::string name) {
+bool StainProfile::SetNameOfStainSeparationAlgorithm(const std::string &name) {
     //Check if the stain separation algorithm name given is in the valid list
     //If not, do not assign value and return false
     if (std::find(m_stainSeparationAlgorithmOptions.begin(), m_stainSeparationAlgorithmOptions.end(), name) 
@@ -179,7 +192,7 @@ bool StainProfile::SetNameOfStainSeparationAlgorithm(std::string name) {
     return false;
 }
 
-std::string StainProfile::GetNameOfStainSeparationAlgorithm() {
+const std::string StainProfile::GetNameOfStainSeparationAlgorithm() {
     std::string result("");
     if (m_algorithmElement == nullptr) {
         return "";
@@ -223,7 +236,7 @@ bool StainProfile::SetStainOneRGB(double rgb[])
     return false;
 }//end SetStainOneRGB(C array)
 
-bool StainProfile::SetStainOneRGB(std::array<double, 3> rgb_in) {
+bool StainProfile::SetStainOneRGB(const std::array<double, 3> &rgb_in) {
     //Normalize the array before assigning
     std::array<double, 3> rgb = StainVectorMath::NormalizeArray<double, 3>(rgb_in);
     //Get the first stain value element, or return false if not found
@@ -246,7 +259,7 @@ bool StainProfile::SetStainOneRGB(std::array<double, 3> rgb_in) {
     return true;
 }//end SetStainOneRGB(std::array)
 
-std::array<double, 3> StainProfile::GetStainOneRGB() {
+const std::array<double, 3> StainProfile::GetStainOneRGB() {
     //Create a zero array to return
     std::array<double, 3> out = { 0.0,0.0,0.0 };
     double r, g, b; //temp values
@@ -306,7 +319,7 @@ bool StainProfile::SetStainTwoRGB(double rgb[]) {
     return false;
 }//end SetStainTwoRGB(C array)
 
-bool StainProfile::SetStainTwoRGB(std::array<double, 3> rgb_in) {
+bool StainProfile::SetStainTwoRGB(const std::array<double, 3> &rgb_in) {
     //Normalize the array before assigning
     std::array<double, 3> rgb = StainVectorMath::NormalizeArray<double, 3>(rgb_in);
     //Get the first stain value element, or return false if not found
@@ -328,7 +341,7 @@ bool StainProfile::SetStainTwoRGB(std::array<double, 3> rgb_in) {
     return true;
 }//end SetStainTwoRGB(std::array)
 
-std::array<double, 3> StainProfile::GetStainTwoRGB() {
+const std::array<double, 3> StainProfile::GetStainTwoRGB() {
     //Create a zero array to return
     std::array<double, 3> out = { 0.0,0.0,0.0 };
     double r, g, b; //temp values
@@ -389,7 +402,7 @@ bool StainProfile::SetStainThreeRGB(double rgb[])
     return false;
 }//end SetStainThreeRGB(C array)
 
-bool StainProfile::SetStainThreeRGB(std::array<double, 3> rgb_in) {
+bool StainProfile::SetStainThreeRGB(const std::array<double, 3> &rgb_in) {
     //Normalize the array before assigning
     std::array<double, 3> rgb = StainVectorMath::NormalizeArray<double, 3>(rgb_in);
     //Get the first stain value element, or return false if not found
@@ -411,7 +424,7 @@ bool StainProfile::SetStainThreeRGB(std::array<double, 3> rgb_in) {
     return true;
 }//end SetStainThreeRGB(std::array)
 
-std::array<double, 3> StainProfile::GetStainThreeRGB() {
+const std::array<double, 3> StainProfile::GetStainThreeRGB() {
     //Create a zero array to return
     std::array<double, 3> out = { 0.0,0.0,0.0 };
     double r, g, b; //temp values
@@ -622,11 +635,11 @@ tinyxml2::XMLError StainProfile::readStainProfileFromXML(std::string fileString)
     return tinyxml2::XML_SUCCESS;
 }//end readStainProfileFromXML
 
-std::vector<std::string> StainProfile::GetStainSeparationAlgorithmOptions() {
+const std::vector<std::string> StainProfile::GetStainSeparationAlgorithmOptions() {
     return m_stainSeparationAlgorithmOptions;
 }
 
-std::string StainProfile::GetStainSeparationAlgorithmName(int index) {
+const std::string StainProfile::GetStainSeparationAlgorithmName(int index) {
     //Check that the given index value is valid
     //Use the vector::at operator to do bounds checking
     std::string name;

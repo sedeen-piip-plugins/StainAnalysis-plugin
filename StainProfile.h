@@ -47,65 +47,67 @@ class StainProfile
 public:
     ///No-parameter constructor (builds XMLDocument structure)
     StainProfile();
+    ///Copy constructor
+    StainProfile(StainProfile &s);
     ///virtual destructor
     virtual ~StainProfile();
 
     ///Get/Set the name of the stain profile
-    bool SetNameOfStainProfile(std::string);
+    bool SetNameOfStainProfile(const std::string &);
     ///Get/Set the name of the stain profile
-    std::string GetNameOfStainProfile();
+    const std::string GetNameOfStainProfile();
 
     ///Get/Set the number of stain components in the profile
-    bool SetNumberOfStainComponents(int);
+    bool SetNumberOfStainComponents(const int &);
     ///Get/Set the number of stain components in the profile
-    int GetNumberOfStainComponents();
+    const int GetNumberOfStainComponents();
 
     ///Get/Set the name of stain one
-    bool SetNameOfStainOne(std::string);
+    bool SetNameOfStainOne(const std::string &);
     ///Get/Set the name of stain one
-    std::string GetNameOfStainOne();
+    const std::string GetNameOfStainOne();
 
     ///Get/Set the name of stain two
-    bool SetNameOfStainTwo(std::string);
+    bool SetNameOfStainTwo(const std::string &);
     ///Get/Set the name of stain two
-    std::string GetNameOfStainTwo();
+    const std::string GetNameOfStainTwo();
 
     ///Get/Set the name of stain three
-    bool SetNameOfStainThree(std::string);
+    bool SetNameOfStainThree(const std::string &);
     ///Get/Set the name of stain three
-    std::string GetNameOfStainThree();
+    const std::string GetNameOfStainThree();
 
     ///Get/Set the name of the stain separation algorithm currently selected
-    bool SetNameOfStainSeparationAlgorithm(std::string);
+    bool SetNameOfStainSeparationAlgorithm(const std::string &);
     ///Get/Set the name of the stain separation algorithm currently selected
-    std::string GetNameOfStainSeparationAlgorithm();
+    const std::string GetNameOfStainSeparationAlgorithm();
 
     ///Set the RGB values for stain one as three doubles
     bool SetStainOneRGB(double, double, double);
     ///Overload: Set the RGB values for stain one as a three-element C-style array
     bool SetStainOneRGB(double[]);
     ///Overload: Set the RGB values for stain one as a C++11 std::array of three doubles
-    bool SetStainOneRGB(std::array<double, 3>);
+    bool SetStainOneRGB(const std::array<double, 3> &);
     ///Get the RGB values for stain one as a C++11 std::array of three doubles
-    std::array<double, 3> GetStainOneRGB();
+    const std::array<double, 3> GetStainOneRGB();
 
     ///Set the RGB values for stain two as three doubles
     bool SetStainTwoRGB(double, double, double);
     ///Overload: Set the RGB values for stain two as a three-element C-style array
     bool SetStainTwoRGB(double[]);
     ///Overload: Set the RGB values for stain two as a C++11 std::array of three doubles
-    bool SetStainTwoRGB(std::array<double, 3>);
+    bool SetStainTwoRGB(const std::array<double, 3> &);
     ///Get the RGB values for stain two as a C++11 std::array of three doubles
-    std::array<double, 3> GetStainTwoRGB();
+    const std::array<double, 3> GetStainTwoRGB();
 
     ///Set the RGB values for stain three as three doubles
     bool SetStainThreeRGB(double, double, double);
     ///Overload: Set the RGB values for stain three as a three-element C-style array
     bool SetStainThreeRGB(double[]);
     ///Overload: Set the RGB values for stain three as a C++11 std::array of three doubles
-    bool SetStainThreeRGB(std::array<double, 3>);
+    bool SetStainThreeRGB(const std::array<double, 3> &);
     ///Get the RGB values for stain three as a C++11 std::array of three doubles
-    std::array<double, 3> GetStainThreeRGB();
+    const std::array<double, 3> GetStainThreeRGB();
 
     ///Public write method - returns true/false for success/failure
     bool writeStainProfile(std::string);
@@ -113,10 +115,10 @@ public:
     bool readStainProfile(std::string);
 
     ///Request the list of possible stain separation algorithm names from the class, static defined in constructor
-    std::vector<std::string> GetStainSeparationAlgorithmOptions();
+    const std::vector<std::string> GetStainSeparationAlgorithmOptions();
 
     ///Request an element of the vector of stain separation algorithms. Returns "" on error.
-    std::string GetStainSeparationAlgorithmName(int);
+    const std::string GetStainSeparationAlgorithmName(int);
 
     ///Get the raw (no normalization applied) stain vector profiles and assign to a 9-element double array
     bool GetProfilesAsDoubleArray(double[9]);
@@ -174,7 +176,7 @@ private:
 
 private:
     ///Store the list of possible stain separation algorithm names here
-	std::vector<std::string> m_stainSeparationAlgorithmOptions;
+	const std::vector<std::string> m_stainSeparationAlgorithmOptions;
 
     ///An XML document associated with this class: note that elements can't be smartpointers
     std::shared_ptr<tinyxml2::XMLDocument> m_xmlDoc;

@@ -97,6 +97,9 @@ void MacenkoHistogram::OptimizeBasisVectorSigns(cv::InputArray sourcePixels, /*a
 
 
 
+    //so here are the basis vectors multiplied by these 
+
+
     //Now do something with the subsampleOfPixels
 
 

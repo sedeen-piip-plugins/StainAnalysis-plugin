@@ -352,7 +352,7 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
         int numStains = 2;   //TEMPORARY! m_numberOfStainComponents;
 
 
-        std::shared_ptr<StainProfile> MacenkoStainProfile = std::make_shared<StainProfile>();
+        std::shared_ptr<StainProfile> MacenkoStainProfile = std::make_shared<StainProfile>(*(m_stainProfileList.at(1)));
 
 
         if ((numStains <= 0) || (numStains > 3)) {
