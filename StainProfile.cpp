@@ -560,7 +560,7 @@ bool StainProfile::readStainProfile(std::string fileString) {
         return false;
     }
     else {
-        tinyxml2::XMLError eResult = this->readStainProfileFromXML(fileString);
+        tinyxml2::XMLError eResult = this->readStainProfileFromXMLFile(fileString);
         if (eResult == tinyxml2::XML_SUCCESS) {
             return true;
         }
@@ -571,6 +571,16 @@ bool StainProfile::readStainProfile(std::string fileString) {
     return false;
 }//end readStainProfile
 
+/// Public read method, calls private write method
+bool StainProfile::readStainProfile(const char *str, size_t size) {
+    tinyxml2::XMLError eResult = this->readStainProfileFromXMLString(str, size);
+    if (eResult == tinyxml2::XML_SUCCESS) {
+      return true;
+    } else {
+      return false;
+    }
+}  // end readStainProfile
+
 ///Private write method that deals with TinyXML2
 tinyxml2::XMLError StainProfile::writeStainProfileToXML(std::string fileString) {
     //Write it!
@@ -580,7 +590,7 @@ tinyxml2::XMLError StainProfile::writeStainProfileToXML(std::string fileString) 
     return tinyxml2::XML_SUCCESS;
 }//end writeStainProfileToXML
 
-tinyxml2::XMLError StainProfile::readStainProfileFromXML(std::string fileString) {
+tinyxml2::XMLError StainProfile::readStainProfileFromXMLFile(std::string fileString) {
     //Clear the current structure
     bool clearSuccessful = ClearXMLDocument();
     if (!clearSuccessful) {
@@ -590,8 +600,26 @@ tinyxml2::XMLError StainProfile::readStainProfileFromXML(std::string fileString)
     //Read it!
     tinyxml2::XMLError eResult = this->GetXMLDoc()->LoadFile(fileString.c_str());
     XMLCheckResult(eResult);
-    //else
-    //Assign the member pointers to children in the loaded data structure
+
+    return parseXMLDoc();
+}//end readStainProfileFromXMLFile
+
+tinyxml2::XMLError StainProfile::readStainProfileFromXMLString(const char *str, size_t size) {
+  // Clear the current structure
+  bool clearSuccessful = ClearXMLDocument();
+  if (!clearSuccessful) {
+    return tinyxml2::XML_ERROR_PARSING_ELEMENT;
+  }
+  // else
+  // Read it!
+  tinyxml2::XMLError eResult = this->GetXMLDoc()->Parse(str, size);
+  XMLCheckResult(eResult);
+
+  return parseXMLDoc();
+}  // end readStainProfileFromXMLFile
+
+tinyxml2::XMLError StainProfile::parseXMLDoc() {
+    // Assign the member pointers to children in the loaded data structure
     m_rootElement = this->GetXMLDoc()->FirstChildElement(rootTag());
     if (m_rootElement == nullptr) {
         return tinyxml2::XML_ERROR_PARSING_ELEMENT;
@@ -601,24 +629,24 @@ tinyxml2::XMLError StainProfile::readStainProfileFromXML(std::string fileString)
         return tinyxml2::XML_ERROR_PARSING_ELEMENT;
     }
 
-    tinyxml2::XMLElement* tempStain = m_componentsElement->FirstChildElement(stainTag());
+    tinyxml2::XMLElement *tempStain =
+        m_componentsElement->FirstChildElement(stainTag());
     while (tempStain != nullptr) {
-        //They must all have an index, or it should be considered an error
+        // They must all have an index, or it should be considered an error
         int stainIndex(-1);
-        tinyxml2::XMLError eResult = tempStain->QueryIntAttribute(indexOfStainAttribute(), &stainIndex);
+        tinyxml2::XMLError eResult =
+            tempStain->QueryIntAttribute(indexOfStainAttribute(), &stainIndex);
         XMLCheckResult(eResult);
-        //Choose which stain element to assign tempStain to
+        // Choose which stain element to assign tempStain to
         if (stainIndex == 1) {
             m_stainOneElement = tempStain;
-        }
-        else if (stainIndex == 2) {
+        } else if (stainIndex == 2) {
             m_stainTwoElement = tempStain;
-        }
-        else if (stainIndex == 3) {
+        } else if (stainIndex == 3) {
             m_stainThreeElement = tempStain;
         }
-        //tempStain is just a pointer to an existing element
-        //Dropping it does not create a memory leak
+        // tempStain is just a pointer to an existing element
+        // Dropping it does not create a memory leak
         tempStain = tempStain->NextSiblingElement(stainTag());
     }
 
@@ -628,12 +656,12 @@ tinyxml2::XMLError StainProfile::readStainProfileFromXML(std::string fileString)
     }
     m_parameterElement = m_algorithmElement->FirstChildElement(parameterTag());
     if (m_parameterElement == nullptr) {
-        //do nothing, for now. The only separation algorithm has no parameters
-        //return tinyxml2::XML_ERROR_PARSING_ELEMENT;
+      // do nothing, for now. The only separation algorithm has no parameters
+      // return tinyxml2::XML_ERROR_PARSING_ELEMENT;
     }
 
     return tinyxml2::XML_SUCCESS;
-}//end readStainProfileFromXML
+}//end parseXMLDoc
 
 const std::vector<std::string> StainProfile::GetStainSeparationAlgorithmOptions() {
     return m_stainSeparationAlgorithmOptions;

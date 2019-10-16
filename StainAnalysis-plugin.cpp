@@ -43,6 +43,10 @@
 #include "image/io/Image.h"
 #include "image/tile/Factory.h"
 
+#include <cmrc/cmrc.hpp>
+
+CMRC_DECLARE(stain);
+
 // Poco header needed for the macros below
 #include <Poco/ClassLibrary.h>
 
@@ -72,28 +76,16 @@ StainAnalysis::StainAnalysis()
     m_thresholdMaxVal(300.0),
     m_colorDeconvolution_factory(nullptr)
 {
-    //Get the path of the current plugin
-    sedeen::file::Location pluginLocation = sedeen::file::getWorkingDirectory();
-    if (GetPluginRelativeDirectory() != "PLUGIN_RELATIVE_DIR-NOTFOUND") {
-        //Convert to std::filesystem::path type, and use the path concatenation operator
-        m_pathToPlugin = std::filesystem::path(pluginLocation.getFilename()) / GetPluginRelativeDirectory();
-        //Build the list of stain vector file names
-        m_stainProfileFullPathNames.push_back(""); //Leave a blank place for the loaded file
-        //HematoxylinPEosinSample
-        m_stainProfileFullPathNames.push_back(m_pathToPlugin / HematoxylinPEosinSampleFilename());
-        //HematoxylinPEosin from Ruifrok and Johnston
-        m_stainProfileFullPathNames.push_back(m_pathToPlugin / HematoxylinPEosinFromRJFilename());
-        //HematoxylinPDAB from Ruifrok and Johnston
-        m_stainProfileFullPathNames.push_back(m_pathToPlugin / HematoxylinPDABFromRJFilename());
-        //HematoxylinPEosinPDAB from Ruifrok and Johnston
-        m_stainProfileFullPathNames.push_back(m_pathToPlugin / HematoxylinPEosinPDABFromRJFilename());        
-    }
-    else { //Could not get the plugin's relative directory
-        //Location of the default stain profiles is unknown
-        m_pathToPlugin = "";
-        //Do not try to load the default stain profiles
-        m_stainProfileFullPathNames.push_back("");
-    }
+    // Build the list of stain vector file names
+    m_stainProfileFullPathNames.push_back("");  // Leave a blank place for the loaded file
+    // HematoxylinPEosinSample
+    m_stainProfileFullPathNames.push_back(HematoxylinPEosinSampleFilename());
+    // HematoxylinPEosin from Ruifrok and Johnston
+    m_stainProfileFullPathNames.push_back(HematoxylinPEosinFromRJFilename());
+    // HematoxylinPDAB from Ruifrok and Johnston
+    m_stainProfileFullPathNames.push_back(HematoxylinPDABFromRJFilename());
+    // HematoxylinPEosinPDAB from Ruifrok and Johnston
+    m_stainProfileFullPathNames.push_back(HematoxylinPEosinPDABFromRJFilename());
 
     //Create stain vector profiles for the loaded and default profiles, push to vector
     //Loaded
@@ -104,18 +96,20 @@ StainAnalysis::StainAnalysis()
     for (auto it = m_stainProfileFullPathNames.begin()+1; it != m_stainProfileFullPathNames.end(); ++it) {
         std::shared_ptr<StainProfile> tsp = std::make_shared<StainProfile>();
         //Convert path to string, read stain profile, and check whether the read was successful
-        bool success = tsp->readStainProfile((*it).generic_string());
-        if (success) {
+        auto const fs = cmrc::stain::get_filesystem();
+        if (auto const is_file = fs.is_file((*it).generic_string())) {
+          auto const file = fs.open((*it).generic_string());
+          if (tsp->readStainProfile(file.begin(), file.size())) {
             m_stainProfileList.push_back(tsp);
-            //Get the name of the profile
+            // Get the name of the profile
             m_stainVectorProfileOptions.push_back(tsp->GetNameOfStainProfile());
+            continue;
+          }
         }
-        else {
-            //make a dummy one
-            m_stainProfileList.push_back(std::make_shared<StainProfile>());
-            m_stainVectorProfileOptions.push_back("Profile failed to load");
-        }
-        tsp.reset();
+
+        // make a dummy one
+        m_stainProfileList.push_back(std::make_shared<StainProfile>());
+        m_stainVectorProfileOptions.push_back("Profile failed to load");
     }
 
     //Define the default list of names of stains to display

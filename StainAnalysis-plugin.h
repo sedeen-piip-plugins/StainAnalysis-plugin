@@ -92,12 +92,10 @@ private:
 
 private:
     ///Names of the default stain profile files
-    inline static const std::string HematoxylinPEosinSampleFilename()     { return "HematoxylinPEosinSample.xml"; }
-    inline static const std::string HematoxylinPEosinFromRJFilename()     { return "HematoxylinPEosinFromRJ.xml"; }
-    inline static const std::string HematoxylinPDABFromRJFilename()       { return "HematoxylinPDABFromRJ.xml"; }
-    inline static const std::string HematoxylinPEosinPDABFromRJFilename() { return "HematoxylinPEosinPDABFromRJ.xml"; }
-    ///Returns the directory of the plugin relative to the Sedeen Viewer directory as a string
-    inline static const std::filesystem::path GetPluginRelativeDirectory() { return std::filesystem::path(PLUGIN_RELATIVE_DIR_STRING); }
+    inline static const std::string HematoxylinPEosinSampleFilename()     { return "defaultprofiles/HematoxylinPEosinSample.xml"; }
+    inline static const std::string HematoxylinPEosinFromRJFilename()     { return "defaultprofiles/HematoxylinPEosinFromRJ.xml"; }
+    inline static const std::string HematoxylinPDABFromRJFilename()       { return "defaultprofiles/HematoxylinPDABFromRJ.xml"; }
+    inline static const std::string HematoxylinPEosinPDABFromRJFilename() { return "defaultprofiles/HematoxylinPEosinPDABFromRJ.xml"; }
 
     ///Access the member file dialog parameter, if possible load the stain profile, return true on success
     bool LoadStainProfileFromFileDialog();
