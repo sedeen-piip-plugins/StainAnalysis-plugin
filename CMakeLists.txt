@@ -36,6 +36,14 @@ IF(NOT BOOST_VERSION)
 ENDIF()
 FIND_PACKAGE(Boost ${BOOST_VERSION} )
 
+INCLUDE(cmake/CMakeRC.cmake)
+
+cmrc_add_resource_library(stain-resources ALIAS stain::rc NAMESPACE stain
+  defaultprofiles/HematoxylinPDABFromRJ.xml
+  defaultprofiles/HematoxylinPEosinFromRJ.xml
+  defaultprofiles/HematoxylinPEosinPDABFromRJ.xml
+  defaultprofiles/HematoxylinPEosinSample.xml)
+
 # Fetch TinyXML2 files. Do not build as a subproject
 FetchContent_Declare(
   TinyXML2
@@ -76,6 +84,7 @@ ADD_LIBRARY( ${PROJECT_NAME} MODULE
 
 # Link the library against the Sedeen SDK libraries
 TARGET_LINK_LIBRARIES( ${PROJECT_NAME} ${SEDEENSDK_LIBRARIES} )
+TARGET_LINK_LIBRARIES( ${PROJECT_NAME} stain::rc )
 
 #Create or update the .info file in the build directory
 STRING( TIMESTAMP DATE_CREATED_TEXT "%Y-%m-%d" )

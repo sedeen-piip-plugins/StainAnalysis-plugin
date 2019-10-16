@@ -111,6 +111,8 @@ public:
     bool writeStainProfile(std::string);
     ///Public read method - checks file existence first, returns true/false for success/failure
     bool readStainProfile(std::string);
+    /// Public read method - reads profile from embedded resource
+    bool readStainProfile(const char *, size_t);
 
     ///Request the list of possible stain separation algorithm names from the class, static defined in constructor
     std::vector<std::string> GetStainSeparationAlgorithmOptions();
@@ -172,7 +174,11 @@ private:
     ///If file is able to be opened, write the current stain profile to file as XML
     tinyxml2::XMLError writeStainProfileToXML(std::string);
     ///If file is able to be opened, read from an XML file and fill variables in this class
-    tinyxml2::XMLError readStainProfileFromXML(std::string);
+    tinyxml2::XMLError readStainProfileFromXMLFile(std::string);
+    ///Read a stain profile from a string
+    tinyxml2::XMLError readStainProfileFromXMLString(const char *, size_t);
+    //Parse XML document
+    tinyxml2::XMLError parseXMLDoc();
 
 private:
     ///Store the list of possible stain separation algorithm names here
