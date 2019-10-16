@@ -58,19 +58,30 @@ void MacenkoHistogram::OptimizeBasisVectorSigns(cv::InputArray sourcePixels, /*a
     }
 
     //Arrange the basis vectors as the columns, if they're not already
-    cv::Mat tempVectors;
+    cv::Mat columnBasisVectors;
     if (basisVecDir == VectorDirection::COLUMNVECTORS) {
         //no change
-        tempVectors = inputVectors.getMat().clone();
+        columnBasisVectors = inputVectors.getMat().clone();
     }
     else if (basisVecDir == VectorDirection::ROWVECTORS) {
         //transpose the inputVectors matrix
-        cv::transpose(inputVectors, tempVectors);
+        cv::transpose(inputVectors, columnBasisVectors);
     }
     else {
         //invalid, but use the inputVectors as given and proceed anyway
-        tempVectors = inputVectors.getMat().clone();
+        columnBasisVectors = inputVectors.getMat().clone();
     }
+
+    //Create the list of +/- options for the basis vectors (0 is +, 1 is -)
+    int numCombinations = static_cast<int>(std::pow(2, columnBasisVectors.cols));
+    cv::Mat testMultCombinations(numCombinations, columnBasisVectors.cols, cv::DataType<int>::type);
+    for (int row = 0; row < numCombinations; row++) {
+        for (int col = 0; col < columnBasisVectors.cols; col++) {
+            int newVal = (row >> col) & 1; //bit shift and mask
+            testMultCombinations.at<int>(row, col) = newVal;
+        }
+    }
+
 
 
     //Temp file output
@@ -79,25 +90,69 @@ void MacenkoHistogram::OptimizeBasisVectorSigns(cv::InputArray sourcePixels, /*a
     std::stringstream ss;
 
 
-    
-
-
-
-    //Create the list of +/- options for the basis vectors (0 is +, 1 is -)
-    int numCombinations = static_cast<int>(std::pow(2, tempVectors.cols));
-    cv::Mat testMultFactors(numCombinations, tempVectors.cols, cv::DataType<int>::type);
-    for (int row = 0; row < numCombinations; row++) {
-        for (int col = 0; col < tempVectors.cols; col++) {
-            int newVal = (row >> col) & 1; //bit shift and mask
-            testMultFactors.at<int>(row, col) = newVal;
+    //Loop through each of the combinations
+    //Get average of subsampled points projected into each variation of the basis vectors
+    cv::Mat projAvgPointsByCombo;
+    for (int combo = 0; combo < testMultCombinations.rows; combo++) {
+        //columnBasisVectors has the basis vectors as columns
+        cv::Mat signedBasisVectors = columnBasisVectors.clone();
+        for (int vec = 0; vec < testMultCombinations.cols; vec++) {
+            double multFactor = (testMultCombinations.at<int>(combo, vec) == 0) ? 1.0 : -1.0;
+            signedBasisVectors.col(vec) *=  multFactor;
         }
-    }
+        ss << "New combo: " << std::endl;
+        ss << signedBasisVectors << std::endl;
 
-    ss << testMultFactors << std::endl;
+        //Project the subsample of pixels into this basis
 
+        cv::Mat projectedSamplePoints;
+        cv::gemm(subsampleofPixels, signedBasisVectors, 1, cv::Mat(), 0, projectedSamplePoints, 0);
 
+        ss << "The projected subsample of pixels: " << std::endl;
+        ss << projectedSamplePoints << std::endl;
 
-    //so here are the basis vectors multiplied by these 
+        //Use reduce to get column averages
+        cv::Mat columnAvg;
+        cv::reduce(projectedSamplePoints, columnAvg, 0, CV_REDUCE_AVG); //dim=0 to reduce to single row
+
+        projAvgPointsByCombo.push_back(columnAvg);
+
+    }//end for each +/- combination
+
+    ss << "The output, projAvgPointsByCombo: " << std::endl;
+    ss << projAvgPointsByCombo << std::endl;
+
+    //assemble 3 dimensional matrix of basis vectors with each of the testMultFactors applied
+    //cv::Mat basisVectorsWithDifferentSigns(tempVectors.rows, tempVectors.cols, testMultFactors.rows, cv::DataType<double>::type);
+
+    ////Do it with for loops until I am less sleepy
+
+    //ss << "The size of basisVectorWithDifferentSigns is: " << tempVectors.rows << ", " << tempVectors.cols << ", " << testMultFactors.rows << "." << std::endl;
+
+    //for (int combo = 0; combo < testMultFactors.rows; combo++) {
+    //    for (int vec = 0; vec < tempVectors.cols; vec++) {
+    //        double multFactor = (testMultFactors.at<int>(combo, vec) == 0) ? 1.0 : -1.0;
+    //        for (int rgb = 0; rgb < tempVectors.rows; rgb++) {
+    //            double tempVal = multFactor * tempVectors.at<double>(rgb, vec);
+
+    //            ss << tempVal << std::endl;
+
+    //            basisVectorsWithDifferentSigns.at<double>(vec, rgb, combo) = tempVal;
+    //        }
+    //    }
+    //}
+
+    //ss << "Did this work at all?" << std::endl;
+
+    //for (int combo = 0; combo < testMultFactors.rows; combo++) {
+    //    for (int vec = 0; vec < tempVectors.cols; vec++) {
+    //        for (int rgb = 0; rgb < tempVectors.rows; rgb++) {
+    //            ss << basisVectorsWithDifferentSigns.at<double>(vec, rgb, combo) << std::endl;
+    //        }
+    //    }
+    //}
+
+    //ss << basisVectorsWithDifferentSigns << std::endl;
 
 
     //Now do something with the subsampleOfPixels
@@ -107,6 +162,27 @@ void MacenkoHistogram::OptimizeBasisVectorSigns(cv::InputArray sourcePixels, /*a
 
     tempOut << ss.str() << std::endl;
     tempOut.close();
+
+
+
+    //If the basis vectors were input as row vectors, transpose them back to that orientation
+
+
+    //Arrange the basis vectors as the columns, if they're not already
+    cv::Mat columnBasisVectors;
+    if (basisVecDir == VectorDirection::COLUMNVECTORS) {
+        //no change
+        columnBasisVectors = inputVectors.getMat().clone();
+    }
+    else if (basisVecDir == VectorDirection::ROWVECTORS) {
+        //transpose the inputVectors matrix
+        cv::transpose(inputVectors, columnBasisVectors);
+    }
+    else {
+        //invalid, but use the inputVectors as given and proceed anyway
+        columnBasisVectors = inputVectors.getMat().clone();
+    }
+
 
 
 }//end OptimizeBasisVectorSigns
