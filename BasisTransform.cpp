@@ -22,7 +22,7 @@
  *
  *=============================================================================*/
 
-#include "MacenkoHistogram.h"
+#include "BasisTransform.h"
 
 #include <vector>
 #include <algorithm>
@@ -33,15 +33,65 @@
 namespace sedeen {
 namespace image {
 
-MacenkoHistogram::MacenkoHistogram() : 
+BasisTransform::BasisTransform() : m_numTestingPixels(10),
     m_rgen((std::random_device())()) //Initialize random number generation
 {
 }//end constructor
 
-MacenkoHistogram::~MacenkoHistogram(void) {
+BasisTransform::~BasisTransform(void) {
 }//end destructor
 
-void MacenkoHistogram::OptimizeBasisVectorSigns(cv::InputArray sourcePoints, /*assume sourcePoints to be row vectors */
+
+void BasisTransform::PCAPointTransform(cv::InputArray sourcePoints, cv::OutputArray outputPoints) {
+
+
+
+
+
+
+
+    //What should the signs of the basis vectors be? 
+    cv::Mat optSignBasisVectors;
+    this->OptimizeBasisVectorSigns(sourcePoints, basisVectors, optSignBasisVectors,
+        BasisTransform::VectorDirection::COLUMNVECTORS);
+
+
+    //histMaker->
+
+
+
+
+
+}//end PCAPointTransform
+
+
+void BasisTransform::projectPoints(cv::InputArray sourcePoints, cv::InputArray basisVectors, cv::OutputArray projectedPoints) {
+
+
+
+
+    cv::Mat projectedPointsByMM;
+    cv::gemm(samplePixels, basisVectors, 1, cv::Mat(), 0, projectedPointsByMM, 0);
+
+    scov << "The gemm output: " << std::endl;
+    scov << projectedPointsByMM << std::endl;
+
+
+}//end projectPoints
+
+
+void backProjectPoints(cv::InputArray projectedPoints, cv::InputArray basisVectors, cv::OutputArray backProjPoints) {
+
+
+
+}//end backProjectPoints
+
+
+
+
+
+
+void BasisTransform::OptimizeBasisVectorSigns(cv::InputArray sourcePoints, /*assume sourcePoints to be row vectors */
     cv::InputArray inputVectors, cv::OutputArray outputVectors,
     VectorDirection basisVecDir /* = VectorDirection::COLUMNVECTORS */) {
     //Check a small number of source pixels to try to get projected points with all positive elements
@@ -189,22 +239,22 @@ void MacenkoHistogram::OptimizeBasisVectorSigns(cv::InputArray sourcePoints, /*a
 
 
 
-void MacenkoHistogram::CreatePixelSubsample(cv::InputArray sourcePoints, cv::OutputArray subsample, int numberOfPixels) {
+void BasisTransform::CreatePixelSubsample(cv::InputArray sourcePixels, cv::OutputArray subsample, int numberOfPixels) {
     cv::Mat tempSubsampleMat;
     if (numberOfPixels < 1) {
         return;
     }
-    else if (numberOfPixels <= sourcePoints.rows()) {
+    else if (numberOfPixels <= sourcePixels.rows()) {
         //Use all of the source pixels
-        subsample.assign(sourcePoints.getMat().clone());
+        subsample.assign(sourcePixels.getMat().clone());
     }
     else {
         //Create with no rows, push new rows later
-        tempSubsampleMat = cv::Mat(0, sourcePoints.cols(), cv::DataType<double>::type);
+        tempSubsampleMat = cv::Mat(0, sourcePixels.cols(), cv::DataType<double>::type);
     }
 
     //Initialize a uniform distribution to choose random pixels
-    std::uniform_int_distribution<int> randSourcePixelIndex(0, sourcePoints.rows() - 1);
+    std::uniform_int_distribution<int> randSourcePixelIndex(0, sourcePixels.rows() - 1);
     //Create a list of pixel (row) indices for the randomized subset, without duplication
     std::vector<int> pixelList;
     for (int px = 0; px < numberOfPixels; px++) {
@@ -226,7 +276,7 @@ void MacenkoHistogram::CreatePixelSubsample(cv::InputArray sourcePoints, cv::Out
     }
     //Get pixels at the row indices in pixelList, push to tempSubsampleMat
     for (auto pxit = pixelList.begin(); pxit != pixelList.end(); ++pxit) {
-        tempSubsampleMat.push_back(sourcePoints.getMat().row(*pxit));
+        tempSubsampleMat.push_back(sourcePixels.getMat().row(*pxit));
     }
     //assign to the OutputArray
     subsample.assign(tempSubsampleMat);

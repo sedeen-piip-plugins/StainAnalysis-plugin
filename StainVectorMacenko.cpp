@@ -34,6 +34,7 @@
 #include "ODConversion.h"
 #include "StainVectorMath.h"
 #include "MacenkoHistogram.h"
+#include "BasisTransform.h"
 
 namespace sedeen {
 namespace image {
@@ -64,6 +65,9 @@ void StainVectorMacenko::ComputeStainVectors(double outputVectors[9]) {
     bool samplingSuccess = theSampler->ChooseRandomPixels(samplePixels, sampleSize, ODthreshold);
     if (!samplingSuccess) { return; }
 
+    //Time the operation
+    //Start the steady clock
+    auto startTime = std::chrono::steady_clock::now();
 
 
     //Temp file output
@@ -82,32 +86,23 @@ void StainVectorMacenko::ComputeStainVectors(double outputVectors[9]) {
     //tempOut << sv.str() << std::endl;
 
 
-
-
     //int numPixels = samplePixels.rows; //may differ from sampleSize
 
-    //Get column mean values for the samplePixels
-    //cv::Mat columnMeans(1, 3, cv::DataType<double>::type);
-    //for (int i = 0; i < 3; i++) {
-    //    columnMeans.at<double>(0, i);
-    //    
-    //sv << cv::mean(samplePixels) << std::endl; //returns a cv::Scalar. now what do I do with that?
-    //}
 
+    //Create a class to perform the basis transformation of the sample pixels
+    std::unique_ptr<BasisTransform> theBasisTransform = std::make_unique<BasisTransform>();
+    //Both the input and output data points should be the matrix rows (columns are pixel elements)
+    cv::Mat projectedPoints;
+    theBasisTransform->PCAPointTransform(samplePixels, projectedPoints);
 
-    //Time the operation
-    //Start the steady clock
-    auto startTime = std::chrono::steady_clock::now();
-
-
-
-
+    cv::Mat basisVectorsFromTheClass;
+    theBasisTransform->GetBasisVectors(basisVectorsFromTheClass);
 
 
     //use PCA for now
     cv::PCA pcAnalysis(samplePixels, cv::noArray(), cv::PCA::DATA_AS_ROW, 2); //2 components to project onto a plane
     //Project all of the sampled pixels into the new basis
-    cv::Mat projectedPoints;
+
     pcAnalysis.project(samplePixels, projectedPoints);
 
     std::stringstream scov;
@@ -124,26 +119,18 @@ void StainVectorMacenko::ComputeStainVectors(double outputVectors[9]) {
 
 
 
-    //Here's where the MacenkoHistogram will go. Pass it the points and the unaltered basis vectors
-    std::unique_ptr<MacenkoHistogram> histMaker = std::make_unique<MacenkoHistogram>();
-    //What should the signs of the basis vectors be? 
-    cv::Mat optSignBasisVectors;
-    histMaker->OptimizeBasisVectorSigns(samplePixels, basisVectors, optSignBasisVectors, 
-        MacenkoHistogram::VectorDirection::COLUMNVECTORS);
 
 
-
-
-    if (basisVectors.at<double>(0, 0) < 0.0) {
-        basisVectors.at<double>(0, 0) *= -1.0;
-        basisVectors.at<double>(1, 0) *= -1.0;
-        basisVectors.at<double>(2, 0) *= -1.0;
-    }
-    if (basisVectors.at<double>(0, 1) < 0.0) {
-        basisVectors.at<double>(0, 1) *= -1.0;
-        basisVectors.at<double>(1, 1) *= -1.0;
-        basisVectors.at<double>(2, 1) *= -1.0;
-    }
+    //if (basisVectors.at<double>(0, 0) < 0.0) {
+    //    basisVectors.at<double>(0, 0) *= -1.0;
+    //    basisVectors.at<double>(1, 0) *= -1.0;
+    //    basisVectors.at<double>(2, 0) *= -1.0;
+    //}
+    //if (basisVectors.at<double>(0, 1) < 0.0) {
+    //    basisVectors.at<double>(0, 1) *= -1.0;
+    //    basisVectors.at<double>(1, 1) *= -1.0;
+    //    basisVectors.at<double>(2, 1) *= -1.0;
+    //}
 
     scov << "The basisVectors (new directions): " << std::endl;
     scov << basisVectors << std::endl;
@@ -347,6 +334,9 @@ void StainVectorMacenko::ComputeStainVectors(double outputVectors[9], int sample
     //Call the single-parameter version of this method, which uses the member variables
     this->ComputeStainVectors(outputVectors);
 }//end multi-parameter ComputeStainVectors
+
+
+
 
 } // namespace image
 } // namespace sedeen

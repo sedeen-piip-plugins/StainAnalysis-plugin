@@ -84,6 +84,7 @@ ADD_LIBRARY( ${PROJECT_NAME} MODULE
              StainVectorPixelROI.h StainVectorPixelROI.cpp
              StainVectorMacenko.h StainVectorMacenko.cpp
              StainVectorNiethammer.h StainVectorNiethammer.cpp
+             BasisTransform.h BasisTransform.cpp
              MacenkoHistogram.h MacenkoHistogram.cpp
              )
 

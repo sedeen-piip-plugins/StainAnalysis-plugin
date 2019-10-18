@@ -38,30 +38,13 @@ namespace sedeen {
 namespace image {
 
 class MacenkoHistogram {
-public:
-    ///An enum to identify which axis the input vectors are arranged in (outputs will match)
-    enum VectorDirection {
-        COLUMNVECTORS,
-        ROWVECTORS
-    };
 
 public:
     MacenkoHistogram();
     ~MacenkoHistogram();
 
-    ///Which signs should be used for the basis vectors? Test projecting some source points, try to get ++ quadrant projections
-    void OptimizeBasisVectorSigns(cv::InputArray sourcePixels, 
-        cv::InputArray inputVectors, cv::OutputArray outputVectors, 
-        VectorDirection basisVecDir = VectorDirection::COLUMNVECTORS);
 
-    ///Set/Get the numTestingPixels member variable
-    inline void SetNumTestingPixels(int n) { m_numTestingPixels = n; }
-    ///Set/Get the numTestingPixels member variable
-    inline  int GetNumTestingPixels() { return m_numTestingPixels; }
-
-protected:
-    ///Randomly choose numberOfPixels rows from sourcePixels, copy them to the subsample OutputArray.
-    void CreatePixelSubsample(cv::InputArray sourcePixels, cv::OutputArray subsample, int numberOfPixels);
+//protected:
 
 
 protected:
@@ -69,7 +52,7 @@ protected:
     std::mt19937_64 m_rgen; //64-bit Mersenne Twister
 
 private:
-    int m_numTestingPixels;
+//    int m_numTestingPixels;
 
 };
 
