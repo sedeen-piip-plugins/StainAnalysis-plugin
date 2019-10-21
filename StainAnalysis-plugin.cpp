@@ -71,7 +71,6 @@ StainAnalysis::StainAnalysis()
     m_stainToDisplay(),
     m_applyThreshold(),
     m_threshold(),
-    m_pathToPlugin(""),
     m_result(),
     m_outputText(),
     m_report(""),

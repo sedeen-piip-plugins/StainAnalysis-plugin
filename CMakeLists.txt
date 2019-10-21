@@ -92,8 +92,6 @@ CONFIGURE_FILE( "infoTemplate.info.in" "${PROJECT_NAME}.info" )
 
 #Set the relative directory where the plugin should be located
 SET( PLUGIN_RELATIVE_DIR "plugins/cpp/piip/${PROJECT_NAME}" )
-#Add to preprocessor definitions
-ADD_DEFINITIONS( -DPLUGIN_RELATIVE_DIR=${PLUGIN_RELATIVE_DIR} )
 
 # Set the install destination directory
 IF( NOT PLUGIN_DESTINATION_DIR )
@@ -111,11 +109,6 @@ IF( ${SEDEEN_FOUND} )
   INSTALL(TARGETS ${PROJECT_NAME}
           LIBRARY DESTINATION "${PLUGIN_DESTINATION_DIR}")
   INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.info"
-          DESTINATION "${PLUGIN_DESTINATION_DIR}")
-  INSTALL(FILES "defaultprofiles/HematoxylinPEosinSample.xml"
-                "defaultprofiles/HematoxylinPEosinFromRJ.xml"
-                "defaultprofiles/HematoxylinPDABFromRJ.xml"
-                "defaultprofiles/HematoxylinPEosinPDABFromRJ.xml"
           DESTINATION "${PLUGIN_DESTINATION_DIR}")
 ENDIF()
 
