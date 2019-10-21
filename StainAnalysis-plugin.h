@@ -28,12 +28,6 @@
 //Convert a macro defined in CMake to a string
 #define StringLiteral(stl) #stl
 #define MacroToString(macro) StringLiteral(macro)
-//Specifically, convert PLUGIN_RELATIVE_DIR to a string literal
-#ifndef PLUGIN_RELATIVE_DIR
-#define PLUGIN_RELATIVE_DIR_STRING "PLUGIN_RELATIVE_DIR-NOTFOUND"
-#else
-#define PLUGIN_RELATIVE_DIR_STRING MacroToString(PLUGIN_RELATIVE_DIR)
-#endif
 
 #include "algorithm/AlgorithmBase.h"
 #include "algorithm/Parameters.h"
@@ -99,9 +93,6 @@ private:
 
     ///Access the member file dialog parameter, if possible load the stain profile, return true on success
     bool LoadStainProfileFromFileDialog();
-
-    ///std::filesystem::path type to the plugin's directory
-    std::filesystem::path m_pathToPlugin;
 
     ///List of the full path file names of the stain profiles
     std::vector<std::filesystem::path> m_stainProfileFullPathNames;
