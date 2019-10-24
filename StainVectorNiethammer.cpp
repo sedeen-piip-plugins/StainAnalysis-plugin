@@ -47,13 +47,6 @@ StainVectorNiethammer::~StainVectorNiethammer(void) {
 }//end destructor
 
 
-long long StainVectorNiethammer::ChooseRandomPixels(cv::Mat outputMatrix, int numberOfPixels, bool suppressZeros) {
-    assert(nullptr != m_sourceFactory);
-
-
-    return 0;
-}//end ChooseRandomPixels
-
 
 
 } // namespace image

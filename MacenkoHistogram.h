@@ -25,14 +25,11 @@
 #ifndef STAINANALYSIS_MACENKOHISTOGRAM_H
 #define STAINANALYSIS_MACENKOHISTOGRAM_H
 
-#include <cassert>
-#include <random>
+#include <array>
 
 //OpenCV include
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
-
 
 namespace sedeen {
 namespace image {
@@ -43,17 +40,45 @@ public:
     MacenkoHistogram();
     ~MacenkoHistogram();
 
+    ///Given a set of 2D vectors (rows), find angle (w/ atan2), histogram, find vectors at hi/lo percentile thresholds
+    bool PercentileThresholdVectors(cv::InputArray projectedPoints, cv::OutputArray percentileThreshPoints, 
+        const double percentileThresholdValue);
+    ///Two-parameter overload of PercentileThresholdVectors, uses the member variable value for the percentileThresholdValue
+    bool PercentileThresholdVectors(cv::InputArray projectedPoints, cv::OutputArray percentileThreshPoints);
 
-//protected:
+    ///Convert a set of 2D vectors to float angles between -pi and pi using the arctan2 function
+    void VectorsToAngles(cv::InputArray inputVectors, cv::OutputArray outputAngles);
+    ///Convert a set of angles to 2D vectors (CV input)
+    void AnglesToVectors(cv::InputArray inputAngles, cv::OutputArray outputVectors);
+    ///Convert a set of angles to 2D vectors (std::array input)
+    void AnglesToVectors(const std::array<double,2> &inputAngles, cv::OutputArray outputVectors);
 
+    ///Create a histogram of angle values, assumed to be between -pi and pi, find angles at %ile thresholds
+    const std::array<double, 2> FindPercentileThresholdValues(cv::InputArray vals);
 
-protected:
-    ///Allow derived classes access to the random number generator (64-bit Mersenne Twister)
-    std::mt19937_64 m_rgen; //64-bit Mersenne Twister
+    ///Set/Get the percentileThreshold member variable (force to be between 0 and 50%)
+    inline void SetPercentileThreshold(const double &p) { 
+        double _p = p < 0.0 ? 0.0 : p;
+        _p = _p > 100.0 ? 100.0 : _p;
+        m_percentileThreshold = (_p <= 50.0) ? _p : (100.0 - _p); 
+    }
+    ///Set/Get the numTestingPixels member variable
+    inline const double GetPercentileThreshold() const { return m_percentileThreshold; }
+
+    ///Set/Get the number of histogram bins
+    inline void SetNumHistogramBins(const int n) { m_numHistogramBins = n; }
+    ///Set/Get the numTestingPixels member variable
+    inline const int GetNumHistogramBins() const { return m_numHistogramBins; }
+
+    ///Set/Get the histogram range
+    inline void SetHistogramRange(const std::array<float, 2> &r) { m_histRange = r; }
+    ///Set/Get the histogram range
+    inline const std::array<float, 2> GetHistogramRange() const { return m_histRange; }
 
 private:
-//    int m_numTestingPixels;
-
+    double m_percentileThreshold;
+    int m_numHistogramBins;
+    std::array<float, 2> m_histRange;
 };
 
 } // namespace image

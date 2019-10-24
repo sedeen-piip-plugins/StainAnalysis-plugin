@@ -35,22 +35,22 @@ class StainVectorMath
 {
 public:
     ///Compute the inverse of a 3x3 matrix using Boost qvm
-    static void Compute3x3MatrixInverse(double inputMat[9], double inversionMat[9]);
+    static void Compute3x3MatrixInverse(const double inputMat[9], double inversionMat[9]);
 
     ///Make a 3x3 matrix, expressed as a 9-element array, have unitary rows. Preserve rows of zeros
-    static void Make3x3MatrixUnitary(double inputMat[9], double unitaryMat[9]);
+    static void Make3x3MatrixUnitary(const double inputMat[9], double unitaryMat[9]);
 
     ///Check the Norm values of sets of three input elements, replace with a unitary row if zero
-    static void ConvertZeroRowsToUnitary(double inputMat[9], double unitaryMat[9]);
+    static void ConvertZeroRowsToUnitary(const double inputMat[9], double unitaryMat[9]);
 
     ///Check the norm values of sets of elements, normalize the row of values in the third argument and replace zero rows with that
-    static void ConvertZeroRowsToUnitary(double inputMat[9], double unitaryMat[9], double replacementVals[3]);
+    static void ConvertZeroRowsToUnitary(const double inputMat[9], double unitaryMat[9], const double replacementVals[3]);
 
     ///Check whether rows of the given matrix sum to zero, but do not have all zero values
-    static std::array<bool, 3> RowSumZeroCheck(double inputMat[9]);
+    static std::array<bool, 3> RowSumZeroCheck(const double inputMat[9]);
 
     ///Multiply a 3x3 matrix and a 3x1 vector to produce a 3x1 vector
-    static void Multiply3x3MatrixAndVector(double inputMat[9], double inputVec[3], double outputVec[3]);
+    static void Multiply3x3MatrixAndVector(const double inputMat[9], const double inputVec[3], double outputVec[3]);
 
     ///Return an array of values of type Ty with size N normalized to unit length. Returns input array if norm is 0.
     template<class Ty, std::size_t N> 

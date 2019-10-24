@@ -31,7 +31,6 @@
 
 #include <chrono>
 #include <random>
-#include <cassert>
 
 //OpenCV include
 #include <opencv2/core/core.hpp>
@@ -46,8 +45,8 @@ public:
     ~RandomWSISampler();
 
     ///Populate an OutputArray with pixels chosen without duplication from the source tile factory
-    virtual bool ChooseRandomPixels(cv::OutputArray outputMatrix, int numberOfPixels, double ODthreshold,
-        int level = 0, int focusPlane = -1, int band = -1); //Negative indicates to use the source default values
+    virtual bool ChooseRandomPixels(cv::OutputArray outputMatrix, const int numberOfPixels, const double ODthreshold,
+        const int level = 0, const int focusPlane = -1, const int band = -1); //Negative indicates to use the source default values
 
     //TODO: make a random tile and sub-tile chooser too
 

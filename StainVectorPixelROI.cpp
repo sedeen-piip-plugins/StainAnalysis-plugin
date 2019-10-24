@@ -47,12 +47,6 @@ StainVectorPixelROI::~StainVectorPixelROI(void) {
 }//end destructor
 
 
-long long StainVectorPixelROI::ChooseRandomPixels(cv::Mat outputMatrix, int numberOfPixels, bool suppressZeros) {
-    assert(nullptr != m_sourceFactory);
-
-
-    return 0;
-}//end ChooseRandomPixels
 
 
 

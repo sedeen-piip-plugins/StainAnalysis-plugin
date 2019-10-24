@@ -50,9 +50,9 @@ RandomWSISampler::RandomWSISampler(std::shared_ptr<tile::Factory> source)
 RandomWSISampler::~RandomWSISampler(void) {
 }//end destructor
 
-bool RandomWSISampler::ChooseRandomPixels(cv::OutputArray outputArray, int numberOfPixels, double ODthreshold,
-    int level /* = 0 */, int focusPlane /* = -1 */, int band /* = -1 */) {
-    assert(nullptr != GetSourceFactory());
+bool RandomWSISampler::ChooseRandomPixels(cv::OutputArray outputArray, const int numberOfPixels, const double ODthreshold,
+    const int level /* = 0 */, const int focusPlane /* = -1 */, const int band /* = -1 */) {
+    if (this->GetSourceFactory() == nullptr) { return false; }
     auto source = this->GetSourceFactory();
     //get info about the whole slide image from the source factory
     s32 numResolutionLevels = source->getNumLevels();

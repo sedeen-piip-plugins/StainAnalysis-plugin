@@ -31,12 +31,10 @@
 
 #include "StainVectorBase.h"
 
-#include <cassert>
-
  //OpenCV include
 #include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
+//#include <opencv2/imgproc/imgproc.hpp>
+//#include <opencv2/highgui/highgui.hpp>
 
 namespace sedeen {
 namespace image {
@@ -49,23 +47,29 @@ public:
     ///Fill the 9-element array with three stain vectors
     virtual void ComputeStainVectors(double outputVectors[9]);
     ///Overload of the basic method, includes parameters needed by the algorithm
-    void ComputeStainVectors(double outputVectors[9], int sampleSize, 
-        double ODthreshold = 0.15, double percentileThreshold = 1.0);
+    void ComputeStainVectors(double outputVectors[9], const int sampleSize, 
+        const double ODthreshold = 0.15, const double percentileThreshold = 1.0);
 
     ///Get/Set the average optical density threshold
-    inline double GetODThreshold() { return m_avgODThreshold; }
+    inline const double GetODThreshold() const { return m_avgODThreshold; }
     ///Get/Set the average optical density threshold
-    inline void SetODThreshold(double t) { m_avgODThreshold = t; }
+    inline void SetODThreshold(const double t) { m_avgODThreshold = t; }
 
     ///Get/Set the percentile threshold
-    inline double GetPercentileThreshold() { return m_percentileThreshold; }
+    inline const double GetPercentileThreshold() const { return m_percentileThreshold; }
     ///Get/Set the percentile threshold
-    inline void SetPercentileThreshold(double p) { m_percentileThreshold = p; }
+    inline void SetPercentileThreshold(const double p) { m_percentileThreshold = p; }
 
     ///Get/Set the sample size, the number of pixels to choose
-    inline int GetSampleSize() { return m_sampleSize; }
+    inline const int GetSampleSize() const { return m_sampleSize; }
     ///Get/Set the sample size, the number of pixels to choose
-    inline void SetSampleSize(int s) { m_sampleSize = s; }
+    inline void SetSampleSize(const int s) { m_sampleSize = s; }
+
+protected:
+    ///Convert stain vector data as 9-element C array to OpenCV matrix (as row vectors)
+    void StainCArrayToCVMat(double inutVectors[9], cv::OutputArray outputData);
+    ///Convert stain vector data from OpenCV matrix (as row vectors) to 9-element C array
+    void StainCVMatToCArray(cv::InputArray inputData, double outputVectors[9]);
 
 private:
     double m_avgODThreshold;

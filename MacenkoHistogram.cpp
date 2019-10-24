@@ -24,8 +24,6 @@
 
 #include "MacenkoHistogram.h"
 
-#include <vector>
-#include <algorithm>
 #include <cmath>
 #include <fstream>
 #include <sstream>
@@ -34,205 +32,232 @@ namespace sedeen {
 namespace image {
 
 MacenkoHistogram::MacenkoHistogram() : 
-    m_rgen((std::random_device())()) //Initialize random number generation
+    m_percentileThreshold(1.0),
+    m_numHistogramBins(1024),
+    m_histRange({ -static_cast<float>(CV_PI),static_cast<float>(CV_PI) })
 {
 }//end constructor
 
 MacenkoHistogram::~MacenkoHistogram(void) {
 }//end destructor
 
-void MacenkoHistogram::OptimizeBasisVectorSigns(cv::InputArray sourcePoints, /*assume sourcePoints to be row vectors */
-    cv::InputArray inputVectors, cv::OutputArray outputVectors,
-    VectorDirection basisVecDir /* = VectorDirection::COLUMNVECTORS */) {
-    //Check a small number of source pixels to try to get projected points with all positive elements
-    //The number of pixels to check is arbitrary, default value 10
-    cv::Mat subsampleofPixels;
-    int numTestPixels = this->GetNumTestingPixels();
-    if (numTestPixels < 1) {
-        //Deep copy the inputVectors to the outputVectors
-        outputVectors.assign(inputVectors.getMat().clone());
+bool MacenkoHistogram::PercentileThresholdVectors(cv::InputArray projectedPoints,
+    cv::OutputArray percentileThreshPoints, const double percentileThresholdValue) {
+    //SetPercentileThreshold forces the value to be between 0 and 50
+    this->SetPercentileThreshold(percentileThresholdValue);
+    //Call the 2-parameter overload of this method,
+    //after the member variable value has been set
+    return this->PercentileThresholdVectors(projectedPoints, percentileThreshPoints);
+}//end PercentileThresholdVectors
+
+bool MacenkoHistogram::PercentileThresholdVectors(cv::InputArray projectedPoints, 
+    cv::OutputArray percentileThreshPoints) {
+    //Check the value of the member variable, return false if it is out of range
+    double threshVal = this->GetPercentileThreshold();
+    if ((threshVal <= 0.0) || (threshVal >= 100.0)) {
+        return false;
+    }
+
+    //Get the angular coordinates of the 2D points
+    cv::Mat angleVals;
+    this->VectorsToAngles(projectedPoints, angleVals);
+    //Check if angleVals is empty, return failure if so
+    if (angleVals.empty()) { return false; }
+
+    //Histogram the angles, get angles at percentile values
+    std::array<double,2> percentileAngles = FindPercentileThresholdValues(angleVals);
+    if (percentileAngles.empty()) { return false; }
+
+    cv::Mat angToVecOutput;
+    this->AnglesToVectors(percentileAngles, angToVecOutput);
+    if (angToVecOutput.empty()) { return false; }
+
+    //Return true on success
+    percentileThreshPoints.assign(angToVecOutput);
+    return true;
+}//end PercentileThresholdVectors
+
+void MacenkoHistogram::VectorsToAngles(cv::InputArray inputVectors, cv::OutputArray outputAngles) {
+    //Check if inputVectors not empty, and there are at least two columns
+    if (inputVectors.empty()) { return; }
+    if (inputVectors.cols() < 2) { return; }
+
+    //Access the input data as a matrix
+    cv::Mat inputMat = inputVectors.getMat();
+    cv::Mat inputFloatMat;
+    inputMat.convertTo(inputFloatMat, cv::DataType<float>::type);
+
+    //Define the output matrix
+    cv::Mat angleVals(inputVectors.rows(), 1, cv::DataType<float>::type);
+    //Calculate output matrix values
+    for (auto p = angleVals.begin<float>(); p != angleVals.end<float>(); p++) {
+        int row = static_cast<int>(p.lpos());
+        //atan2 is undefined when x and y are both 0
+        bool angleUndef = (std::abs(inputFloatMat.at<float>(row, 0)) < 1e-4) 
+            && (std::abs(inputFloatMat.at<float>(row, 1)) < 1e-4); //Choice of zero roundoff threshold is arbitrary
+        //Use maximum float value as the undefined value
+        float undefined = std::numeric_limits<float>::max();
+        //Calculate the arctan2, unless undefined
+        *p = angleUndef ? undefined
+            : std::atan2(inputFloatMat.at<float>(row, 1), inputFloatMat.at<float>(row, 0));
+    }
+    outputAngles.assign(angleVals);
+}//end VectorsToAngles
+
+void MacenkoHistogram::AnglesToVectors(cv::InputArray inputAngles, cv::OutputArray outputVectors) {
+    //Check if inputAngles is empty
+    if (inputAngles.empty()) { return; }
+    //Access the input angle data as a matrix
+    cv::Mat inputMat = inputAngles.getMat();
+    cv::Mat inputDoubleMat;
+    inputMat.convertTo(inputDoubleMat, cv::DataType<double>::type);
+    std::array<double, 2> angleArray;
+    if (inputDoubleMat.rows == 1 && inputDoubleMat.cols >= 2) {
+        angleArray[0] = inputDoubleMat.at<double>(0, 0);
+        angleArray[1] = inputDoubleMat.at<double>(0, 1);
+    }
+    else if (inputMat.rows >= 2 && inputMat.cols == 1) {
+        angleArray[0] = inputDoubleMat.at<double>(0, 0);
+        angleArray[1] = inputDoubleMat.at<double>(1, 0);
+    }
+    else {
         return;
     }
-    else {
-        CreatePixelSubsample(sourcePoints, subsampleofPixels, numTestPixels);
-    }
+    //Call the other overload of this method
+    this->AnglesToVectors(angleArray, outputVectors);
+}//end AnglesToVectors
 
-    //Arrange the basis vectors as the columns, if they're not already
-    cv::Mat columnBasisVectors;
-    if (basisVecDir == VectorDirection::COLUMNVECTORS) {
-        //no change
-        columnBasisVectors = inputVectors.getMat().clone();
-    }
-    else if (basisVecDir == VectorDirection::ROWVECTORS) {
-        //transpose the inputVectors matrix
-        cv::transpose(inputVectors, columnBasisVectors);
-    }
-    else {
-        //invalid, but use the inputVectors as given and proceed anyway
-        columnBasisVectors = inputVectors.getMat().clone();
-    }
+void MacenkoHistogram::AnglesToVectors(const std::array<double,2> &inputAngles, cv::OutputArray outputVectors) {
+    //Check if inputAngles is empty
+    if (inputAngles.empty()) { return; }
+    //Check if inputAngles is 0,0
+    if (inputAngles[0] == 0.0 && inputAngles[1] == 0.0) { return; }
 
-    //Create the list of +/- options for the basis vectors (0 is +, 1 is -)
-    int numCombinations = static_cast<int>(std::pow(2, columnBasisVectors.cols));
-    cv::Mat testMultCombinations(numCombinations, columnBasisVectors.cols, cv::DataType<int>::type);
-    for (int row = 0; row < numCombinations; row++) {
-        for (int col = 0; col < columnBasisVectors.cols; col++) {
-            int newVal = (row >> col) & 1; //bit shift and mask
-            testMultCombinations.at<int>(row, col) = newVal;
-        }
-    }
+    //Convert to 2D Cartesian
+    cv::Mat cartesianVectors(2, 2, cv::DataType<double>::type);
+    cartesianVectors.at<double>(0, 0) = std::cos(inputAngles[0]);
+    cartesianVectors.at<double>(0, 1) = std::sin(inputAngles[0]);
+    cartesianVectors.at<double>(1, 0) = std::cos(inputAngles[1]);
+    cartesianVectors.at<double>(1, 1) = std::sin(inputAngles[1]);
+    outputVectors.assign(cartesianVectors);
+}//end AnglesToVectors
 
-
+const std::array<double, 2> MacenkoHistogram::FindPercentileThresholdValues(cv::InputArray vals) {
+    //Return threshold angle values as a 2-element array
+    //The intent is to make the output format more strict than cv::Mat would be
+    std::array<double, 2> errorValues = { 0.0,0.0 };
+    std::array<double, 2> outputValues = { 0.0,0.0 };
+    if (vals.empty()) { return errorValues; }
 
     //Temp file output
     std::fstream tempOut;
-    tempOut.open("D:\\mschumaker\\projects\\Sedeen\\testData\\output\\tempout-samplepix.txt", std::fstream::out);
-    std::stringstream ss;
+    tempOut.open("D:\\mschumaker\\projects\\Sedeen\\testData\\output\\tempout-theHistogram.txt", std::fstream::out);
+    std::stringstream sh;
 
 
-    //Loop through each of the combinations
-    //Get average of subsampled points projected into each variation of the basis vectors
-    cv::Mat projAvgPointsByCombo;
-    for (int combo = 0; combo < testMultCombinations.rows; combo++) {
-        //columnBasisVectors has the basis vectors as columns
-        cv::Mat signedBasisVectors = columnBasisVectors.clone();
-        for (int vec = 0; vec < testMultCombinations.cols; vec++) {
-            double multFactor = (testMultCombinations.at<int>(combo, vec) == 0) ? 1.0 : -1.0;
-            signedBasisVectors.col(vec) *=  multFactor;
+    //cv::calcHist only operates on floats, so convert data type
+    cv::Mat _vals, floatVals;
+    _vals = vals.getMat(); // .clone();
+
+    sh << "The values before conversion: " << std::endl;
+    sh << vals.getMat() << std::endl;
+
+    _vals.convertTo(floatVals, cv::DataType<float>::type);
+
+    //Make sure that the histogram range is valid
+    std::array<float, 2> rangeArray = this->GetHistogramRange();
+    if (rangeArray[1] <= rangeArray[0]) { return errorValues; }
+    //Check the current number set for histogram bins
+    if (this->GetNumHistogramBins() <= 0) { return errorValues; }
+
+    //Fill the histogram
+    cv::Mat theHist;
+    int channels[1] = { 0 };
+    int histSize[1] = { this->GetNumHistogramBins() };
+    float range[] = { rangeArray[0], rangeArray[1] };
+    const float* histRange[] = { range };
+    bool uniform = true;
+    bool accumulate = false;
+    cv::calcHist(&floatVals, 1, channels, cv::Mat(), theHist, 1, histSize, histRange, uniform, accumulate);
+    //The resulting type of theHist elements is float
+
+
+    //What if I suppress the highest, lowest, and zero bins?
+    //Suppress the values in the highest and lowest bins, and angle=0
+    //theHist.at<float>(0, 0) = 0.0;
+    //theHist.at<float>(this->GetNumHistogramBins() / 2 + 1, 0) = 0.0;
+    //theHist.at<float>(this->GetNumHistogramBins() - 1, 0) = 0.0;
+
+
+
+
+
+    sh << "Here are all of the angles being added to the histogram: " << std::endl;
+    sh << floatVals << std::endl;
+
+    sh << "And here's the histogram: " << std::endl;
+    sh << theHist << std::endl;
+
+
+    //Count how many elements were added to the histogram
+    cv::Scalar scalarTotal = cv::sum(theHist);
+    double histoCountTotal = scalarTotal[0];
+
+    sh << "The value of histoCountTotal is : " << histoCountTotal << std::endl;
+
+    //Calculate the slope and intercept to convert from bin to value
+    //value = intercept + slope*bin
+    double intercept = static_cast<double>(range[0]);
+    double slope = static_cast<double>(range[1] - range[0]) / static_cast<double>(histSize[0]);
+    double percentileThreshold = this->GetPercentileThreshold();
+
+    //Find the bins containing the lower and upper percentiles
+    double lowerFraction = (percentileThreshold) / 100.0;
+    double upperFraction = (100.0 - percentileThreshold) / 100.0;
+    bool lowerPassed(false), upperPassed(false);
+    double lowerBin(-1.0), upperBin(-1.0);
+    double cumulativeSum(0.0);
+
+    sh << "Looking for the lower and upper bins! Time to search! " << std::endl;
+
+    for (int bin = 0; bin < (theHist.size)[0]; bin++) {
+        double prevFraction = cumulativeSum / histoCountTotal;
+        cumulativeSum += static_cast<double>(theHist.at<float>(bin, 0));
+        double currentFraction = cumulativeSum / histoCountTotal;
+
+        sh << "bin =" << bin << ", prevFraction= " << prevFraction << ", cumulativeSum= " << cumulativeSum 
+            << ", currentFraction= " << currentFraction << std::endl;
+
+        if (!lowerPassed && (currentFraction >= lowerFraction)) {
+            lowerPassed = true;
+            //linearly interpolate a bin position
+
+            sh << "This is the bin for which I think the lowerBin was passed! " << bin << std::endl;
+            lowerBin = static_cast<double>(bin - 1) + (lowerFraction - prevFraction) / (currentFraction - prevFraction);
+            sh << "And here's the value of lowerBin I calculate: " << lowerBin << std::endl;
         }
-        ss << "New combo: " << std::endl;
-        ss << signedBasisVectors << std::endl;
+        if (!upperPassed && (currentFraction >= upperFraction)) {
+            upperPassed = true;
+            //linearly interpolate a bin position
+            sh << "This is the bin for which I think the upperBin was passed! " << bin << std::endl;
+            upperBin = static_cast<double>(bin - 1) + (upperFraction - prevFraction) / (currentFraction - prevFraction);
+            sh << "And here's the value of upperBin I calculate: " << upperBin << std::endl;
+        }
+        if (lowerPassed && upperPassed) { break; }
+    }
+    //Convert from bins to values
+    outputValues[0] = intercept + slope * lowerBin;
+    outputValues[1] = intercept + slope * upperBin;
 
-        //Project the subsample of pixels into this basis
+    sh << "This is what I think intercept and slope are: " << intercept << " and " << slope << std::endl;
+    sh << "and here are the output values I'm returning: " << outputValues[0] << " and " << outputValues[1] << std::endl;
 
-        cv::Mat projectedSamplePoints;
-        cv::gemm(subsampleofPixels, signedBasisVectors, 1, cv::Mat(), 0, projectedSamplePoints, 0);
-
-        ss << "The projected subsample of pixels: " << std::endl;
-        ss << projectedSamplePoints << std::endl;
-
-        //Use reduce to get column averages
-        cv::Mat columnAvg;
-        cv::reduce(projectedSamplePoints, columnAvg, 0, CV_REDUCE_AVG); //dim=0 to reduce to single row
-
-        projAvgPointsByCombo.push_back(columnAvg);
-
-    }//end for each +/- combination
-
-    ss << "The output, projAvgPointsByCombo: " << std::endl;
-    ss << projAvgPointsByCombo << std::endl;
-
-    //assemble 3 dimensional matrix of basis vectors with each of the testMultFactors applied
-    //cv::Mat basisVectorsWithDifferentSigns(tempVectors.rows, tempVectors.cols, testMultFactors.rows, cv::DataType<double>::type);
-
-    ////Do it with for loops until I am less sleepy
-
-    //ss << "The size of basisVectorWithDifferentSigns is: " << tempVectors.rows << ", " << tempVectors.cols << ", " << testMultFactors.rows << "." << std::endl;
-
-    //for (int combo = 0; combo < testMultFactors.rows; combo++) {
-    //    for (int vec = 0; vec < tempVectors.cols; vec++) {
-    //        double multFactor = (testMultFactors.at<int>(combo, vec) == 0) ? 1.0 : -1.0;
-    //        for (int rgb = 0; rgb < tempVectors.rows; rgb++) {
-    //            double tempVal = multFactor * tempVectors.at<double>(rgb, vec);
-
-    //            ss << tempVal << std::endl;
-
-    //            basisVectorsWithDifferentSigns.at<double>(vec, rgb, combo) = tempVal;
-    //        }
-    //    }
-    //}
-
-    //ss << "Did this work at all?" << std::endl;
-
-    //for (int combo = 0; combo < testMultFactors.rows; combo++) {
-    //    for (int vec = 0; vec < tempVectors.cols; vec++) {
-    //        for (int rgb = 0; rgb < tempVectors.rows; rgb++) {
-    //            ss << basisVectorsWithDifferentSigns.at<double>(vec, rgb, combo) << std::endl;
-    //        }
-    //    }
-    //}
-
-    //ss << basisVectorsWithDifferentSigns << std::endl;
-
-
-    //Now do something with the subsampleOfPixels
-
-
-
-
-    tempOut << ss.str() << std::endl;
+    tempOut << sh.str() << std::endl;
     tempOut.close();
 
 
-
-    //If the basis vectors were input as row vectors, transpose them back to that orientation
-
-
-    //Arrange the basis vectors as the columns, if they're not already
-    cv::Mat columnBasisVectors;
-    if (basisVecDir == VectorDirection::COLUMNVECTORS) {
-        //no change
-        columnBasisVectors = inputVectors.getMat().clone();
-    }
-    else if (basisVecDir == VectorDirection::ROWVECTORS) {
-        //transpose the inputVectors matrix
-        cv::transpose(inputVectors, columnBasisVectors);
-    }
-    else {
-        //invalid, but use the inputVectors as given and proceed anyway
-        columnBasisVectors = inputVectors.getMat().clone();
-    }
-
-
-
-}//end OptimizeBasisVectorSigns
-
-
-
-void MacenkoHistogram::CreatePixelSubsample(cv::InputArray sourcePoints, cv::OutputArray subsample, int numberOfPixels) {
-    cv::Mat tempSubsampleMat;
-    if (numberOfPixels < 1) {
-        return;
-    }
-    else if (numberOfPixels <= sourcePoints.rows()) {
-        //Use all of the source pixels
-        subsample.assign(sourcePoints.getMat().clone());
-    }
-    else {
-        //Create with no rows, push new rows later
-        tempSubsampleMat = cv::Mat(0, sourcePoints.cols(), cv::DataType<double>::type);
-    }
-
-    //Initialize a uniform distribution to choose random pixels
-    std::uniform_int_distribution<int> randSourcePixelIndex(0, sourcePoints.rows() - 1);
-    //Create a list of pixel (row) indices for the randomized subset, without duplication
-    std::vector<int> pixelList;
-    for (int px = 0; px < numberOfPixels; px++) {
-        int countLimit = 2 * numberOfPixels; //loop count limit (just in case)
-        bool newIndexFound = false;
-        int attemptNumber = 0;
-        while (!newIndexFound && (attemptNumber < countLimit)) {
-            int newIndex = randSourcePixelIndex(m_rgen);
-            auto it = std::find(pixelList.begin(), pixelList.end(), newIndex);
-            if (it == pixelList.end()) {
-                newIndexFound = true;
-                pixelList.push_back(newIndex);
-            }
-            else {
-                newIndexFound = false;
-                attemptNumber++;
-            }
-        }
-    }
-    //Get pixels at the row indices in pixelList, push to tempSubsampleMat
-    for (auto pxit = pixelList.begin(); pxit != pixelList.end(); ++pxit) {
-        tempSubsampleMat.push_back(sourcePoints.getMat().row(*pxit));
-    }
-    //assign to the OutputArray
-    subsample.assign(tempSubsampleMat);
-}//end CreatePixelSubsample
-
-
+    return outputValues;
+}//end FindPercentileThresholdValues
 
 } // namespace image
 } // namespace sedeen

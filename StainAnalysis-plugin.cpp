@@ -27,7 +27,6 @@
 #include "StainAnalysis-plugin.h"
 #include "StainVectorMacenko.h"
 
-#include <cassert>
 #include <sstream>
 #include <string>
 #include <iostream>
@@ -303,6 +302,8 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
     auto source_factory = image()->getFactory();
     auto source_color = source_factory->getColorSpace();
 
+
+    double conv_matrix[9] = { 0.0 };
     bool doProcessing = false;
     if ( pipeline_changed || somethingChanged
          || m_regionToProcess.isChanged()
@@ -338,7 +339,6 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
 
 
         //Values to use in getting the stain vectors
-        double conv_matrix[9] = { 0.0 };
         auto display_resolution = getDisplayResolution(image(), m_displayArea);
 
         ////Build the color deconvolution channel
@@ -359,18 +359,13 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
             long long timeToGetBasisVectors = 0;
             
             
-            
-            
-            //timeToGetBasisVectors = sedeen::image::doSomethingWithSVD(source_factory,
-            //    display_resolution, conv_matrix);
-
 
             //here!!! here's the place for trying the next new thing.
 
             //Create an object to get stain vectors from, using the Macenko algorithm
             std::shared_ptr<sedeen::image::StainVectorMacenko> stainsFromMacenko 
                 = std::make_shared<sedeen::image::StainVectorMacenko>(source_factory);
-            stainsFromMacenko->ComputeStainVectors(conv_matrix, 1000, 0.15);
+            stainsFromMacenko->ComputeStainVectors(conv_matrix, 1000, 0.15, 1.0);
 
 
         //    //TEMPORARY!
@@ -392,8 +387,12 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
 
 
 
+        //TEMPORARY
+        //Change the contents of the chosenStainProfile
+        chosenStainProfile->SetProfilesFromDoubleArray(conv_matrix);
 
-		//TEMPORARY!!! Scale down the threshold to create more precision
+		//TEMPORARY
+        //Scale down the threshold to create more precision
         auto colorDeconvolution_kernel =
             std::make_shared<image::tile::ColorDeconvolution>(DisplayOption, chosenStainProfile, 
                 m_applyThreshold, m_threshold/100.0);  //Need to tell it whether to use the threshold or not
@@ -435,8 +434,10 @@ std::string StainAnalysis::generateCompleteReport(std::shared_ptr<StainProfile> 
 
 std::string StainAnalysis::generateStainProfileReport(std::shared_ptr<StainProfile> theProfile) const
 {
-    //I think using assert is a little too strong here. Use different error handling.
-	assert(nullptr != theProfile);
+    //If the pointer to theProfile is null, return an error description
+    if(theProfile == nullptr) { 
+        return "Error reading the stain profile. Please try a different stain profile or restart."; 
+    }
 
     int numStains = theProfile->GetNumberOfStainComponents();
     if (numStains < 0) {
@@ -484,7 +485,9 @@ std::string StainAnalysis::generateStainProfileReport(std::shared_ptr<StainProfi
 }//end generateStainProfileReport
 
 std::string StainAnalysis::generatePixelFractionReport() const {
-	assert(nullptr != m_colorDeconvolution_factory);
+    if (m_colorDeconvolution_factory == nullptr) {
+        return "Error accessing the color deconvolution factory. Cannot generate pixel fraction report.";
+    }
 
 	using namespace image::tile;
 
@@ -545,5 +548,3 @@ std::string StainAnalysis::generatePixelFractionReport() const {
 
 } // namespace algorithm
 } // namespace sedeen
-
-//throw std::runtime_error("The plugin has experienced a serious error and has stopped running.");
