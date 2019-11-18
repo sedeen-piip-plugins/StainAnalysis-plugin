@@ -89,6 +89,7 @@ ADD_LIBRARY( ${PROJECT_NAME} MODULE
              StainRGBFromROI.h StainRGBFromROI.cpp
              RandomWSISampler.h RandomWSISampler.cpp
              StainVectorBase.h StainVectorBase.cpp
+             StainVectorOpenCV.h StainVectorOpenCV.cpp
              StainVectorPixelROI.h StainVectorPixelROI.cpp
              StainVectorMacenko.h StainVectorMacenko.cpp
              StainVectorNiethammer.h StainVectorNiethammer.cpp

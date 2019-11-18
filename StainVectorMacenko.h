@@ -29,17 +29,12 @@
 #include "Geometry.h"
 #include "Image.h"
 
-#include "StainVectorBase.h"
-
- //OpenCV include
-#include <opencv2/core/core.hpp>
-//#include <opencv2/imgproc/imgproc.hpp>
-//#include <opencv2/highgui/highgui.hpp>
+#include "StainVectorOpenCV.h"
 
 namespace sedeen {
 namespace image {
 
-class PATHCORE_IMAGE_API StainVectorMacenko : public StainVectorBase {
+class PATHCORE_IMAGE_API StainVectorMacenko : public StainVectorOpenCV {
 public:
     StainVectorMacenko(std::shared_ptr<tile::Factory> source);
     ~StainVectorMacenko();
@@ -64,12 +59,6 @@ public:
     inline const int GetSampleSize() const { return m_sampleSize; }
     ///Get/Set the sample size, the number of pixels to choose
     inline void SetSampleSize(const int s) { m_sampleSize = s; }
-
-protected:
-    ///Convert stain vector data as 9-element C array to OpenCV matrix (as row vectors)
-    void StainCArrayToCVMat(double inutVectors[9], cv::OutputArray outputData);
-    ///Convert stain vector data from OpenCV matrix (as row vectors) to 9-element C array
-    void StainCVMatToCArray(cv::InputArray inputData, double outputVectors[9]);
 
 private:
     double m_avgODThreshold;

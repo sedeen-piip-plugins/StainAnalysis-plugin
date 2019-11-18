@@ -56,18 +56,18 @@ public:
     ///Create a histogram of angle values, assumed to be between -pi and pi, find angles at %ile thresholds
     const std::array<double, 2> FindPercentileThresholdValues(cv::InputArray vals);
 
-    ///Set/Get the percentileThreshold member variable (force to be between 0 and 50%)
+    ///Set the percentileThreshold member variable (force to be between 0 and 50%)
     inline void SetPercentileThreshold(const double &p) { 
-        double _p = p < 0.0 ? 0.0 : p;
-        _p = _p > 100.0 ? 100.0 : _p;
-        m_percentileThreshold = (_p <= 50.0) ? _p : (100.0 - _p); 
+        double _p = p < 0.0 ? 0.0 : p; //can't be less than 0
+        _p = _p > 100.0 ? 100.0 : _p; //can't be more than 100
+        m_percentileThreshold = (_p <= 50.0) ? _p : (100.0 - _p); //100-p if over 50
     }
-    ///Set/Get the numTestingPixels member variable
+    ///Get the percentileThreshold member variable
     inline const double GetPercentileThreshold() const { return m_percentileThreshold; }
 
     ///Set/Get the number of histogram bins
     inline void SetNumHistogramBins(const int n) { m_numHistogramBins = n; }
-    ///Set/Get the numTestingPixels member variable
+    ///Set/Get the number of histogram bins
     inline const int GetNumHistogramBins() const { return m_numHistogramBins; }
 
     ///Set/Get the histogram range

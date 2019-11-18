@@ -53,7 +53,7 @@ namespace sedeen {
 namespace image {
 
 StainVectorMacenko::StainVectorMacenko(std::shared_ptr<tile::Factory> source)
-    : StainVectorBase(source),
+    : StainVectorOpenCV(source),
     m_sampleSize(0), //Must set to greater than 0 to ComputeStainVectors
     m_avgODThreshold(0.15), //assign default value
     m_percentileThreshold(1.0) //assign default value
@@ -118,35 +118,37 @@ void StainVectorMacenko::ComputeStainVectors(double outputVectors[9]) {
     scov << backProjectedVectors << std::endl;
 
 
-    //Back-project to get un-normalized stain vectors
-    //cv::Mat stainVectorOutput;
-
-
-    //Write to a temp array first
+    //Convert to C array and normalize rows
     double tempStainVecOutput[9] = {0.0};
-
-
-
-    //MAKE THIS GOOD
-
-    StainCVMatToCArray(backProjectedVectors, tempStainVecOutput);
-    
-    
-    
-    
-    //Error checks?
+    StainCVMatToCArray(backProjectedVectors, tempStainVecOutput, true);
     for (int i = 0; i < 9; i++) {
         outputVectors[i] = tempStainVecOutput[i];
     }
+
+
+
+
+    scov << "Testing CVMat to C array conversion (normalize=true): " << std::endl;
+    for (int i = 0; i < 9; i++) {
+        scov << tempStainVecOutput[i] << ", ";
+    }
+    scov << std::endl;
+    
+
+
+
+    //Test converting it the other way
+    //cv::Mat convertBack;
+    //StainCArrayToCVMat(tempStainVecOutput, convertBack, true);
+
+    //scov << "Testing C array to CVMat conversion (normalize=true): " << std::endl;
+    //scov << convertBack << std::endl;
+
 
     tempOut << scov.str() << std::endl;
     tempOut.close();
 
 
-
-    //Test converting it the other way
-    cv::Mat convertBack;
-    StainCArrayToCVMat(tempStainVecOutput, convertBack);
 
 
 
@@ -166,145 +168,6 @@ void StainVectorMacenko::ComputeStainVectors(double outputVectors[9], int sample
     //Call the single-parameter version of this method, which uses the member variables
     this->ComputeStainVectors(outputVectors);
 }//end multi-parameter ComputeStainVectors
-
-
-
-void StainVectorMacenko::StainCVMatToCArray(cv::InputArray inputData, double outputVectors[9]) {
-    if (inputData.empty()) { return; }
-    cv::Mat stainVectorOutput, _stainVectorMat(inputData.getMat());
-    _stainVectorMat.convertTo(stainVectorOutput, cv::DataType<double>::type);
-    //Reshape the matrix and get the data
-    int numElements = static_cast<int>(stainVectorOutput.total());
-
-
-    //pick up here!!!
-
-
-
-    //Fill a temporary matrix with the stain vector elements before normalization
-    double nonUnitary[9] = { 0.0 };
-
-
-
-
-    //Normalize the stain vectors
-    //StainVectorMath::Make3x3MatrixUnitary(nonUnitary, outputVectors);
-
-
-
-
-    //scov << "Well, here are what it calculates as the stain vectors:" << std::endl;
-    //scov << stainVectorOutput << std::endl;
-
-    //double rowSums[2] = { 0.0 };
-    //rowSums[0] = stainVectorOutput.at<double>(0, 0)
-    //    + stainVectorOutput.at<double>(0, 1)
-    //    + stainVectorOutput.at<double>(0, 2);
-    //rowSums[1] = stainVectorOutput.at<double>(1, 0)
-    //    + stainVectorOutput.at<double>(1, 1)
-    //    + stainVectorOutput.at<double>(1, 2);
-
-    //if (rowSums[0] < 0.0) {
-    //    stainVectorOutput.at<double>(0, 0) *= -1.0;
-    //    stainVectorOutput.at<double>(0, 1) *= -1.0;
-    //    stainVectorOutput.at<double>(0, 2) *= -1.0;
-    //}
-    //if (rowSums[1] < 0.0) {
-    //    stainVectorOutput.at<double>(1, 0) *= -1.0;
-    //    stainVectorOutput.at<double>(1, 1) *= -1.0;
-    //    stainVectorOutput.at<double>(1, 2) *= -1.0;
-    //}
-
-
-    //scov << "Here they are positive summed:" << std::endl;
-    //scov << stainVectorOutput << std::endl;
-
-
-    nonUnitary[0] = stainVectorOutput.at<double>(0, 0);
-    nonUnitary[1] = stainVectorOutput.at<double>(0, 1);
-    nonUnitary[2] = stainVectorOutput.at<double>(0, 2);
-    nonUnitary[3] = stainVectorOutput.at<double>(1, 0);
-    nonUnitary[4] = stainVectorOutput.at<double>(1, 1);
-    nonUnitary[5] = stainVectorOutput.at<double>(1, 2);
-    nonUnitary[6] = 0.0;
-    nonUnitary[7] = 0.0;
-    nonUnitary[8] = 0.0;
-
-    StainVectorMath::Make3x3MatrixUnitary(nonUnitary, outputVectors);
-    //scov << "Here they are unitary: " << std::endl;
-
-    //scov << outputVectors[0] << ", " << outputVectors[1] << ", " << outputVectors[2] << std::endl;
-    //scov << outputVectors[3] << ", " << outputVectors[4] << ", " << outputVectors[5] << std::endl;
-    //scov << outputVectors[6] << ", " << outputVectors[7] << ", " << outputVectors[8] << std::endl;
-
-
-
-
-
-
- /*   scov << "Well, here are what it calculates as the stain vectors:" << std::endl;
-    scov << stainVectorOutput << std::endl;
-
-    double rowSums[2] = { 0.0 };
-    rowSums[0] = stainVectorOutput.at<double>(0, 0)
-        + stainVectorOutput.at<double>(0, 1)
-        + stainVectorOutput.at<double>(0, 2);
-    rowSums[1] = stainVectorOutput.at<double>(1, 0)
-        + stainVectorOutput.at<double>(1, 1)
-        + stainVectorOutput.at<double>(1, 2);
-
-    if (rowSums[0] < 0.0) {
-        stainVectorOutput.at<double>(0, 0) *= -1.0;
-        stainVectorOutput.at<double>(0, 1) *= -1.0;
-        stainVectorOutput.at<double>(0, 2) *= -1.0;
-    }
-    if (rowSums[1] < 0.0) {
-        stainVectorOutput.at<double>(1, 0) *= -1.0;
-        stainVectorOutput.at<double>(1, 1) *= -1.0;
-        stainVectorOutput.at<double>(1, 2) *= -1.0;
-    }
-
-
-    scov << "Here they are positive summed:" << std::endl;
-    scov << stainVectorOutput << std::endl;
-
-    double nonUnitary[9] = { 0.0 };
-    nonUnitary[0] = stainVectorOutput.at<double>(0, 0);
-    nonUnitary[1] = stainVectorOutput.at<double>(0, 1);
-    nonUnitary[2] = stainVectorOutput.at<double>(0, 2);
-    nonUnitary[3] = stainVectorOutput.at<double>(1, 0);
-    nonUnitary[4] = stainVectorOutput.at<double>(1, 1);
-    nonUnitary[5] = stainVectorOutput.at<double>(1, 2);
-    nonUnitary[6] = 0.0;
-    nonUnitary[7] = 0.0;
-    nonUnitary[8] = 0.0;
-
-    scov << "Here they are unitary: " << std::endl;
-
-    scov << outputVectors[0] << ", " << outputVectors[1] << ", " << outputVectors[2] << std::endl;
-    scov << outputVectors[3] << ", " << outputVectors[4] << ", " << outputVectors[5] << std::endl;
-    scov << outputVectors[6] << ", " << outputVectors[7] << ", " << outputVectors[8] << std::endl;
-*/
-
-
-
-
-}//end StainCVMatToCArray
-
-
-
-void StainVectorMacenko::StainCArrayToCVMat(double inputVectors[9], cv::OutputArray outputData) {
-    //Create a copy of the input data
-    double inputCopy[9] = { 0.0 };
-    for (int i = 0; i < 9; i++) {
-        inputCopy[i] = inputVectors[i];
-    }
-    //Create a cv::Mat of type double and point to inputCopy (reference, not deep copy)
-    cv::Mat inputMatFlat(1, 9, cv::DataType<double>::type, inputCopy);
-    //Reshape the matrix (does not reallocate, still points to inputCopy)
-    cv::Mat inputMatSquare = inputMatFlat.reshape(0, 3);
-    outputData.assign(inputMatSquare);
-}//end StainCArrayToCVMat
 
 } // namespace image
 } // namespace sedeen

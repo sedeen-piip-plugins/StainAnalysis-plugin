@@ -302,8 +302,13 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
     auto source_factory = image()->getFactory();
     auto source_color = source_factory->getColorSpace();
 
-
+    //Set this one to change the stain profile
     double conv_matrix[9] = { 0.0 };
+
+    //This one has output, but don't assign it to a kernel right now
+    double TESTING_conv_matrix[9] = { 0.0 };
+
+
     bool doProcessing = false;
     if ( pipeline_changed || somethingChanged
          || m_regionToProcess.isChanged()
@@ -353,12 +358,18 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
         }
         else if (numStains == 2) {
 
-            //Get the two stain vectors from the SVD of the image
-            //I also want to know how long this takes to run. This function returns time required
+            //Get the two stain vectors with the Macenko method
+            //I also want to know how long this takes to run.
 
-            long long timeToGetBasisVectors = 0;
+            //long long timeToGetBasisVectors = 0;
             
+
             
+            //Test with this one
+            //TESTING_conv_matrix
+
+
+
 
             //here!!! here's the place for trying the next new thing.
 
@@ -366,7 +377,6 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
             std::shared_ptr<sedeen::image::StainVectorMacenko> stainsFromMacenko 
                 = std::make_shared<sedeen::image::StainVectorMacenko>(source_factory);
             stainsFromMacenko->ComputeStainVectors(conv_matrix, 1000, 0.15, 1.0);
-
 
         //    //TEMPORARY!
             std::ostringstream ss;
@@ -391,7 +401,7 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
         //Change the contents of the chosenStainProfile
         chosenStainProfile->SetProfilesFromDoubleArray(conv_matrix);
 
-		//TEMPORARY
+
         //Scale down the threshold to create more precision
         auto colorDeconvolution_kernel =
             std::make_shared<image::tile::ColorDeconvolution>(DisplayOption, chosenStainProfile, 

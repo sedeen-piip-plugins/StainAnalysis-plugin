@@ -25,7 +25,6 @@
 #include "BasisTransform.h"
 
 #include <vector>
-//#include <algorithm>
 #include <cmath>
 #include <fstream>
 #include <sstream>
