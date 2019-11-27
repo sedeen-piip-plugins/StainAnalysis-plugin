@@ -109,6 +109,9 @@ bool RandomWSISampler::ChooseRandomPixels(cv::OutputArray outputArray, const int
     //Create a TileServer to be able to access tiles from the factory
     std::unique_ptr<tile::TileServer> theTileServer = std::make_unique<tile::TileServer>(cacheSource);
 
+    //Perform faster color to OD conversion using a lookup table
+    std::shared_ptr<ODConversion> converter = std::make_shared<ODConversion>();
+
     //Define OpenCV Mat structure with numberOfSamplePixels rows, RGB columns, elements are type double
     cv::Mat sampledPixelsMatrix(numberOfPixels, 3, cv::DataType<double>::type);
 
@@ -180,9 +183,9 @@ bool RandomWSISampler::ChooseRandomPixels(cv::OutputArray outputArray, const int
                         break;
                     }
                     //Get the optical density values
-                    rgbOD[0] = ODConversion::ConvertRGBtoOD(static_cast<double>((tileImage[Rindex]).as<s32>()));
-                    rgbOD[1] = ODConversion::ConvertRGBtoOD(static_cast<double>((tileImage[Gindex]).as<s32>()));
-                    rgbOD[2] = ODConversion::ConvertRGBtoOD(static_cast<double>((tileImage[Bindex]).as<s32>()));
+                    rgbOD[0] = converter->LookupRGBtoOD(static_cast<int>((tileImage[Rindex]).as<s32>()));
+                    rgbOD[1] = converter->LookupRGBtoOD(static_cast<int>((tileImage[Gindex]).as<s32>()));
+                    rgbOD[2] = converter->LookupRGBtoOD(static_cast<int>((tileImage[Bindex]).as<s32>()));
 
                     if (rgbOD[0] + rgbOD[1] + rgbOD[2] > ODthreshold) {
                         sampledPixelsMatrix.at<double>(numPixelsAddedToMatrix, 0) = rgbOD[0];

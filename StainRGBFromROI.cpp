@@ -38,6 +38,9 @@ namespace sedeen {
             //temporary array
             double tempOD[3] = { 0.0 };
 
+            //Perform fast color to OD conversion using a lookup table
+            std::shared_ptr<ODConversion> converter = std::make_shared<ODConversion>();
+
             int imageSize = ROI.size().width()*ROI.size().height();
             double log255 = log(255.0);
             int y = 0, x = 0;
@@ -47,9 +50,9 @@ namespace sedeen {
                     y++;
                 }
                 //Convert RGB vals to optical density, sum over all pixels
-                tempOD[0] = tempOD[0] + ODConversion::ConvertRGBtoOD(ROI.at(x, y, 0).as<double>());
-                tempOD[1] = tempOD[1] + ODConversion::ConvertRGBtoOD(ROI.at(x, y, 1).as<double>());
-                tempOD[2] = tempOD[2] + ODConversion::ConvertRGBtoOD(ROI.at(x, y, 2).as<double>());
+                tempOD[0] = tempOD[0] + converter->LookupRGBtoOD(ROI.at(x, y, 0).as<int>());
+                tempOD[1] = tempOD[1] + converter->LookupRGBtoOD(ROI.at(x, y, 1).as<int>());
+                tempOD[2] = tempOD[2] + converter->LookupRGBtoOD(ROI.at(x, y, 2).as<int>());
             }
             //average of all pixels in region of interest
             rgbOD[0] = tempOD[0] / imageSize;

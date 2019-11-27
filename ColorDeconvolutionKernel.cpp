@@ -66,8 +66,8 @@ namespace sedeen {
                 double inverse_matrix[9] = { 0.0 };
                 StainVectorMath::Compute3x3MatrixInverse(noZeroRowsMatrix, inverse_matrix);
 
-                //double normalized_inverse_matrix[9] = { 0.0 };
-                //StainVectorMath::Make3x3MatrixUnitary(inverse_matrix, normalized_inverse_matrix);
+                //Perform faster color -> OD conversion with a lookup table
+                std::shared_ptr<ODConversion> converter = std::make_shared<ODConversion>();
 
                 //loop over all pixels in the given RawImage		
 				int y = 0, x = 0;
@@ -76,13 +76,13 @@ namespace sedeen {
 					y = j/imageSize.width();
 
 					// log transform the RGB data
-                    double R = source.at(x, y, 0).as<double>();
-                    double G = source.at(x, y, 1).as<double>();
-                    double B = source.at(x, y, 2).as<double>();
+                    int R = source.at(x, y, 0).as<int>();
+                    int G = source.at(x, y, 1).as<int>();
+                    int B = source.at(x, y, 2).as<int>();
                     double pixelOD[3]; //index is color channel
-                    pixelOD[0] = ODConversion::ConvertRGBtoOD(R);
-                    pixelOD[1] = ODConversion::ConvertRGBtoOD(G);
-                    pixelOD[2] = ODConversion::ConvertRGBtoOD(B);
+                    pixelOD[0] = converter->LookupRGBtoOD(R);
+                    pixelOD[1] = converter->LookupRGBtoOD(G);
+                    pixelOD[2] = converter->LookupRGBtoOD(B);
 
                     //The resulting RGB values for the three images
                     double RGB_sep[9] = { 0.0 };
@@ -161,20 +161,23 @@ namespace sedeen {
                     colorImages[i].fill(0);
                 }
 
-                // translate ------------------				
+                //Perform faster OD conversions using a lookup table
+                std::shared_ptr<ODConversion> converter = std::make_shared<ODConversion>();
+
+                //Calculate the OD sum to compare to the threshold
                 int y = 0, x = 0;
                 for (int j = 0; j < imageSize.width()*imageSize.height(); j++) {
                     x = j % imageSize.width();
                     y = j / imageSize.width();
 
                     // log transform the RGB data
-                    double R = source.at(x, y, 0).as<double>();
-                    double G = source.at(x, y, 1).as<double>();
-                    double B = source.at(x, y, 2).as<double>();
+                    int R = source.at(x, y, 0).as<int>();
+                    int G = source.at(x, y, 1).as<int>();
+                    int B = source.at(x, y, 2).as<int>();
                     double pixelOD[3]; //index is color channel
-                    pixelOD[0] = ODConversion::ConvertRGBtoOD(R);
-                    pixelOD[1] = ODConversion::ConvertRGBtoOD(G);
-                    pixelOD[2] = ODConversion::ConvertRGBtoOD(B);
+                    pixelOD[0] = converter->LookupRGBtoOD(R);
+                    pixelOD[1] = converter->LookupRGBtoOD(G);
+                    pixelOD[2] = converter->LookupRGBtoOD(B);
                     //Get the total OD at the pixel
                     double OD_sum = pixelOD[0] + pixelOD[1] + pixelOD[2];
 

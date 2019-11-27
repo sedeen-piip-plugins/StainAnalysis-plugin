@@ -26,6 +26,8 @@
 //
 #include "StainAnalysis-plugin.h"
 #include "StainVectorMacenko.h"
+#include "StainVectorNiethammer.h"
+#include "ODConversion.h"
 
 #include <sstream>
 #include <string>
@@ -305,10 +307,6 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
     //Set this one to change the stain profile
     double conv_matrix[9] = { 0.0 };
 
-    //This one has output, but don't assign it to a kernel right now
-    double TESTING_conv_matrix[9] = { 0.0 };
-
-
     bool doProcessing = false;
     if ( pipeline_changed || somethingChanged
          || m_regionToProcess.isChanged()
@@ -350,7 +348,7 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
         int numStains = 2;   //TEMPORARY! m_numberOfStainComponents;
 
 
-        std::shared_ptr<StainProfile> MacenkoStainProfile = std::make_shared<StainProfile>(*(m_stainProfileList.at(1)));
+        //std::shared_ptr<StainProfile> MacenkoStainProfile = std::make_shared<StainProfile>(*(m_stainProfileList.at(1)));
 
 
         if ((numStains <= 0) || (numStains > 3)) {
@@ -361,31 +359,34 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
             //Get the two stain vectors with the Macenko method
             //I also want to know how long this takes to run.
 
-            //long long timeToGetBasisVectors = 0;
-            
-
-            
-            //Test with this one
-            //TESTING_conv_matrix
-
-
-
 
             //here!!! here's the place for trying the next new thing.
 
             //Create an object to get stain vectors from, using the Macenko algorithm
             std::shared_ptr<sedeen::image::StainVectorMacenko> stainsFromMacenko 
                 = std::make_shared<sedeen::image::StainVectorMacenko>(source_factory);
-            stainsFromMacenko->ComputeStainVectors(conv_matrix, 1000, 0.15, 1.0);
+            stainsFromMacenko->ComputeStainVectors(conv_matrix, 5000, 0.15, 1.0);
 
-        //    //TEMPORARY!
+
+            //Create an object to get stain vectors from, using the Niethammer algorithm
+            //std::shared_ptr<sedeen::image::StainVectorNiethammer> stainsFromNiethammer
+            //    = std::make_shared<sedeen::image::StainVectorNiethammer>(source_factory);
+            //stainsFromNiethammer->ComputeStainVectors(conv_matrix); // , 1000, 0.15, 1.0);
+
+
+            std::shared_ptr<ODConversion> converter = std::make_shared<ODConversion>();
+
+
+            //TEMPORARY!
             std::ostringstream ss;
             ss << "Here is the output from getting the vectors by Macenko: " << std::endl;
+            //ss << "Here is the output from getting the vectors by Niethammer: " << std::endl;
             for (int i = 0; i < 9; i++) {
                 ss << conv_matrix[i] << ", ";
             }
+
+
             ss << std::endl;
-            //ss << "And here's how many microseconds it took: " << timeToGetBasisVectors << std::endl;
             m_outputText.sendText(ss.str());
 
 
@@ -399,6 +400,7 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
 
         //TEMPORARY
         //Change the contents of the chosenStainProfile
+        //REENABLE THIS WHEN YOU'RE READY TO TEST
         chosenStainProfile->SetProfilesFromDoubleArray(conv_matrix);
 
 

@@ -84,7 +84,7 @@ ADD_LIBRARY( ${PROJECT_NAME} MODULE
              ${${TinyXML2Name}_SOURCE_DIR}/tinyxml2.cpp
              StainProfile.h StainProfile.cpp 
              ColorDeconvolutionKernel.h ColorDeconvolutionKernel.cpp
-             ODConversion.h
+             ODConversion.h 
              StainVectorMath.h StainVectorMath.cpp
              StainRGBFromROI.h StainRGBFromROI.cpp
              RandomWSISampler.h RandomWSISampler.cpp

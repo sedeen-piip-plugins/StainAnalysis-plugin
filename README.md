@@ -50,7 +50,7 @@ This plugin calculates the percentage area of a region of interest which has bee
 <b> <sup> [1] </sup> </b>  <sub>  A. C. Ruifrok and D. A. Johnston, “Quantification of histochemical staining by color deconvolution,” Anal. Quant. Cytol. Histol., vol. 23, no. 4, pp. 291–299, 2001. </sub>
 
 ## Authors
-Stain Analysis Plugin was developed by **Michael Schumaker** and **Azadeh Yazanpanah**, Martel lab at Sunnybrook Research Institute (SRI), University of Toronto and was partially funded by [NIH grant](https://itcr.nci.nih.gov/funded-project/pathology-image-informatics-platform-visualization-analysis-and-management).
+Stain Analysis Plugin was developed by **Michael Schumaker** and **Azadeh Yazanpanah**, Martel lab at Sunnybrook Research Institute (SRI), University of Toronto and was partially funded by [NIH grant](https://itcr.cancer.gov/funding-opportunities/pathology-image-informatics-platform-visualization-analysis-and-management).
 
 ## Copyright & License
 
