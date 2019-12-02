@@ -182,15 +182,6 @@ const std::array<double, 2> MacenkoHistogram::FindPercentileThresholdValues(cv::
     //The resulting type of theHist elements is float
 
 
-    //What if I suppress the highest, lowest, and zero bins?
-    //Suppress the values in the highest and lowest bins, and angle=0
-    //theHist.at<float>(0, 0) = 0.0;
-    //theHist.at<float>(this->GetNumHistogramBins() / 2 + 1, 0) = 0.0;
-    //theHist.at<float>(this->GetNumHistogramBins() - 1, 0) = 0.0;
-
-
-
-
 
     sh << "Here are all of the angles being added to the histogram: " << std::endl;
     sh << floatVals << std::endl;

@@ -43,7 +43,7 @@ namespace sedeen {
             ColorDeconvolution::~ColorDeconvolution(void) {
             }//end destructor
 
-			RawImage ColorDeconvolution::separateStains(const RawImage &source, double stainVec_matrix[9])
+			RawImage ColorDeconvolution::separateStains(const RawImage &source, double (&stainVec_matrix)[9])
 			{
                 int scaleMax = 255;
                 // initialize 3 output images
@@ -111,7 +111,7 @@ namespace sedeen {
                 }
 			}//end separateStains
 
-            void ColorDeconvolution::GetSeparateColorsForPixel(double pixelOD[3], double RGB_sep[9], double stainVec_matrix[9], double inverse_matrix[9]) {
+            void ColorDeconvolution::GetSeparateColorsForPixel(double (&pixelOD)[3], double (&RGB_sep)[9], double (&stainVec_matrix)[9], double (&inverse_matrix)[9]) {
                 //Determine how much of each stain is present at a pixel
                 double stainSaturation[3] = { 0.0 }; //index is stain number
                 StainVectorMath::Multiply3x3MatrixAndVector(inverse_matrix, pixelOD, stainSaturation);

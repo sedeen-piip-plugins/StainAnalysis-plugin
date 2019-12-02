@@ -123,13 +123,13 @@ public:
     const std::string GetStainSeparationAlgorithmName(int);
 
     ///Get the raw (no normalization applied) stain vector profiles and assign to a 9-element double array
-    bool GetProfilesAsDoubleArray(double[9]);
+    bool GetProfilesAsDoubleArray(double (&profileArray)[9]);
     ///Normalize each vector to 1, then assign the stain vector profiles to a 9-element double array
-    bool GetNormalizedProfilesAsDoubleArray(double[9]);
+    bool GetNormalizedProfilesAsDoubleArray(double (&profileArray)[9]);
     ///Get the stain vector profiles, normalized or not depending on second parameter, and assign to a 9-element double array
-    bool GetProfilesAsDoubleArray(double[9], bool);
+    bool GetProfilesAsDoubleArray(double (&profileArray)[9], bool);
     ///Set the values of the stain vector profiles from a 9-element double array
-    bool SetProfilesFromDoubleArray(double[9]);
+    bool SetProfilesFromDoubleArray(double (&profileArray)[9]);
 
     //Check if the file exists, and accessible for reading or writing, depending on the second argument
     static bool checkFile(std::string, std::string);

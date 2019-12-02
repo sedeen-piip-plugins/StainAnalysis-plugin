@@ -36,7 +36,7 @@
 #include <boost/qvm/map_mat_mat.hpp>
 
 ///Compute the inverse of a 3x3 matrix using Boost qvm: ensure matrix is unitary before using
-void StainVectorMath::Compute3x3MatrixInverse(const double inputMat[9], double inversionMat[9]) {
+void StainVectorMath::Compute3x3MatrixInverse(const double (&inputMat)[9], double (&inversionMat)[9]) {
     //Clear the inversionMat (output) array
     for (int i = 0; i < 9; i++) { inversionMat[i] = 0.0; }
     //Define an output matrix
@@ -75,7 +75,7 @@ void StainVectorMath::Compute3x3MatrixInverse(const double inputMat[9], double i
     //void return
 }//end Compute3x3MatrixInverse
 
-void StainVectorMath::Make3x3MatrixUnitary(const double inputMat[9], double unitaryMat[9]) {
+void StainVectorMath::Make3x3MatrixUnitary(const double (&inputMat)[9], double (&unitaryMat)[9]) {
     //Bundle the input values in rows of three
     std::vector<std::array<double, 3>> inputRows;
     inputRows.push_back(std::array<double, 3>({ inputMat[0], inputMat[1], inputMat[2] }));
@@ -109,12 +109,12 @@ void StainVectorMath::Make3x3MatrixUnitary(const double inputMat[9], double unit
     }
 }//end Make3x3MatrixUnitary
 
-void StainVectorMath::ConvertZeroRowsToUnitary(const double inputMat[9], double unitaryMat[9]) {
+void StainVectorMath::ConvertZeroRowsToUnitary(const double (&inputMat)[9], double (&unitaryMat)[9]) {
     double replacementVals[3] = { 1.0,1.0,1.0 };
     StainVectorMath::ConvertZeroRowsToUnitary(inputMat, unitaryMat, replacementVals);
 }//end ConvertZeroRowsToUnitary
 
-void StainVectorMath::ConvertZeroRowsToUnitary(const double inputMat[9], double unitaryMat[9], const double replacementVals[3]) {
+void StainVectorMath::ConvertZeroRowsToUnitary(const double (&inputMat)[9], double (&unitaryMat)[9], const double (&replacementVals)[3]) {
     //Bundle the input values in rows of three
     std::vector<std::array<double, 3>> inputRows;
     inputRows.push_back(std::array<double, 3>({ inputMat[0], inputMat[1], inputMat[2] }));
@@ -142,7 +142,7 @@ void StainVectorMath::ConvertZeroRowsToUnitary(const double inputMat[9], double 
     }
 }//end ConvertZeroRowsToUnitary
 
-std::array<bool, 3> StainVectorMath::RowSumZeroCheck(const double inputMat[9]) {
+std::array<bool, 3> StainVectorMath::RowSumZeroCheck(const double (&inputMat)[9]) {
     std::array<bool, 3> returnVals;
     //Bundle the input values in rows of three
     std::vector<std::array<double, 3>> inputRows;
@@ -168,7 +168,7 @@ std::array<bool, 3> StainVectorMath::RowSumZeroCheck(const double inputMat[9]) {
     return returnVals;
 }//end RowSumZeroCheck
 
-void StainVectorMath::Multiply3x3MatrixAndVector(const double inputMat[9], const double inputVec[3], double outputVec[3]) {
+void StainVectorMath::Multiply3x3MatrixAndVector(const double (&inputMat)[9], const double (&inputVec)[3], double (&outputVec)[3]) {
     //Clear the output vector
     for (int i = 0; i < 3; i++) { outputVec[i] = 0.0; }
     //Reshape to a 3x3 matrix

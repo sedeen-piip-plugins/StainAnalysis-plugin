@@ -40,7 +40,7 @@ public:
     ~StainVectorBase();
 
     ///The core functionality of a stain vector class; fills the 9-element array with three stain vectors
-    virtual void ComputeStainVectors(double outputVectors[9]);
+    virtual void ComputeStainVectors(double (&outputVectors)[9]);
 
 protected:
     ///Returns a shared pointer to the source factory, protected so only derived classes may access it

@@ -62,7 +62,7 @@ StainVectorMacenko::StainVectorMacenko(std::shared_ptr<tile::Factory> source)
 StainVectorMacenko::~StainVectorMacenko(void) {
 }//end destructor
 
-void StainVectorMacenko::ComputeStainVectors(double outputVectors[9]) {
+void StainVectorMacenko::ComputeStainVectors(double (&outputVectors)[9]) {
     if (this->GetSourceFactory() == nullptr) { return; }
     //Using this overload of the method requires setting sample size in advance
     int sampleSize = this->GetSampleSize();
@@ -158,7 +158,7 @@ void StainVectorMacenko::ComputeStainVectors(double outputVectors[9]) {
 
 //This overload does not have a default value for sampleSize, so it requires at least two arguments,
 //thus there is a clear difference in arguments between this and the other overload of the method
-void StainVectorMacenko::ComputeStainVectors(double outputVectors[9], int sampleSize,
+void StainVectorMacenko::ComputeStainVectors(double (&outputVectors)[9], int sampleSize,
     const double ODthreshold /* = 0.15 */, const double percentileThreshold /* = 1.0 */) {
     if (this->GetSourceFactory() == nullptr) { return; }
     //Set member variables with the argument values

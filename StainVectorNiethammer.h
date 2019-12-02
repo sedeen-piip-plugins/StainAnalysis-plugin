@@ -25,6 +25,8 @@
 #ifndef SEDEEN_SRC_FILTER_STAINVECTORNIETHAMMER_H
 #define SEDEEN_SRC_FILTER_STAINVECTORNIETHAMMER_H
 
+#include <array>
+
 #include "Global.h"
 #include "Geometry.h"
 #include "Image.h"
@@ -40,9 +42,12 @@ public:
     ~StainVectorNiethammer();
 
     ///Fill the 9-element array with three stain vectors
-    virtual void ComputeStainVectors(double outputVectors[9]);
+    virtual void ComputeStainVectors(double (&outputVectors)[9]);
     ///Overload of the basic method, includes parameters needed by the algorithm
-    void ComputeStainVectors(double outputVectors[9], const int sampleSize, 
+    //void ComputeStainVectors(double (&outputVectors)[9], const double (&inputPriors)[9], 
+    //    const int sampleSize, const double ODthreshold = 0.15, const double percentileThreshold = 1.0);
+    ///Additional overload that does not require an array of prior stain vector values
+    void ComputeStainVectors(double (&outputVectors)[9], const int sampleSize, 
         const double ODthreshold = 0.15, const double percentileThreshold = 1.0);
 
     ///Get/Set the average optical density threshold
@@ -53,16 +58,28 @@ public:
     ///Get/Set the percentile threshold
     inline const double GetPercentileThreshold() const { return m_percentileThreshold; }
     ///Get/Set the percentile threshold
-    inline void SetPercentileThreshold(const double p) { m_percentileThreshold = p; }
+    inline void SetPercentileThreshold(const double pt) { m_percentileThreshold = pt; }
 
     ///Get/Set the sample size, the number of pixels to choose
     inline const int GetSampleSize() const { return m_sampleSize; }
     ///Get/Set the sample size, the number of pixels to choose
     inline void SetSampleSize(const int s) { m_sampleSize = s; }
 
+    ///Get the priors as a std::array<double, 9>
+    inline const std::array<double, 9> GetPriors() const { return m_priors; }
+    ///Get the priors by filling a double[9] C array
+    inline void GetPriors(double (&p)[9]) const { std::copy(m_priors.begin(), m_priors.end(), std::begin(p)); }
+    ///Set the priors from a std::array<double, 9>
+    inline void SetPriors(const std::array<double, 9> &p) { m_priors = p; }
+    ///Set the priors from a C array
+    inline void SetPriors(const double (&p)[9]) { std::copy(std::begin(p), std::end(p), m_priors.begin()); }
+
 private:
     double m_avgODThreshold;
     double m_percentileThreshold;
+
+    ///Stain vectors to use as a starting point for the fit
+    std::array<double, 9> m_priors;
 
     ///The number of pixels that should be used to calculate the stain vectors
     int m_sampleSize;

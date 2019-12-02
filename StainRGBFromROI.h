@@ -35,10 +35,10 @@ namespace sedeen {
         PATHCORE_IMAGE_API
             void getStainsComponents(std::shared_ptr<tile::Factory> source,
                 const std::vector<std::shared_ptr<GraphicItemBase>> regions_of_interest,
-                const Size& rescaled_resolutions, double[9]);
+                const Size& rescaled_resolutions, double (&stainVec_matrix)[9]);
 
         PATHCORE_IMAGE_API
-            void getmeanRGBODfromROI(RawImage, double[3]);
+            void getmeanRGBODfromROI(RawImage, double (&rgbOD)[3]);
 
     } // namespace image
 } // namespace sedeen

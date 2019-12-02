@@ -31,7 +31,7 @@ namespace sedeen {
     namespace image {
 
 
-        void getmeanRGBODfromROI(RawImage ROI, double rgbOD[3])
+        void getmeanRGBODfromROI(RawImage ROI, double (&rgbOD)[3])
         {
             if (ROI.isNull())
                 return;
@@ -62,7 +62,7 @@ namespace sedeen {
 
         void getStainsComponents(std::shared_ptr<tile::Factory> source,
             const std::vector<std::shared_ptr<GraphicItemBase>> region_of_interests,
-            const Size &rescaled_resolutions, double stainVec_matrix[9])
+            const Size &rescaled_resolutions, double (&stainVec_matrix)[9])
         {
             for (int i = 0; i < 9; i++) {
                 stainVec_matrix[i] = 0;

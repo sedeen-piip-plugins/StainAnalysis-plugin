@@ -32,7 +32,8 @@
 
 StainProfile::StainProfile() : m_stainSeparationAlgorithmOptions( 
     { "Ruifrok+Johnston Deconvolution",
-      "Macenko 2-Stain Decomposition"   })
+      "Macenko 2-Stain Decomposition",
+      "Niethammer 2-Stain Decomposition" })
 {
     //Build the XML document structure
     BuildXMLDocument();
@@ -453,15 +454,15 @@ const std::array<double, 3> StainProfile::GetStainThreeRGB() {
     return out;
 }//end GetStainThreeRGB
 
-bool StainProfile::GetProfilesAsDoubleArray(double profileArray[9]) {
+bool StainProfile::GetProfilesAsDoubleArray(double (&profileArray)[9]) {
     return GetProfilesAsDoubleArray(profileArray, false);
 }//end GetProfileAsDoubleArray
 
-bool StainProfile::GetNormalizedProfilesAsDoubleArray(double profileArray[9]) {
+bool StainProfile::GetNormalizedProfilesAsDoubleArray(double (&profileArray)[9]) {
     return GetProfilesAsDoubleArray(profileArray, true);
 }//end GetNormalizedProfilesAsDoubleArray
 
-bool StainProfile::GetProfilesAsDoubleArray(double profileArray[9], bool normalize) {
+bool StainProfile::GetProfilesAsDoubleArray(double (&profileArray)[9], bool normalize) {
     //This method fills the values of profileArray from local stain profile
     //Assigns 0.0 for elements corresponding to components beyond the number set in the profile
     int components = this->GetNumberOfStainComponents();
@@ -492,7 +493,7 @@ bool StainProfile::GetProfilesAsDoubleArray(double profileArray[9], bool normali
     return true;
 }//end GetProfilesAsDoubleArray
 
-bool StainProfile::SetProfilesFromDoubleArray(double profileArray[9]) {
+bool StainProfile::SetProfilesFromDoubleArray(double (&profileArray)[9]) {
     //Copy values to ensure they are in local scope
     double thisArray[9] = { 0.0 };
     for (int i = 0; i < 9; i++) {

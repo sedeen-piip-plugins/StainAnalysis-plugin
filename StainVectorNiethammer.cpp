@@ -43,20 +43,25 @@ StainVectorNiethammer::StainVectorNiethammer(std::shared_ptr<tile::Factory> sour
     : StainVectorOpenCV(source),
     m_sampleSize(0), //Must set to greater than 0 to ComputeStainVectors
     m_avgODThreshold(0.15), //assign default value
-    m_percentileThreshold(1.0) //assign default value
+    m_percentileThreshold(1.0), //assign default value
+    m_priors({ 0.0 })
 {}//end constructor
 
 StainVectorNiethammer::~StainVectorNiethammer(void) {
 }//end destructor
 
-void StainVectorNiethammer::ComputeStainVectors(double outputVectors[9]) {
+void StainVectorNiethammer::ComputeStainVectors(double (&outputVectors)[9]) {
     if (this->GetSourceFactory() == nullptr) { return; }
     //Using this overload of the method requires setting sample size in advance
     int sampleSize = this->GetSampleSize();
     if (sampleSize <= 0) { return; }
+    //This overload requires setting ODthreshold in advance
     double ODthreshold = this->GetODThreshold();
+    //This overload requires setting percentileThreshold in advance
     double percentileThreshold = this->GetPercentileThreshold();
     if (percentileThreshold <= 0.0) { return; }
+    //Priors are optional, but must be set in advance for this method overload
+
 
     //Sample a set of pixel values from the source
     cv::Mat samplePixels;
@@ -143,18 +148,26 @@ void StainVectorNiethammer::ComputeStainVectors(double outputVectors[9]) {
 
 
 
-//This overload does not have a default value for sampleSize, so it requires at least two arguments,
-//thus there is a clear difference in arguments between this and the other overload of the method
-void StainVectorNiethammer::ComputeStainVectors(double outputVectors[9], int sampleSize,
+
+
+
+//This overload does not have a default value for sampleSize, so it requires at least two arguments
+void StainVectorNiethammer::ComputeStainVectors(double (&outputVectors)[9], int sampleSize,
     const double ODthreshold /* = 0.15 */, const double percentileThreshold /* = 1.0 */) {
     if (this->GetSourceFactory() == nullptr) { return; }
     //Set member variables with the argument values
     this->SetSampleSize(sampleSize);
     this->SetODThreshold(ODthreshold);
     this->SetPercentileThreshold(percentileThreshold);
+    //Set the prior stain vector values
+    //this->SetPriors(inputPriors);
+
     //Call the single-parameter version of this method, which uses the member variables
     this->ComputeStainVectors(outputVectors);
 }//end multi-parameter ComputeStainVectors
+
+
+
 
 } // namespace image
 } // namespace sedeen

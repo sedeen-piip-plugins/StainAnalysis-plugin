@@ -40,9 +40,9 @@ public:
     ~StainVectorMacenko();
 
     ///Fill the 9-element array with three stain vectors
-    virtual void ComputeStainVectors(double outputVectors[9]);
+    virtual void ComputeStainVectors(double (&outputVectors)[9]);
     ///Overload of the basic method, includes parameters needed by the algorithm
-    void ComputeStainVectors(double outputVectors[9], const int sampleSize, 
+    void ComputeStainVectors(double (&outputVectors)[9], const int sampleSize, 
         const double ODthreshold = 0.15, const double percentileThreshold = 1.0);
 
     ///Get/Set the average optical density threshold

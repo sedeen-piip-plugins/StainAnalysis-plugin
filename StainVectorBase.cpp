@@ -36,7 +36,7 @@ StainVectorBase::StainVectorBase(std::shared_ptr<tile::Factory> source)
 StainVectorBase::~StainVectorBase(void) {
 }//end destructor
 
-void StainVectorBase::ComputeStainVectors(double outputVectors[9]) {
+void StainVectorBase::ComputeStainVectors(double (&outputVectors)[9]) {
 }//end ComputeStainVectors
 
 } // namespace image

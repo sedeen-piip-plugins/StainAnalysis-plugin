@@ -363,27 +363,46 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
             //here!!! here's the place for trying the next new thing.
 
             //Create an object to get stain vectors from, using the Macenko algorithm
-            std::shared_ptr<sedeen::image::StainVectorMacenko> stainsFromMacenko 
-                = std::make_shared<sedeen::image::StainVectorMacenko>(source_factory);
-            stainsFromMacenko->ComputeStainVectors(conv_matrix, 5000, 0.15, 1.0);
+            //std::shared_ptr<sedeen::image::StainVectorMacenko> stainsFromMacenko 
+            //    = std::make_shared<sedeen::image::StainVectorMacenko>(source_factory);
+            //stainsFromMacenko->ComputeStainVectors(conv_matrix, 1000, 0.15, 1.0);
 
+
+            //I need some priors to test with. R+J?
+            double priors[9] = { 0.65,0.70,0.29,0.07,0.99,0.11,0.0,0.0,0.0};
 
             //Create an object to get stain vectors from, using the Niethammer algorithm
-            //std::shared_ptr<sedeen::image::StainVectorNiethammer> stainsFromNiethammer
-            //    = std::make_shared<sedeen::image::StainVectorNiethammer>(source_factory);
-            //stainsFromNiethammer->ComputeStainVectors(conv_matrix); // , 1000, 0.15, 1.0);
+            std::shared_ptr<sedeen::image::StainVectorNiethammer> stainsFromNiethammer
+                = std::make_shared<sedeen::image::StainVectorNiethammer>(source_factory);
+            //stainsFromNiethammer->ComputeStainVectors(conv_matrix, 1000, 0.15, 1.0);
 
 
-            std::shared_ptr<ODConversion> converter = std::make_shared<ODConversion>();
+            std::ostringstream ss;
 
+            //Let's try some things.
+
+
+            //pick up here!!! test the other Set/Get overloads
+
+            stainsFromNiethammer->SetPriors(priors);
+            double outPriors[9];
+
+            stainsFromNiethammer->GetPriors(outPriors);
+
+            ss << "So, can I set and get priors treating them as C arrays?" << std::endl;
+            for (int i = 0; i < 9; i++) {
+                ss << outPriors[i] << ", ";
+            }
+            ss << std::endl;
+          
 
             //TEMPORARY!
-            std::ostringstream ss;
-            ss << "Here is the output from getting the vectors by Macenko: " << std::endl;
+            //std::ostringstream ss;
+            //ss << "Here is the output from getting the vectors by Macenko: " << std::endl;
             //ss << "Here is the output from getting the vectors by Niethammer: " << std::endl;
-            for (int i = 0; i < 9; i++) {
-                ss << conv_matrix[i] << ", ";
-            }
+            //for (int i = 0; i < 9; i++) {
+            //    ss << conv_matrix[i] << ", ";
+            //}
 
 
             ss << std::endl;
@@ -401,7 +420,9 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
         //TEMPORARY
         //Change the contents of the chosenStainProfile
         //REENABLE THIS WHEN YOU'RE READY TO TEST
-        chosenStainProfile->SetProfilesFromDoubleArray(conv_matrix);
+        //chosenStainProfile->SetProfilesFromDoubleArray(conv_matrix);
+
+
 
 
         //Scale down the threshold to create more precision

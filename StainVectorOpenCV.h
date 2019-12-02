@@ -44,9 +44,9 @@ public:
 
 protected:
     ///Convert stain vector data as 9-element C array to OpenCV matrix (as row vectors)
-    void StainCArrayToCVMat(double inutVectors[9], cv::OutputArray outputData, const bool normalize = false);
+    void StainCArrayToCVMat(double (&inutVectors)[9], cv::OutputArray outputData, const bool normalize = false);
     ///Convert stain vector data from OpenCV matrix (as row vectors) to 9-element C array
-    void StainCVMatToCArray(cv::InputArray inputData, double outputVectors[9], const bool normalize = false);
+    void StainCVMatToCArray(cv::InputArray inputData, double (&outputVectors)[9], const bool normalize = false);
 
 };
 
