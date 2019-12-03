@@ -40,6 +40,47 @@ BasisTransform::BasisTransform() : m_numTestingPixels(10),
 BasisTransform::~BasisTransform(void) {
 }//end destructor
 
+
+void BasisTransform::NiethammerProjection(cv::InputArray sourcePoints, cv::OutputArray outputPoints,
+    cv::InputArray basisVectors,
+    const VectorDirection &sourcePointDir /*= VectorDirection::ROWVECTORS*/) {
+    if (sourcePoints.empty()) { return; }
+
+    //Get the source points as a matrix
+    cv::Mat sourceMat(sourcePoints.getMat());
+    //Get the basisVectors as a matrix
+    cv::Mat basisVectorsMat(basisVectors.getMat());
+    //Determine the data type of the source data
+    int ctype = sourceMat.depth();
+    int numElements, numPoints;
+    //Create a dummy array of means (projectPoints requires it)
+    cv::Size sizeOfMean;
+    //If sourcePointDir == VectorDirection::ROWVECTORS, data points are entered as rows, RGB elements columns
+    if (sourcePointDir == VectorDirection::ROWVECTORS) {
+        numElements = sourceMat.cols;
+        numPoints = sourceMat.rows;
+        sizeOfMean = cv::Size(numElements, 1);
+    }
+    else { //VectorDirection::COLUMNVECTORS
+        numElements = sourceMat.rows;
+        numPoints = sourceMat.cols;
+        sizeOfMean = cv::Size(1, numElements);
+    }
+    cv::Mat dummyMeans(sizeOfMean, ctype);
+    SetPointMean(dummyMeans);
+
+    //Set the basis vectors
+    SetBasisVectors(basisVectors, sourcePointDir);
+    //Perform the projection. Do not translate to a mean position first
+    cv::Mat projectedPointsOut;
+    bool useMean = false;
+    this->projectPoints(sourcePoints, projectedPointsOut, useMean);
+
+    outputPoints.assign(projectedPointsOut);
+}//end 
+
+
+
 void BasisTransform::PCAPointTransform(cv::InputArray sourcePoints, cv::OutputArray outputPoints, 
     cv::InputArray sourceMask /*=cv::noArray()*/, cv::InputArray inputMean /*=cv::noArray()*/, 
     const VectorDirection &sourcePointDir /*= VectorDirection::ROWVECTORS*/) {

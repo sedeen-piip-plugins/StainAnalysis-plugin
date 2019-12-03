@@ -121,9 +121,7 @@ void StainVectorMacenko::ComputeStainVectors(double (&outputVectors)[9]) {
     //Convert to C array and normalize rows
     double tempStainVecOutput[9] = {0.0};
     StainCVMatToCArray(backProjectedVectors, tempStainVecOutput, true);
-    for (int i = 0; i < 9; i++) {
-        outputVectors[i] = tempStainVecOutput[i];
-    }
+    std::copy(std::begin(tempStainVecOutput), std::end(tempStainVecOutput), std::begin(outputVectors));
 
 
 
@@ -158,7 +156,7 @@ void StainVectorMacenko::ComputeStainVectors(double (&outputVectors)[9]) {
 
 //This overload does not have a default value for sampleSize, so it requires at least two arguments,
 //thus there is a clear difference in arguments between this and the other overload of the method
-void StainVectorMacenko::ComputeStainVectors(double (&outputVectors)[9], int sampleSize,
+void StainVectorMacenko::ComputeStainVectors(double (&outputVectors)[9], const int sampleSize,
     const double ODthreshold /* = 0.15 */, const double percentileThreshold /* = 1.0 */) {
     if (this->GetSourceFactory() == nullptr) { return; }
     //Set member variables with the argument values

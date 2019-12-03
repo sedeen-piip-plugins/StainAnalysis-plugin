@@ -42,6 +42,9 @@ public:
     ///The core functionality of a stain vector class; fills the 9-element array with three stain vectors
     virtual void ComputeStainVectors(double (&outputVectors)[9]);
 
+    ///Utility method to check the equality of the contents of two CV InputArrays (mat, vec, etc.)
+    bool AreEqual(cv::InputArray array1, cv::InputArray array2);
+
 protected:
     ///Returns a shared pointer to the source factory, protected so only derived classes may access it
     inline std::shared_ptr<tile::Factory> GetSourceFactory() { return m_sourceFactory; }

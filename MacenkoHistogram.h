@@ -40,6 +40,13 @@ public:
     MacenkoHistogram();
     ~MacenkoHistogram();
 
+    //There will be refactoring to separate histogramming to get percentile values from
+    //histogramming to find an Otsu threshold.
+
+    ///Computes angles, finds Otsu threshold, reassigns points belonging to clusters (below or above threshold).
+    bool AssignClusters(cv::InputArray projectedPoints, cv::InputOutputArray clusterAssignments, cv::InputArray stainPriors);
+    
+
     ///Given a set of 2D vectors (rows), find angle (w/ atan2), histogram, find vectors at hi/lo percentile thresholds
     bool PercentileThresholdVectors(cv::InputArray projectedPoints, cv::OutputArray percentileThreshPoints, 
         const double percentileThresholdValue);
@@ -53,7 +60,7 @@ public:
     ///Convert a set of angles to 2D vectors (std::array input)
     void AnglesToVectors(const std::array<double,2> &inputAngles, cv::OutputArray outputVectors);
 
-    ///Create a histogram of angle values, assumed to be between -pi and pi, find angles at %ile thresholds
+    ///Create a histogram of angle values with hist range set by member variable, find angles at %ile thresholds
     const std::array<double, 2> FindPercentileThresholdValues(cv::InputArray vals);
 
     ///Set the percentileThreshold member variable (force to be between 0 and 50%)

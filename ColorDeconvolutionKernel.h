@@ -78,7 +78,8 @@ namespace sedeen {
                 RawImage thresholdOnly(const RawImage &source);
 
                 ///Arguments are: the three OD values for the pixel, the output array, the stain vector matrix, and the inverse of the matrix
-                void GetSeparateColorsForPixel(double (&pixelOD)[3], double (&RGB_sep)[9], double (&stainVec_matrix)[9], double (&inverse_matrix)[9]);
+                void GetSeparateColorsForPixel(double (&pixelOD)[3], double (&RGB_sep)[9], 
+                    double (&stainVec_matrix)[9], double (&inverse_matrix)[9]);
 
 				// rows of matrix are stains, columns are color channels
 				ColorDeconvolution::DisplayOptions m_DisplayOption;	

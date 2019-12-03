@@ -368,41 +368,31 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
             //stainsFromMacenko->ComputeStainVectors(conv_matrix, 1000, 0.15, 1.0);
 
 
-            //I need some priors to test with. R+J?
+            //I need some priors to test with. Start with R+J.
             double priors[9] = { 0.65,0.70,0.29,0.07,0.99,0.11,0.0,0.0,0.0};
 
             //Create an object to get stain vectors from, using the Niethammer algorithm
             std::shared_ptr<sedeen::image::StainVectorNiethammer> stainsFromNiethammer
                 = std::make_shared<sedeen::image::StainVectorNiethammer>(source_factory);
-            //stainsFromNiethammer->ComputeStainVectors(conv_matrix, 1000, 0.15, 1.0);
+            stainsFromNiethammer->ComputeStainVectors(conv_matrix, priors, 10, 0.15, 1.0);
 
 
             std::ostringstream ss;
 
-            //Let's try some things.
-
-
-            //pick up here!!! test the other Set/Get overloads
-
-            stainsFromNiethammer->SetPriors(priors);
-            double outPriors[9];
-
-            stainsFromNiethammer->GetPriors(outPriors);
-
-            ss << "So, can I set and get priors treating them as C arrays?" << std::endl;
+            std::array<double, 9> arrayOutPriors = stainsFromNiethammer->GetPriors();
+            ss << "The prior values passed to Niethammer:" << std::endl;
             for (int i = 0; i < 9; i++) {
-                ss << outPriors[i] << ", ";
+                ss << arrayOutPriors[i] << ", ";
             }
             ss << std::endl;
           
-
             //TEMPORARY!
             //std::ostringstream ss;
             //ss << "Here is the output from getting the vectors by Macenko: " << std::endl;
-            //ss << "Here is the output from getting the vectors by Niethammer: " << std::endl;
-            //for (int i = 0; i < 9; i++) {
-            //    ss << conv_matrix[i] << ", ";
-            //}
+            ss << "Here is the output from getting the vectors by Niethammer: " << std::endl;
+            for (int i = 0; i < 9; i++) {
+                ss << conv_matrix[i] << ", ";
+            }
 
 
             ss << std::endl;

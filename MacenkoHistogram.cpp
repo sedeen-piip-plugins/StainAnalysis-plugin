@@ -41,6 +41,20 @@ MacenkoHistogram::MacenkoHistogram() :
 MacenkoHistogram::~MacenkoHistogram(void) {
 }//end destructor
 
+
+bool MacenkoHistogram::AssignClusters(cv::InputArray projectedPoints, cv::InputOutputArray clusterAssignments, 
+    cv::InputArray qPriors) {
+
+
+
+    //return true on success
+    return true;
+}//end AssignClusters
+
+
+
+
+
 bool MacenkoHistogram::PercentileThresholdVectors(cv::InputArray projectedPoints,
     cv::OutputArray percentileThreshPoints, const double percentileThresholdValue) {
     //SetPercentileThreshold forces the value to be between 0 and 50

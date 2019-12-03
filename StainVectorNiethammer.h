@@ -44,11 +44,13 @@ public:
     ///Fill the 9-element array with three stain vectors
     virtual void ComputeStainVectors(double (&outputVectors)[9]);
     ///Overload of the basic method, includes parameters needed by the algorithm
-    //void ComputeStainVectors(double (&outputVectors)[9], const double (&inputPriors)[9], 
-    //    const int sampleSize, const double ODthreshold = 0.15, const double percentileThreshold = 1.0);
+    void ComputeStainVectors(double (&outputVectors)[9], const double (&inputPriors)[9], 
+        const int sampleSize, const double ODthreshold = 0.15, const double percentileThreshold = 1.0,
+        const double qAdjustmentFactor = 0.15);
     ///Additional overload that does not require an array of prior stain vector values
     void ComputeStainVectors(double (&outputVectors)[9], const int sampleSize, 
-        const double ODthreshold = 0.15, const double percentileThreshold = 1.0);
+        const double ODthreshold = 0.15, const double percentileThreshold = 1.0,
+        const double qAdjustmentFactor = 0.15);
 
     ///Get/Set the average optical density threshold
     inline const double GetODThreshold() const { return m_avgODThreshold; }
@@ -59,6 +61,11 @@ public:
     inline const double GetPercentileThreshold() const { return m_percentileThreshold; }
     ///Get/Set the percentile threshold
     inline void SetPercentileThreshold(const double pt) { m_percentileThreshold = pt; }
+
+    ///Get/Set the q adjustment factor, which is the mixing ratio between s1 and s2 to get q1, q2
+    inline const double GetQAdjustmentFactor() const { return m_qAdjustmentFactor; }
+    ///Get/Set the q adjustment factor, which is the mixing ratio between s1 and s2 to get q1, q2
+    inline void SetQAdjustmentFactor(const double q) { m_qAdjustmentFactor = q; }
 
     ///Get/Set the sample size, the number of pixels to choose
     inline const int GetSampleSize() const { return m_sampleSize; }
@@ -74,9 +81,14 @@ public:
     ///Set the priors from a C array
     inline void SetPriors(const double (&p)[9]) { std::copy(std::begin(p), std::end(p), m_priors.begin()); }
 
+protected:
+    ///The vectors q1 and q2 are computed from the stain priors and the q adjustment factor
+    void ComputeQVectorsFromPriors(cv::InputArray stainPriors, cv::OutputArray qVectors, double qAdjustmentFactor);
+
 private:
     double m_avgODThreshold;
     double m_percentileThreshold;
+    double m_qAdjustmentFactor;
 
     ///Stain vectors to use as a starting point for the fit
     std::array<double, 9> m_priors;

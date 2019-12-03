@@ -33,6 +33,8 @@
 namespace sedeen {
 namespace image {
 
+
+
 class BasisTransform {
 public:
     ///An enum to identify which axis input vectors are arranged in (outputs will match, if applicable)
@@ -45,6 +47,14 @@ public:
 public:
     BasisTransform();
     ~BasisTransform();
+
+
+    //Make versions of methods that are useful for Niethammer, and refactor later
+
+    void NiethammerProjection(cv::InputArray sourcePoints, cv::OutputArray outputPoints, cv::InputArray basisVectors,
+        const VectorDirection &sourcePointDir = VectorDirection::ROWVECTORS);
+
+
 
     ///Perform Principal Component Analysis (PCA) on a set of points, find a basis, transform points to new basis.
     void PCAPointTransform(cv::InputArray sourcePoints, cv::OutputArray outputPoints, 
