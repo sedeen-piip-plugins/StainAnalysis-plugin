@@ -94,7 +94,9 @@ ADD_LIBRARY( ${PROJECT_NAME} MODULE
              StainVectorMacenko.h StainVectorMacenko.cpp
              StainVectorNiethammer.h StainVectorNiethammer.cpp
              BasisTransform.h BasisTransform.cpp
+             AngleHistogram.h AngleHistogram.cpp
              MacenkoHistogram.h MacenkoHistogram.cpp
+             NiethammerHistogram.h NiethammerHistogram.cpp
              )
 
 # Link the library against the Sedeen SDK libraries

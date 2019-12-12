@@ -39,7 +39,7 @@ namespace image {
 class PATHCORE_IMAGE_API StainVectorNiethammer : public StainVectorOpenCV {
 public:
     StainVectorNiethammer(std::shared_ptr<tile::Factory> source);
-    ~StainVectorNiethammer();
+    virtual ~StainVectorNiethammer();
 
     ///Fill the 9-element array with three stain vectors
     virtual void ComputeStainVectors(double (&outputVectors)[9]);
@@ -62,10 +62,10 @@ public:
     ///Get/Set the percentile threshold
     inline void SetPercentileThreshold(const double pt) { m_percentileThreshold = pt; }
 
-    ///Get/Set the q adjustment factor, which is the mixing ratio between s1 and s2 to get q1, q2
-    inline const double GetQAdjustmentFactor() const { return m_qAdjustmentFactor; }
-    ///Get/Set the q adjustment factor, which is the mixing ratio between s1 and s2 to get q1, q2
-    inline void SetQAdjustmentFactor(const double q) { m_qAdjustmentFactor = q; }
+    ///Get/Set the q vector mixing ratio between s1 and s2 to get q1, q2
+    inline const double GetQVectorMixRatio() const { return m_qVectorMixRatio; }
+    ///Get/Set the q vector mixing ratio between s1 and s2 to get q1, q2
+    inline void SetQVectorMixRatio(const double q) { m_qVectorMixRatio = q; }
 
     ///Get/Set the sample size, the number of pixels to choose
     inline const int GetSampleSize() const { return m_sampleSize; }
@@ -83,12 +83,12 @@ public:
 
 protected:
     ///The vectors q1 and q2 are computed from the stain priors and the q adjustment factor
-    void ComputeQVectorsFromPriors(cv::InputArray stainPriors, cv::OutputArray qVectors, double qAdjustmentFactor);
+    void ComputeQVectorsFromPriors(cv::InputArray stainPriors, cv::OutputArray qVectors, double qVectorMixRatio);
 
 private:
     double m_avgODThreshold;
     double m_percentileThreshold;
-    double m_qAdjustmentFactor;
+    double m_qVectorMixRatio;
 
     ///Stain vectors to use as a starting point for the fit
     std::array<double, 9> m_priors;

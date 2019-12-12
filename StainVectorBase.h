@@ -37,7 +37,7 @@ namespace image {
 class PATHCORE_IMAGE_API StainVectorBase {
 public:
     StainVectorBase(std::shared_ptr<tile::Factory> source);
-    ~StainVectorBase();
+    virtual ~StainVectorBase();
 
     ///The core functionality of a stain vector class; fills the 9-element array with three stain vectors
     virtual void ComputeStainVectors(double (&outputVectors)[9]);

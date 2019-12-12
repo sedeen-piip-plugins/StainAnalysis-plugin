@@ -49,7 +49,7 @@ public:
     StainProfile();
     ///Copy constructor
     StainProfile(StainProfile &s);
-    ///virtual destructor
+    ///destructor
     virtual ~StainProfile();
 
     ///Get/Set the name of the stain profile

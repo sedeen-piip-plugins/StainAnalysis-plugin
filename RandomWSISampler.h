@@ -42,7 +42,7 @@ class PATHCORE_IMAGE_API RandomWSISampler {
 
 public:
     RandomWSISampler(std::shared_ptr<tile::Factory> source);
-    ~RandomWSISampler();
+    virtual ~RandomWSISampler();
 
     ///Populate an OutputArray with pixels chosen without duplication from the source tile factory
     virtual bool ChooseRandomPixels(cv::OutputArray outputMatrix, const int numberOfPixels, const double ODthreshold,

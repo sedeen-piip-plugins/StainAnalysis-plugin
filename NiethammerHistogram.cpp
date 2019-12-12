@@ -22,36 +22,54 @@
  *
  *=============================================================================*/
 
-#ifndef SEDEEN_SRC_FILTER_STAINVECTORPIXELROI_H
-#define SEDEEN_SRC_FILTER_STAINVECTORPIXELROI_H
+#include "NiethammerHistogram.h"
 
-#include "Global.h"
-#include "Geometry.h"
-#include "Image.h"
-
-#include "StainVectorBase.h"
-
- //OpenCV include
-#include <opencv2/core/core.hpp>
+#include <cmath>
+#include <fstream>
+#include <sstream>
 
 namespace sedeen {
 namespace image {
 
-class PATHCORE_IMAGE_API StainVectorPixelROI : public StainVectorBase {
-public:
-    StainVectorPixelROI(std::shared_ptr<tile::Factory> source);
-    virtual ~StainVectorPixelROI();
+NiethammerHistogram::NiethammerHistogram(double alpha /*= 0.15 */, int nbins /*= 128 */) : AngleHistogram(nbins /*, default range */),
+    m_alphaMixRatio(alpha) {
+}//end constructor
 
-    long long ChooseRandomPixels(cv::Mat outputMatrix, int numberOfPixels, bool suppressZeros);
+NiethammerHistogram::~NiethammerHistogram(void) {
+}//end destructor
 
-private:
-    std::shared_ptr<tile::Factory> m_sourceFactory;
 
-private:
-    //TODO: replace this with a threshold factory applied BEFORE creating an instance of this class
-    double m_avgODThreshold;
-};
+bool NiethammerHistogram::AssignClusters(cv::InputArray projectedPoints, cv::InputOutputArray clusterAssignments,
+    cv::InputArray qPriors) {
+    //Get the angular coordinates of the 2D points
+    cv::Mat angleVals;
+    this->VectorsToAngles(projectedPoints, angleVals);
+    //Check if angleVals is empty, return failure if so
+    if (angleVals.empty()) { return false; }
+
+    //Fill the histogram
+    cv::Mat theHist;
+    FillHistogram(angleVals, theHist); //Use the member variables for number of bins and histogram range
+
+
+    //Now what do I do with it?
+    //I think I'm right. I test every bin and see which one has the lowest energy function
+    //I'm going to need a temporary cluster assignment matrix
+    cv::Mat tempClusterAssignments(angleVals.size(), cv::DataType<int>::type);
+    //Order: set I_theta to a bin value. 
+
+    //I will have to convert back from histogram bin to angle
+
+
+
+
+
+    //return true on success
+    return true;
+}//end AssignClusters
+
+
+
 
 } // namespace image
 } // namespace sedeen
-#endif

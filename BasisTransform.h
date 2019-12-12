@@ -46,7 +46,7 @@ public:
 
 public:
     BasisTransform();
-    ~BasisTransform();
+    virtual ~BasisTransform();
 
 
     //Make versions of methods that are useful for Niethammer, and refactor later

@@ -33,7 +33,7 @@
 //in a kernel, and use a factory to apply it before passing the factory to this class
 #include "ODConversion.h"
 #include "StainVectorMath.h"
-#include "MacenkoHistogram.h"
+#include "NiethammerHistogram.h"
 #include "BasisTransform.h"
 
 namespace sedeen {
@@ -44,8 +44,8 @@ StainVectorNiethammer::StainVectorNiethammer(std::shared_ptr<tile::Factory> sour
     m_sampleSize(0), //Must set to greater than 0 to ComputeStainVectors
     m_avgODThreshold(0.15),     //assign default value
     m_percentileThreshold(1.0), //assign default value
-    m_qAdjustmentFactor(0.15),  //assign default value
-    m_priors({ 0.0 })
+    m_qVectorMixRatio(0.15),    //assign default value
+    m_priors({ 0.0 })           //prior values 0 unless redefined after construction
 {}//end constructor
 
 StainVectorNiethammer::~StainVectorNiethammer(void) {
@@ -62,7 +62,7 @@ void StainVectorNiethammer::ComputeStainVectors(double (&outputVectors)[9]) {
     double percentileThreshold = this->GetPercentileThreshold();
     if (percentileThreshold <= 0.0) { return; }
     //This overload requires that the q adjustment factor to be already set
-    double qAdjustmentFactor = this->GetQAdjustmentFactor();
+    double qVectorMixRatio = this->GetQVectorMixRatio();
     //Priors may be zero, or must be set already for this method overload
     double thePriors[9];
     this->GetPriors(thePriors);
@@ -85,10 +85,10 @@ void StainVectorNiethammer::ComputeStainVectors(double (&outputVectors)[9]) {
 
     //Create a mask to identify cluster assignments, and a holder for the values from the previous iteration
     //0 and 1 are cluster assignments. Initialize to cluster 0.
-    cv::Size sizeOfMask = cv::Size(1, samplePixels.rows);
+    cv::Size sizeOfMask = cv::Size(samplePixels.rows, 1);
     int ctype = cv::DataType<int>::type;
-    cv::Mat clusterMask = cv::Mat::zeros(sizeOfMask, ctype);
-    cv::Mat prevIterationMask; //initially empty
+    cv::Mat clusterAssignments = cv::Mat::zeros(sizeOfMask, ctype);
+    cv::Mat prevClusterAssignments; //initially empty
 
     //I guess do stuff here and then refactor when I know what I'm doing?
 
@@ -100,7 +100,7 @@ void StainVectorNiethammer::ComputeStainVectors(double (&outputVectors)[9]) {
     
     //Compute q1 and q2 by mixing the stain priors
     cv::Mat qVectors, projQPriors;
-    ComputeQVectorsFromPriors(cvPriors, qVectors, this->GetQAdjustmentFactor());
+    ComputeQVectorsFromPriors(cvPriors, qVectors, this->GetQVectorMixRatio());
 
     //TEMP: create a separate basis transform object for projection of the q priors
     std::unique_ptr<BasisTransform> qBasisTransform = std::make_unique<BasisTransform>();
@@ -111,14 +111,15 @@ void StainVectorNiethammer::ComputeStainVectors(double (&outputVectors)[9]) {
     scov << "The projected qPriors: " << projQPriors << std::endl;
 
 
-    //Create a histogramming class
-    std::unique_ptr<MacenkoHistogram> testingHistogram = std::make_unique<MacenkoHistogram>();
+    //Create a histogramming class that can identify clusters
+    std::unique_ptr<NiethammerHistogram> testingHistogram = std::make_unique<NiethammerHistogram>();
 
-    //Test equality of the previous and the new cluster assignment matrices
-    cv::Mat prevClusterAssignments, clusterAssignments;
-    //Assign clusterAssignments to prevClusterAssignments, get new clusterAssignments
+    //Assign clusterAssignments reference to prevClusterAssignments, get new clusterAssignments
     prevClusterAssignments = clusterAssignments;
     testingHistogram->AssignClusters(projectedPoints, clusterAssignments, qVectors);
+
+
+    //Test equality of the previous and the new cluster assignment matrices
     bool assignmentsEqual = AreEqual(prevClusterAssignments, clusterAssignments);
 
     scov << "Are the old and new cluster assignments equivalent? " << assignmentsEqual << std::endl;

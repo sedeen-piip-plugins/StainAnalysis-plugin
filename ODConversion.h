@@ -40,7 +40,7 @@ public:
         }
     }//end lookup table constructor
 
-    ~ODConversion(void) {
+    virtual ~ODConversion(void) {
         m_convLookup.clear();
         m_convLookup.shrink_to_fit();
     }//end destructor

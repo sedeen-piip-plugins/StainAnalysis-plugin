@@ -40,7 +40,7 @@ namespace image {
 class PATHCORE_IMAGE_API StainVectorOpenCV : public StainVectorBase {
 public:
     StainVectorOpenCV(std::shared_ptr<tile::Factory> source);
-    ~StainVectorOpenCV();
+    virtual ~StainVectorOpenCV();
 
 protected:
     ///Convert stain vector data as 9-element C array to OpenCV matrix (as numRows row vectors)

@@ -22,8 +22,8 @@
  *
  *=============================================================================*/
 
-#ifndef STAINANALYSIS_MACENKOHISTOGRAM_H
-#define STAINANALYSIS_MACENKOHISTOGRAM_H
+#ifndef STAINANALYSIS_NIETHAMMERHISTOGRAM_H
+#define STAINANALYSIS_NIETHAMMERHISTOGRAM_H
 
 #include <array>
 
@@ -35,38 +35,48 @@
 namespace sedeen {
 namespace image {
 
-class MacenkoHistogram : public AngleHistogram {
+class NiethammerHistogram : public AngleHistogram {
 
 public:
     ///Constructor with two parameters, with defaults specified
-    MacenkoHistogram(double pthresh = 1.0, int nbins = 1024);
+    NiethammerHistogram(double alpha = 0.15, int nbins = 128);
     ///Destructor
-    virtual ~MacenkoHistogram();
+    virtual ~NiethammerHistogram();
 
-    ///Given a set of 2D vectors (rows), find angle (w/ atan2), histogram, find vectors at hi/lo percentile thresholds
-    bool PercentileThresholdVectors(cv::InputArray projectedPoints, cv::OutputArray percentileThreshPoints, 
-        const double &percentileThresholdValue);
 
-    ///Two-parameter overload of PercentileThresholdVectors, uses the member variable value for the percentileThresholdValue
-    bool PercentileThresholdVectors(cv::InputArray projectedPoints, cv::OutputArray percentileThreshPoints);
+    //There will be refactoring to separate histogramming to get percentile values from
+    //histogramming to find an Otsu threshold.
 
-    ///Create a histogram of angle values with hist range set by member variable, find angles at %ile thresholds
-    const std::array<double, 2> FindPercentileThresholdValues(cv::InputArray vals);
-
+    ///Computes angles, finds Otsu threshold, reassigns points belonging to clusters (below or above threshold).
+    bool AssignClusters(cv::InputArray projectedPoints, cv::InputOutputArray clusterAssignments, cv::InputArray stainPriors);
+    
 public:
-    ///Set the percentileThreshold member variable (force to be between 0 and 50%)
-    inline void SetPercentileThreshold(const double &_p) { 
-        double p = _p < 0.0 ? 0.0 : _p; //can't be less than 0
-        p = p > 100.0 ? 100.0 : p;      //can't be more than 100
-        m_percentileThreshold = (p <= 50.0) ? p : (100.0 - p); //100-p if over 50
-    }
-    ///Get the percentileThreshold member variable
-    inline const double GetPercentileThreshold() const { return m_percentileThreshold; }
+    ///Set/Get the mixing parameter between the raw stain priors (basis vectors) to get the mixed vectors q1 and q2
+    inline void SetAlphaMixRatio(const double &alpha) { m_alphaMixRatio = alpha; }
+    ///Set/Get the mixing parameter between the raw stain priors (basis vectors) to get the mixed vectors q1 and q2
+    inline const double GetAlphaMixRatio() const { return m_alphaMixRatio; }
+
+    ///Set the raw stain priors, and compute the q vectors
+
+    ///Set/Get the raw stain priors
+
+
+    ///Get the mixed vectors q1 and q2 by filling a 2-row cv::OutputArray
+
+    ///Get the mixed vectors q1 and q2 as a 2-row cv::Mat return variable
+
 
 private:
-    double m_percentileThreshold;
+    ///Parameter that determines the amount of mixing between the raw stain priors (basis vectors)
+    double m_alphaMixRatio;
+    ///The raw stain priors, as used externally
+    cv::Mat m_stainPriors;
+    ///The adjusted priors, calculated by mixing the raw stain priors using the value of m_alphaMixRatio
+    cv::Mat m_qPriors;
+
 };
 
 } // namespace image
 } // namespace sedeen
 #endif
+

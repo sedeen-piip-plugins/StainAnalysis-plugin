@@ -37,7 +37,7 @@ namespace image {
 class PATHCORE_IMAGE_API StainVectorMacenko : public StainVectorOpenCV {
 public:
     StainVectorMacenko(std::shared_ptr<tile::Factory> source);
-    ~StainVectorMacenko();
+    virtual ~StainVectorMacenko();
 
     ///Fill the 9-element array with three stain vectors
     virtual void ComputeStainVectors(double (&outputVectors)[9]);
