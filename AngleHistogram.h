@@ -51,7 +51,7 @@ public:
     ///Convert a set of angles to 2D vectors (CV input)
     void AnglesToVectors(cv::InputArray inputAngles, cv::OutputArray outputVectors);
     ///Convert a set of angles to 2D vectors (std::array input)
-    void AnglesToVectors(const std::array<double, 2> &inputAngles, cv::OutputArray outputVectors);
+    void AnglesToVectors(const std::array<float, 2> &inputAngles, cv::OutputArray outputVectors);
 
 public:
     ///Set/Get the number of histogram bins
@@ -64,22 +64,14 @@ public:
     ///Set/Get the histogram range
     inline const std::array<float, 2> GetHistogramRange() const { return m_histRange; }
 
+    ///Given member variable values for range and nbins, convert an angle value to a float bin value
+    const float AngleToHistogramBin(const float &angle) const;
+    ///Given member variable values for range and nbins, convert a float histogram bin to angle value
+    const float HistogramBinToAngle(const float &bin) const;
+
 protected:
     ///Populate a histogram from an input array of single-column data, histogram configuration set by 3rd and 4th arguments
     void FillHistogram(cv::InputArray inVals, cv::OutputArray outHist, int nbins, std::array<float, 2> range);
-
-
-    //I think I need a way to convert from bin back to angle
-
-    //AngleToHistogramBin
-
-    //HistogramBinToAngle
-
-
-    //interpolation?
-
-
-
 
 private:
     int m_numHistogramBins;

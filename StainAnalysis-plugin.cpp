@@ -363,9 +363,9 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
             //here!!! here's the place for trying the next new thing.
 
             //Create an object to get stain vectors from, using the Macenko algorithm
-            //std::shared_ptr<sedeen::image::StainVectorMacenko> stainsFromMacenko 
-            //    = std::make_shared<sedeen::image::StainVectorMacenko>(source_factory);
-            //stainsFromMacenko->ComputeStainVectors(conv_matrix, 1000, 0.15, 1.0);
+            std::shared_ptr<sedeen::image::StainVectorMacenko> stainsFromMacenko 
+                = std::make_shared<sedeen::image::StainVectorMacenko>(source_factory);
+            stainsFromMacenko->ComputeStainVectors(conv_matrix, 1000, 0.15, 1.0);
 
 
             //I need some priors to test with. Start with R+J.
@@ -374,7 +374,7 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
             //Create an object to get stain vectors from, using the Niethammer algorithm
             std::shared_ptr<sedeen::image::StainVectorNiethammer> stainsFromNiethammer
                 = std::make_shared<sedeen::image::StainVectorNiethammer>(source_factory);
-            stainsFromNiethammer->ComputeStainVectors(conv_matrix, priors, 10, 0.15, 1.0);
+            stainsFromNiethammer->ComputeStainVectors(conv_matrix, priors, 100, 0.15, 1.0);
 
 
             std::ostringstream ss;

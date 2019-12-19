@@ -56,14 +56,6 @@ public:
     ///Set/Get the mixing parameter between the raw stain priors (basis vectors) to get the mixed vectors q1 and q2
     inline const double GetAlphaMixRatio() const { return m_alphaMixRatio; }
 
-    ///Set the raw stain priors, and compute the q vectors
-
-    ///Set/Get the raw stain priors
-
-
-    ///Get the mixed vectors q1 and q2 by filling a 2-row cv::OutputArray
-
-    ///Get the mixed vectors q1 and q2 as a 2-row cv::Mat return variable
 
 
 private:

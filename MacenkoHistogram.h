@@ -50,8 +50,8 @@ public:
     ///Two-parameter overload of PercentileThresholdVectors, uses the member variable value for the percentileThresholdValue
     bool PercentileThresholdVectors(cv::InputArray projectedPoints, cv::OutputArray percentileThreshPoints);
 
-    ///Create a histogram of angle values with hist range set by member variable, find angles at %ile thresholds
-    const std::array<double, 2> FindPercentileThresholdValues(cv::InputArray vals);
+    ///Given a histogram with range and nbins set in member variables, find values at percentile thresholds
+    const std::array<float, 2> FindPercentileThresholdValues(cv::InputArray theHist);
 
 public:
     ///Set the percentileThreshold member variable (force to be between 0 and 50%)

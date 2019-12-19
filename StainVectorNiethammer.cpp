@@ -117,7 +117,7 @@ void StainVectorNiethammer::ComputeStainVectors(double (&outputVectors)[9]) {
     //Assign clusterAssignments reference to prevClusterAssignments, get new clusterAssignments
     prevClusterAssignments = clusterAssignments;
     testingHistogram->AssignClusters(projectedPoints, clusterAssignments, qVectors);
-
+    
 
     //Test equality of the previous and the new cluster assignment matrices
     bool assignmentsEqual = AreEqual(prevClusterAssignments, clusterAssignments);

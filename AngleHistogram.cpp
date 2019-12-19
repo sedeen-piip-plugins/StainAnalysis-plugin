@@ -125,16 +125,16 @@ void AngleHistogram::AnglesToVectors(cv::InputArray inputAngles, cv::OutputArray
     if (inputAngles.empty()) { return; }
     //Access the input angle data as a matrix
     cv::Mat inputMat = inputAngles.getMat();
-    cv::Mat inputDoubleMat;
-    inputMat.convertTo(inputDoubleMat, cv::DataType<double>::type);
-    std::array<double, 2> angleArray;
-    if (inputDoubleMat.rows == 1 && inputDoubleMat.cols >= 2) {
-        angleArray[0] = inputDoubleMat.at<double>(0, 0);
-        angleArray[1] = inputDoubleMat.at<double>(0, 1);
+    cv::Mat inputFloatMat;
+    inputMat.convertTo(inputFloatMat, cv::DataType<float>::type);
+    std::array<float, 2> angleArray;
+    if (inputFloatMat.rows == 1 && inputFloatMat.cols >= 2) {
+        angleArray[0] = inputFloatMat.at<float>(0, 0);
+        angleArray[1] = inputFloatMat.at<float>(0, 1);
     }
     else if (inputMat.rows >= 2 && inputMat.cols == 1) {
-        angleArray[0] = inputDoubleMat.at<double>(0, 0);
-        angleArray[1] = inputDoubleMat.at<double>(1, 0);
+        angleArray[0] = inputFloatMat.at<float>(0, 0);
+        angleArray[1] = inputFloatMat.at<float>(1, 0);
     }
     else {
         return;
@@ -143,20 +143,48 @@ void AngleHistogram::AnglesToVectors(cv::InputArray inputAngles, cv::OutputArray
     this->AnglesToVectors(angleArray, outputVectors);
 }//end AnglesToVectors
 
-void AngleHistogram::AnglesToVectors(const std::array<double, 2> &inputAngles, cv::OutputArray outputVectors) {
+void AngleHistogram::AnglesToVectors(const std::array<float, 2> &inputAngles, cv::OutputArray outputVectors) {
     //Check if inputAngles is empty
     if (inputAngles.empty()) { return; }
     //Check if inputAngles is 0,0
     if (inputAngles[0] == 0.0 && inputAngles[1] == 0.0) { return; }
 
     //Convert to 2D Cartesian
-    cv::Mat cartesianVectors(2, 2, cv::DataType<double>::type);
-    cartesianVectors.at<double>(0, 0) = std::cos(inputAngles[0]);
-    cartesianVectors.at<double>(0, 1) = std::sin(inputAngles[0]);
-    cartesianVectors.at<double>(1, 0) = std::cos(inputAngles[1]);
-    cartesianVectors.at<double>(1, 1) = std::sin(inputAngles[1]);
+    cv::Mat cartesianVectors(2, 2, cv::DataType<float>::type);
+    cartesianVectors.at<float>(0, 0) = std::cos(inputAngles[0]);
+    cartesianVectors.at<float>(0, 1) = std::sin(inputAngles[0]);
+    cartesianVectors.at<float>(1, 0) = std::cos(inputAngles[1]);
+    cartesianVectors.at<float>(1, 1) = std::sin(inputAngles[1]);
     outputVectors.assign(cartesianVectors);
 }//end AnglesToVectors
+
+    ///Given member variable values for range and nbins, convert an angle value to a float bin value
+const float AngleHistogram::AngleToHistogramBin(const float &angle) const {
+    std::array<float, 2> range = this->GetHistogramRange();
+    int nbins = this->GetNumHistogramBins();
+    //error checks on these values. return max float value on error
+    if (range.empty() || (nbins < 1)) {
+        return std::numeric_limits<float>::max();
+    }
+    float intercept = static_cast<float>(range[0]);
+    float slope = static_cast<float>(range[1] - range[0]) / static_cast<float>(nbins);
+    //bin = (angle - intercept) / slope
+    return (angle - intercept) / slope;
+}//end AngleToHistogramBin
+
+///Given member variable values for range and nbins, convert a float histogram bin to angle value
+const float AngleHistogram::HistogramBinToAngle(const float &bin) const {
+    std::array<float, 2> range = this->GetHistogramRange();
+    int nbins = this->GetNumHistogramBins();
+    //error checks on these values. return max float value on error
+    if (range.empty() || (nbins < 1)) {
+        return std::numeric_limits<float>::max();
+    }
+    float intercept = static_cast<float>(range[0]);
+    float slope = static_cast<float>(range[1] - range[0]) / static_cast<float>(nbins);
+    //value = intercept + slope*bin
+    return (intercept + slope * bin);
+}//end HistogramBinToAngle
 
 } // namespace image
 } // namespace sedeen

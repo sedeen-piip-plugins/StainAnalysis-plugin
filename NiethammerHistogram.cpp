@@ -50,6 +50,7 @@ bool NiethammerHistogram::AssignClusters(cv::InputArray projectedPoints, cv::Inp
     //Fill the histogram
     cv::Mat theHist;
     FillHistogram(angleVals, theHist); //Use the member variables for number of bins and histogram range
+    //int angType = angleVals.depth();
 
 
     //Now what do I do with it?
@@ -59,6 +60,26 @@ bool NiethammerHistogram::AssignClusters(cv::InputArray projectedPoints, cv::Inp
     //Order: set I_theta to a bin value. 
 
     //I will have to convert back from histogram bin to angle
+
+
+    //When iterating over the histogram bins, skip if a bin has no new counts.
+    //The cluster assignments can't change if the threshold has the same number of counts on either side
+
+
+    //Choose a bin and angle value: bin nbins/2, angle 0.
+
+    int bin = 3 * GetNumHistogramBins() / 4; //+90 degrees
+    float thresholdAngle = CV_PI / 2.0;
+
+    //Iterate through the angleVals
+    for (auto ang = angleVals.begin<float>(); ang != angleVals.end<float>(); ++ang) {
+        int i = ang.lpos();
+        //Is the angle value above or below the current threshold angle?
+        tempClusterAssignments.at<int>(i) = (*ang <= thresholdAngle) ? 0 : 1;
+
+
+
+    }
 
 
 
