@@ -36,14 +36,14 @@ namespace image {
 
 class PATHCORE_IMAGE_API StainVectorMacenko : public StainVectorOpenCV {
 public:
-    StainVectorMacenko(std::shared_ptr<tile::Factory> source);
+    StainVectorMacenko(std::shared_ptr<tile::Factory> source,
+        double ODthreshold = 0.15, double percentileThreshold = 1.0);
     virtual ~StainVectorMacenko();
 
     ///Fill the 9-element array with three stain vectors
     virtual void ComputeStainVectors(double (&outputVectors)[9]);
-    ///Overload of the basic method, includes parameters needed by the algorithm
-    void ComputeStainVectors(double (&outputVectors)[9], const int sampleSize, 
-        const double ODthreshold = 0.15, const double percentileThreshold = 1.0);
+    ///Overload of the basic method, includes sampleSize parameter
+    void ComputeStainVectors(double (&outputVectors)[9], int sampleSize);
 
     ///Get/Set the average optical density threshold
     inline const double GetODThreshold() const { return m_avgODThreshold; }

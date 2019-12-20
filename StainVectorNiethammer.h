@@ -38,19 +38,16 @@ namespace image {
 
 class PATHCORE_IMAGE_API StainVectorNiethammer : public StainVectorOpenCV {
 public:
-    StainVectorNiethammer(std::shared_ptr<tile::Factory> source);
+    StainVectorNiethammer(std::shared_ptr<tile::Factory> source, double ODthreshold = 0.15, 
+        double percentileThreshold = 1.0, double qAdjustmentFactor = 0.15);
     virtual ~StainVectorNiethammer();
 
     ///Fill the 9-element array with three stain vectors
     virtual void ComputeStainVectors(double (&outputVectors)[9]);
     ///Overload of the basic method, includes parameters needed by the algorithm
-    void ComputeStainVectors(double (&outputVectors)[9], const double (&inputPriors)[9], 
-        const int sampleSize, const double ODthreshold = 0.15, const double percentileThreshold = 1.0,
-        const double qAdjustmentFactor = 0.15);
+    void ComputeStainVectors(double (&outputVectors)[9], const double (&inputPriors)[9], const int sampleSize);
     ///Additional overload that does not require an array of prior stain vector values
-    void ComputeStainVectors(double (&outputVectors)[9], const int sampleSize, 
-        const double ODthreshold = 0.15, const double percentileThreshold = 1.0,
-        const double qAdjustmentFactor = 0.15);
+    void ComputeStainVectors(double (&outputVectors)[9], const int sampleSize);
 
     ///Get/Set the average optical density threshold
     inline const double GetODThreshold() const { return m_avgODThreshold; }

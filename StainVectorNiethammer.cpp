@@ -39,12 +39,13 @@
 namespace sedeen {
 namespace image {
 
-StainVectorNiethammer::StainVectorNiethammer(std::shared_ptr<tile::Factory> source)
+StainVectorNiethammer::StainVectorNiethammer(std::shared_ptr<tile::Factory> source,
+    double ODthreshold /*= 0.15 */, double percentileThreshold /*= 1.0 */, double qAdjustmentFactor /*= 0.15 */)
     : StainVectorOpenCV(source),
     m_sampleSize(0), //Must set to greater than 0 to ComputeStainVectors
-    m_avgODThreshold(0.15),     //assign default value
-    m_percentileThreshold(1.0), //assign default value
-    m_qVectorMixRatio(0.15),    //assign default value
+    m_avgODThreshold(ODthreshold),     //assign default value
+    m_percentileThreshold(percentileThreshold), //assign default value
+    m_qVectorMixRatio(qAdjustmentFactor),    //assign default value
     m_priors({ 0.0 })           //prior values 0 unless redefined after construction
 {}//end constructor
 
@@ -194,23 +195,19 @@ void StainVectorNiethammer::ComputeStainVectors(double (&outputVectors)[9]) {
 
 
 
-void StainVectorNiethammer::ComputeStainVectors(double(&outputVectors)[9], const int sampleSize,
-    const double ODthreshold /* = 0.15 */, const double percentileThreshold /* = 1.0 */,
-    const double qAdjustmentFactor /* = 0.15 */) {
+//This overload does not have a default value for sampleSize, so it requires two arguments
+void StainVectorNiethammer::ComputeStainVectors(double(&outputVectors)[9], const int sampleSize) {
     //This method creates a priors array initialized to zeros, and calls the method with priors
     double zeroPriors[9] = { 0.0 };
-    this->ComputeStainVectors(outputVectors, zeroPriors, sampleSize, ODthreshold, percentileThreshold);
+    this->ComputeStainVectors(outputVectors, zeroPriors, sampleSize);
 }//end no-priors multi-parameter ComputeStainVectors
 
-//This overload does not have a default value for sampleSize, so it requires at least two arguments
-void StainVectorNiethammer::ComputeStainVectors(double (&outputVectors)[9], const double (&inputPriors)[9], 
-    const int sampleSize, const double ODthreshold /* = 0.15 */, const double percentileThreshold /* = 1.0 */,
-    const double qAdjustmentFactor /* = 0.15 */) {
+//This overload requires three arguments
+void StainVectorNiethammer::ComputeStainVectors(double (&outputVectors)[9], 
+    const double (&inputPriors)[9], const int sampleSize) {
     if (this->GetSourceFactory() == nullptr) { return; }
     //Set member variables with the argument values
     this->SetSampleSize(sampleSize);
-    this->SetODThreshold(ODthreshold);
-    this->SetPercentileThreshold(percentileThreshold);
     //Set the prior stain vector values
     this->SetPriors(inputPriors);
     //Call the single-parameter version of this method, which uses the member variables

@@ -52,11 +52,12 @@
 namespace sedeen {
 namespace image {
 
-StainVectorMacenko::StainVectorMacenko(std::shared_ptr<tile::Factory> source)
+StainVectorMacenko::StainVectorMacenko(std::shared_ptr<tile::Factory> source,
+    double ODthreshold /*= 0.15 */, double percentileThreshold /*= 1.0 */)
     : StainVectorOpenCV(source),
     m_sampleSize(0), //Must set to greater than 0 to ComputeStainVectors
-    m_avgODThreshold(0.15), //assign default value
-    m_percentileThreshold(1.0) //assign default value
+    m_avgODThreshold(ODthreshold), //assign default value
+    m_percentileThreshold(percentileThreshold) //assign default value
 {}//end constructor
 
 StainVectorMacenko::~StainVectorMacenko(void) {
@@ -154,16 +155,12 @@ void StainVectorMacenko::ComputeStainVectors(double (&outputVectors)[9]) {
 
 
 
-//This overload does not have a default value for sampleSize, so it requires at least two arguments,
-//thus there is a clear difference in arguments between this and the other overload of the method
-void StainVectorMacenko::ComputeStainVectors(double (&outputVectors)[9], const int sampleSize,
-    const double ODthreshold /* = 0.15 */, const double percentileThreshold /* = 1.0 */) {
+//This overload does not have a default value for sampleSize, so it requires at two arguments
+void StainVectorMacenko::ComputeStainVectors(double (&outputVectors)[9], const int sampleSize) {
     if (this->GetSourceFactory() == nullptr) { return; }
     //Set member variables with the argument values
     this->SetSampleSize(sampleSize);
-    this->SetODThreshold(ODthreshold);
-    this->SetPercentileThreshold(percentileThreshold);
-    //Call the single-parameter version of this method, which uses the member variables
+    //Call the single-parameter version of this method, which uses member variables
     this->ComputeStainVectors(outputVectors);
 }//end multi-parameter ComputeStainVectors
 

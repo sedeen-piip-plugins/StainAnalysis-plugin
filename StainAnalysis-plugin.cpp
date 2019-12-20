@@ -364,8 +364,8 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
 
             //Create an object to get stain vectors from, using the Macenko algorithm
             std::shared_ptr<sedeen::image::StainVectorMacenko> stainsFromMacenko 
-                = std::make_shared<sedeen::image::StainVectorMacenko>(source_factory);
-            stainsFromMacenko->ComputeStainVectors(conv_matrix, 1000, 0.15, 1.0);
+                = std::make_shared<sedeen::image::StainVectorMacenko>(source_factory, 0.15, 1.0);
+            stainsFromMacenko->ComputeStainVectors(conv_matrix, 1000);
 
 
             //I need some priors to test with. Start with R+J.
