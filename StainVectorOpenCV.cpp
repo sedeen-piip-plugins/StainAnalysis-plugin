@@ -1,6 +1,6 @@
 /*=============================================================================
  *
- *  Copyright (c) 2019 Sunnybrook Research Institute
+ *  Copyright (c) 2020 Sunnybrook Research Institute
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,23 @@ StainVectorOpenCV::StainVectorOpenCV(std::shared_ptr<tile::Factory> source)
 StainVectorOpenCV::~StainVectorOpenCV(void) {
 }//end destructor
 
-void StainVectorOpenCV::StainCArrayToCVMat(double (&inputVectors)[9], cv::OutputArray outputData, 
+bool StainVectorOpenCV::AreEqual(cv::InputArray array1, cv::InputArray array2) {
+    // treat two empty arrays as identical
+    if (array1.empty() && array2.empty()) {
+        return true;
+    }
+    // if dimensionality is not identical, these arrays are not identical
+    if (array1.cols() != array2.cols() || array1.rows() != array2.rows() || array1.dims() != array2.dims()) {
+        return false;
+    }
+    //Compare NOT equal, then count NON-zero (there isn't a countZero function in OpenCV).
+    cv::Mat diff;
+    cv::compare(array1, array2, diff, cv::CmpTypes::CMP_NE);
+    int nz = cv::countNonZero(diff);
+    return (nz == 0);
+}//end AreEqual
+
+void StainVectorOpenCV::StainCArrayToCVMat(double(&inputVectors)[9], cv::OutputArray outputData,
     const bool normalize /* = false*/, const int _numRows /*= -1 */) {
     //If _numRows == 0, no output should be produced
     if (_numRows == 0) { return; }

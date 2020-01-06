@@ -22,20 +22,7 @@
  *
  *=============================================================================*/
 
-
-//I'm moving this, but keeping the code snippets for later use
-    //Start the steady clock
-    //auto startTime = std::chrono::steady_clock::now();
-
-    //How long did it take to get the basis vectors?
-    //auto afterBasisVectorsTime = std::chrono::steady_clock::now();
-
-    //How long did getting the basis vectors take?
-    //long long gettingBasisVectorsDuration = std::chrono::duration_cast<std::chrono::microseconds>(afterBasisVectorsTime - startTime).count();
-
-
-
-#include "StainVectorMacenko.h"
+#include "StainVectorICA.h"
 
 //#include <chrono>
 //#include <random>
@@ -46,31 +33,26 @@
 //in a kernel, and use a factory to apply it before passing the factory to this class
 #include "ODConversion.h"
 #include "StainVectorMath.h"
-#include "MacenkoHistogram.h"
-#include "BasisTransform.h"
 
 namespace sedeen {
 namespace image {
 
-StainVectorMacenko::StainVectorMacenko(std::shared_ptr<tile::Factory> source,
-    double ODthreshold /*= 0.15 */, double percentileThreshold /*= 1.0 */)
-    : StainVectorOpenCV(source),
+StainVectorICA::StainVectorICA(std::shared_ptr<tile::Factory> source,
+    double ODthreshold /*= 0.15 */)
+    : StainVectorMLPACK(source),
     m_sampleSize(0), //Must set to greater than 0 to ComputeStainVectors
-    m_avgODThreshold(ODthreshold), //assign default value
-    m_percentileThreshold(percentileThreshold) //assign default value
+    m_avgODThreshold(ODthreshold) //assign default value
 {}//end constructor
 
-StainVectorMacenko::~StainVectorMacenko(void) {
+StainVectorICA::~StainVectorICA(void) {
 }//end destructor
 
-void StainVectorMacenko::ComputeStainVectors(double (&outputVectors)[9]) {
+void StainVectorICA::ComputeStainVectors(double (&outputVectors)[9]) {
     if (this->GetSourceFactory() == nullptr) { return; }
     //Using this overload of the method requires setting sample size in advance
     int sampleSize = this->GetSampleSize();
     if (sampleSize <= 0) { return; }
     double ODthreshold = this->GetODThreshold();
-    double percentileThreshold = this->GetPercentileThreshold();
-    if (percentileThreshold <= 0.0) { return; }
 
     //Sample a set of pixel values from the source
     cv::Mat samplePixels;
@@ -81,14 +63,14 @@ void StainVectorMacenko::ComputeStainVectors(double (&outputVectors)[9]) {
 
     //Temp file output
     std::fstream tempOut;
-    tempOut.open("D:\\mschumaker\\projects\\Sedeen\\testData\\output\\tempout-ComputeStainVectors.txt", std::fstream::out);
+    tempOut.open("D:\\mschumaker\\projects\\Sedeen\\testData\\output\\tempout-ComputeStainVectorsICA.txt", std::fstream::out);
 
 
     //Create a class to perform the basis transformation of the sample pixels
-    std::unique_ptr<BasisTransform> theBasisTransform = std::make_unique<BasisTransform>();
+    //std::unique_ptr<BasisTransform> theBasisTransform = std::make_unique<BasisTransform>();
     //Both the input and output data points should be the matrix rows (columns are pixel elements)
     cv::Mat projectedPoints;
-    theBasisTransform->PCAPointTransform(samplePixels, projectedPoints);
+    //theBasisTransform->PCAPointTransform(samplePixels, projectedPoints);
 
     //Now, the only reason to see the basis vectors in this class is out of curiosity
     //cv::Mat basisVectors;
@@ -103,35 +85,37 @@ void StainVectorMacenko::ComputeStainVectors(double (&outputVectors)[9]) {
 
 
     //Create a class to histogram the results and find 2D vectors corresponding to percentile thresholds
-    std::unique_ptr<MacenkoHistogram> theHistogram = std::make_unique<MacenkoHistogram>();
-    cv::Mat percentileThreshVectors;
-    theHistogram->PercentileThresholdVectors(projectedPoints, percentileThreshVectors, this->GetPercentileThreshold());
+    //std::unique_ptr<MacenkoHistogram> theHistogram = std::make_unique<MacenkoHistogram>();
+    //cv::Mat percentileThreshVectors;
+    //theHistogram->PercentileThresholdVectors(projectedPoints, percentileThreshVectors, this->GetPercentileThreshold());
 
-    scov << "The percentile threshold vectors: " << std::endl;
-    scov << percentileThreshVectors << std::endl;
+    //scov << "The percentile threshold vectors: " << std::endl;
+    //scov << percentileThreshVectors << std::endl;
 
 
     //Back-project to get un-normalized stain vectors. DO NOT translate to the mean after backprojection.
-    cv::Mat backProjectedVectors;
-    theBasisTransform->backProjectPoints(percentileThreshVectors, backProjectedVectors, false); //useMean=false
+    //cv::Mat backProjectedVectors;
+    //theBasisTransform->backProjectPoints(percentileThreshVectors, backProjectedVectors, false); //useMean=false
 
-    scov << "The back projected percentileThreshVectors: " << std::endl;
-    scov << backProjectedVectors << std::endl;
+    //scov << "The back projected percentileThreshVectors: " << std::endl;
+    //scov << backProjectedVectors << std::endl;
 
 
     //Convert to C array and normalize rows
-    double tempStainVecOutput[9] = {0.0};
-    StainCVMatToCArray(backProjectedVectors, tempStainVecOutput, true);
-    std::copy(std::begin(tempStainVecOutput), std::end(tempStainVecOutput), std::begin(outputVectors));
+    //double tempStainVecOutput[9] = {0.0};
+    //StainCVMatToCArray(backProjectedVectors, tempStainVecOutput, true);
+    //for (int i = 0; i < 9; i++) {
+    //    outputVectors[i] = tempStainVecOutput[i];
+    //}
 
 
 
 
-    scov << "Testing CVMat to C array conversion (normalize=true): " << std::endl;
-    for (int i = 0; i < 9; i++) {
-        scov << tempStainVecOutput[i] << ", ";
-    }
-    scov << std::endl;
+    //scov << "Testing CVMat to C array conversion (normalize=true): " << std::endl;
+    //for (int i = 0; i < 9; i++) {
+    //    scov << tempStainVecOutput[i] << ", ";
+    //}
+    //scov << std::endl;
     
 
 
@@ -156,11 +140,11 @@ void StainVectorMacenko::ComputeStainVectors(double (&outputVectors)[9]) {
 
 
 //This overload does not have a default value for sampleSize, so it requires at two arguments
-void StainVectorMacenko::ComputeStainVectors(double (&outputVectors)[9], const int sampleSize) {
+void StainVectorICA::ComputeStainVectors(double(&outputVectors)[9], int sampleSize) {
     if (this->GetSourceFactory() == nullptr) { return; }
     //Set member variables with the argument values
     this->SetSampleSize(sampleSize);
-    //Call the single-parameter version of this method, which uses member variables
+    //Call the single-parameter version of this method, which uses the member variables
     this->ComputeStainVectors(outputVectors);
 }//end multi-parameter ComputeStainVectors
 

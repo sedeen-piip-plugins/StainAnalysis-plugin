@@ -22,40 +22,43 @@
  *
  *=============================================================================*/
 
-#ifndef SEDEEN_SRC_FILTER_STAINVECTORBASE_H
-#define SEDEEN_SRC_FILTER_STAINVECTORBASE_H
+#ifndef SEDEEN_SRC_FILTER_STAINVECTORNMF_H
+#define SEDEEN_SRC_FILTER_STAINVECTORNMF_H
 
 #include "Global.h"
 #include "Geometry.h"
 #include "Image.h"
 
-#include "RandomWSISampler.h"
+#include "StainVectorMLPACK.h"
 
 namespace sedeen {
 namespace image {
 
-class PATHCORE_IMAGE_API StainVectorBase {
+class PATHCORE_IMAGE_API StainVectorNMF : public StainVectorMLPACK {
 public:
-    StainVectorBase(std::shared_ptr<tile::Factory> source);
-    virtual ~StainVectorBase();
+    StainVectorNMF(std::shared_ptr<tile::Factory> source, double ODthreshold = 0.15);
+    ~StainVectorNMF();
 
-    ///The core functionality of a stain vector class; fills the 9-element array with three stain vectors
+    ///Fill the 9-element array with three stain vectors
     virtual void ComputeStainVectors(double (&outputVectors)[9]);
+    ///Overload of the basic method, includes sampleSize parameter
+    void ComputeStainVectors(double (&outputVectors)[9], const int sampleSize);
 
-    ///Utility method to check the equality of the contents of two CV InputArrays (mat, vec, etc.)
-    bool AreEqual(cv::InputArray array1, cv::InputArray array2);
+    ///Get/Set the average optical density threshold
+    inline const double GetODThreshold() const { return m_avgODThreshold; }
+    ///Get/Set the average optical density threshold
+    inline void SetODThreshold(const double t) { m_avgODThreshold = t; }
 
-protected:
-    ///Returns a shared pointer to the source factory, protected so only derived classes may access it
-    inline std::shared_ptr<tile::Factory> GetSourceFactory() { return m_sourceFactory; }
-    ///Sets the source factory, protected so only derived classes may modify it
-    inline void SetSourceFactory(std::shared_ptr<tile::Factory> source) { m_sourceFactory = source; }
-    ///Access the random pixel chooser
-    inline std::shared_ptr<RandomWSISampler> GetRandomWSISampler() { return m_randomWSISampler; }
+    ///Get/Set the sample size, the number of pixels to choose
+    inline const int GetSampleSize() const { return m_sampleSize; }
+    ///Get/Set the sample size, the number of pixels to choose
+    inline void SetSampleSize(const int s) { m_sampleSize = s; }
 
 private:
-    std::shared_ptr<tile::Factory> m_sourceFactory;
-    std::shared_ptr<RandomWSISampler> m_randomWSISampler;
+    double m_avgODThreshold;
+
+    ///The number of pixels that should be used to calculate the stain vectors
+    int m_sampleSize;
 };
 
 } // namespace image

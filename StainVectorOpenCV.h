@@ -1,6 +1,6 @@
 /*=============================================================================
  *
- *  Copyright (c) 2019 Sunnybrook Research Institute
+ *  Copyright (c) 2020 Sunnybrook Research Institute
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -42,8 +42,11 @@ public:
     StainVectorOpenCV(std::shared_ptr<tile::Factory> source);
     virtual ~StainVectorOpenCV();
 
+    ///Utility method to check the equality of the contents of two CV InputArrays (mat, vec, etc.)
+    bool AreEqual(cv::InputArray array1, cv::InputArray array2);
+
 protected:
-    ///Convert stain vector data as 9-element C array to OpenCV matrix (as numRows row vectors)
+    ///Convert stain vector data as 9-element C array to OpenCV matrix (as row vectors)
     void StainCArrayToCVMat(double (&inutVectors)[9], cv::OutputArray outputData, 
         const bool normalize = false, const int _numRows = -1);
     ///Convert stain vector data from OpenCV matrix (as row vectors) to 9-element C array

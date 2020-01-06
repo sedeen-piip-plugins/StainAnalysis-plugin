@@ -22,40 +22,46 @@
  *
  *=============================================================================*/
 
-#ifndef SEDEEN_SRC_FILTER_STAINVECTORBASE_H
-#define SEDEEN_SRC_FILTER_STAINVECTORBASE_H
+#ifndef SEDEEN_SRC_FILTER_STAINVECTORMLPACK_H
+#define SEDEEN_SRC_FILTER_STAINVECTORMLPACK_H
 
 #include "Global.h"
 #include "Geometry.h"
 #include "Image.h"
 
-#include "RandomWSISampler.h"
+#include "StainVectorOpenCV.h"
+
+//MLPACK includes
+#include <mlpack/core.hpp>
+//#include <armadillo>
+
 
 namespace sedeen {
 namespace image {
 
-class PATHCORE_IMAGE_API StainVectorBase {
+class PATHCORE_IMAGE_API StainVectorMLPACK : public StainVectorOpenCV {
 public:
-    StainVectorBase(std::shared_ptr<tile::Factory> source);
-    virtual ~StainVectorBase();
+    StainVectorMLPACK(std::shared_ptr<tile::Factory> source);
+    ~StainVectorMLPACK();
 
-    ///The core functionality of a stain vector class; fills the 9-element array with three stain vectors
-    virtual void ComputeStainVectors(double (&outputVectors)[9]);
-
-    ///Utility method to check the equality of the contents of two CV InputArrays (mat, vec, etc.)
+    ///Utility method to check the equality of the contents of two Armadillo matrices (format used by MLPACK)
     bool AreEqual(cv::InputArray array1, cv::InputArray array2);
 
 protected:
-    ///Returns a shared pointer to the source factory, protected so only derived classes may access it
-    inline std::shared_ptr<tile::Factory> GetSourceFactory() { return m_sourceFactory; }
-    ///Sets the source factory, protected so only derived classes may modify it
-    inline void SetSourceFactory(std::shared_ptr<tile::Factory> source) { m_sourceFactory = source; }
-    ///Access the random pixel chooser
-    inline std::shared_ptr<RandomWSISampler> GetRandomWSISampler() { return m_randomWSISampler; }
+    ///Convert stain vector data as 9-element C array to Armadillo matrix (as row vectors)
+    void StainCArrayToArmaMat(double (&inutVectors)[9], cv::OutputArray outputData, 
+        const bool normalize = false, const int _numRows = -1);
+    ///Convert stain vector data from Armadillo matrix (as row vectors) to 9-element C array
+    void StainArmaMatToCArray(cv::InputArray inputData, double (&outputVectors)[9], const bool normalize = false);
 
-private:
-    std::shared_ptr<tile::Factory> m_sourceFactory;
-    std::shared_ptr<RandomWSISampler> m_randomWSISampler;
+    ///Convert an OpenCV matrix to an Armadillo matrix (note: CV is row-major order, Armadillo is column-major)
+
+
+
+    ///Convert an Armadillo matrix to an OpenCV matrix (note: CV is row-major order, Armadillo is column-major)
+
+
+
 };
 
 } // namespace image

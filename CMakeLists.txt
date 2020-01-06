@@ -5,7 +5,7 @@ SET(CMAKE_CXX_STANDARD 17)
 INCLUDE(FetchContent)
 
 #Note which version of Sedeen Viewer this plugin was last compiled and tested with
-SET(SEDEENSDK_VERSION "5.4.3.20190808" CACHE STRING "Last version of Sedeen Viewer the plugin was compiled and tested with")
+SET(SEDEENSDK_VERSION "5.4.4.20191024" CACHE STRING "Last version of Sedeen Viewer the plugin was compiled and tested with")
 
 # Define project description variables
 SET( DISPLAY_NAME_TEXT "Stain Analysis and Separation" CACHE STRING "Name of the plugin as it should be displayed in Sedeen Viewer")
@@ -16,8 +16,14 @@ SET( DEVELOPER_TEXT "Sunnybrook Research Institute" CACHE STRING "Name of the au
 SET(PROGRAMFILESX86 "PROGRAMFILES\(X86\)")
 FIND_PACKAGE( SEDEENSDK REQUIRED 
   HINTS ../../.. 
-        "$ENV{${PROGRAMFILESX86}}/Sedeen Viewer SDK/v5.4.3.20190808/msvc2017"
-        "$ENV{PROGRAMFILES}/Sedeen Viewer SDK/v5.4.3.20190808/msvc2017" )
+        "$ENV{${PROGRAMFILESX86}}/Sedeen Viewer SDK/v5.4.4.20191024/msvc2017"
+        "$ENV{PROGRAMFILES}/Sedeen Viewer SDK/v5.4.4.20191024/msvc2017" )
+
+# Load the included OpenCV libs
+FIND_PACKAGE(SEDEENSDK_OPENCV REQUIRED
+  HINTS ../../..
+        "$ENV{${PROGRAMFILESX86}}/Sedeen Viewer SDK/v5.4.4.20191024/msvc2017"
+        "$ENV{PROGRAMFILES}/Sedeen Viewer SDK/v5.4.4.20191024/msvc2017" )
 
 #Add OpenMP for parallel programming
 #This is not essential to the plugin and can be omitted
@@ -28,11 +34,33 @@ IF(OPENMP_FOUND)
   SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 ENDIF()
 
-# Load the included OpenCV libs
-FIND_PACKAGE(SEDEENSDK_OPENCV REQUIRED
-             HINTS ../../..
-                  "$ENV{${PROGRAMFILESX86}}/Sedeen Viewer SDK/v5.4.2.20190715/msvc2017"
-                  "$ENV{PROGRAMFILES}/Sedeen Viewer SDK/v5.4.2.20190715/msvc2017" )
+#Configure MLPACK (requires some Boost libraries)
+SET(MLPACK_REQUIRED_BOOST_COMPONENTS "serialization" "program_options")
+FOREACH(component IN ITEMS ${MLPACK_REQUIRED_BOOST_COMPONENTS})
+  SET(MLPACK_REQUIRED_BOOST_LIBRARIES ${MLPACK_REQUIRED_BOOST_LIBRARIES} "Boost::${component}")
+ENDFOREACH(component)
+
+SET(MLPACK_INCLUDE_DIR "MLPACK_INCLUDE_DIR-NOTFOUND" CACHE PATH "Base directory of the MLPACK include files")
+SET(MLPACK_LIBRARY_DIR "MLPACK_LIBRARY_DIR-NOTFOUND" CACHE PATH "Directory containing mlpack.lib")
+#List all .lib files in MLPACK_LIBRARY_DIR
+FILE(GLOB MLPACK_LIBRARIES "${MLPACK_LIBRARY_DIR}/*.lib")
+
+#Configure the Armadillo library (used by MLPACK)
+SET(ARMADILLO_INCLUDE_DIR "ARMADILLO_INCLUDE_DIR-NOTFOUND" CACHE PATH "Location of armadillo include file and subdirectory")
+SET(ARMADILLO_LIBRARY "ARMADILLO_LIBRARY-NOTFOUND" CACHE FILEPATH "Full path to the library file armadillo.lib")
+GET_FILENAME_COMPONENT(ARMADILLO_LIBRARY_DIR ARMADILLO_LIBRARY DIRECTORY)
+
+#Configure the LAPACK linear algebra library (used by MLPACK)
+SET(LAPACK_STATIC_LIBRARY "LAPACK_STATIC_LIBRARY-NOTFOUND" CACHE FILEPATH "Full path to the static library file liblapack.lib")
+GET_FILENAME_COMPONENT(LAPACK_STATIC_LIBRARY_DIR LAPACK_STATIC_LIBRARY DIRECTORY)
+SET(LAPACK_DYNAMIC_LIBRARY "LAPACK_DYNAMIC_LIBRARY-NOTFOUND" CACHE FILEPATH "Full path to the dynamic library file liblapack.dll")
+GET_FILENAME_COMPONENT(LAPACK_DYNAMIC_LIBRARY_DIR LAPACK_DYNAMIC_LIBRARY DIRECTORY)
+
+#Configure the LAPACK linear algebra library (used by MLPACK)
+SET(BLAS_STATIC_LIBRARY "BLAS_STATIC_LIBRARY-NOTFOUND" CACHE FILEPATH "Full path to the static library file libblas.lib")
+GET_FILENAME_COMPONENT(BLAS_STATIC_LIBRARY_DIR BLAS_STATIC_LIBRARY DIRECTORY)
+SET(BLAS_DYNAMIC_LIBRARY "BLAS_DYNAMIC_LIBRARY-NOTFOUND" CACHE FILEPATH "Full path to the dynamic library file libblas.dll")
+GET_FILENAME_COMPONENT(BLAS_DYNAMIC_LIBRARY_DIR BLAS_DYNAMIC_LIBRARY DIRECTORY)
 
 IF(NOT BOOST_ROOT)
   SET(BOOST_ROOT "BOOST_ROOT-NOTFOUND" CACHE PATH "Preferred installation prefix of the Boost C++ library")
@@ -40,7 +68,7 @@ ENDIF()
 IF(NOT BOOST_VERSION)
   SET(BOOST_VERSION "BOOST_VERSION-NOTFOUND" CACHE STRING "Boost library version number")
 ENDIF()
-FIND_PACKAGE(Boost ${BOOST_VERSION} )
+FIND_PACKAGE(Boost ${BOOST_VERSION} REQUIRED COMPONENTS ${MLPACK_REQUIRED_BOOST_COMPONENTS})
 
 INCLUDE(cmake/CMakeRC.cmake)
 
@@ -69,11 +97,17 @@ INCLUDE_DIRECTORIES( ${INCLUDE_DIRECTORIES}
                      ${SEDEENSDK_OPENCV_INCLUDE_DIR}
                      ${BOOST_ROOT} 
                      ${${TinyXML2Name}_SOURCE_DIR}
+                     ${MLPACK_INCLUDE_DIR}
+                     ${ARMADILLO_INCLUDE_DIR}
                      )
 
 LINK_DIRECTORIES( ${LINK_DIRECTORIES} 
                   ${SEDEENSDK_LIBRARY_DIR} 
                   ${SEDEENSDK_OPENCV_LIBRARY_DIR}
+                  ${MLPACK_LIBRARY_DIR}
+                  ${ARMADILLO_LIBRARY_DIR}
+                  ${LAPACK_STATIC_LIBRARY_DIR}
+                  ${BLAS_STATIC_LIBRARY_DIR}
                   )
 
 # Build the code into a module library
@@ -90,9 +124,12 @@ ADD_LIBRARY( ${PROJECT_NAME} MODULE
              RandomWSISampler.h RandomWSISampler.cpp
              StainVectorBase.h StainVectorBase.cpp
              StainVectorOpenCV.h StainVectorOpenCV.cpp
+             StainVectorMLPACK.h StainVectorMLPACK.cpp
              StainVectorPixelROI.h StainVectorPixelROI.cpp
              StainVectorMacenko.h StainVectorMacenko.cpp
              StainVectorNiethammer.h StainVectorNiethammer.cpp
+             StainVectorNMF.h StainVectorNMF.cpp 
+             StainVectorICA.h StainVectorICA.cpp 
              BasisTransform.h BasisTransform.cpp
              AngleHistogram.h AngleHistogram.cpp
              MacenkoHistogram.h MacenkoHistogram.cpp
@@ -100,8 +137,16 @@ ADD_LIBRARY( ${PROJECT_NAME} MODULE
              )
 
 # Link the library against the Sedeen SDK libraries
-TARGET_LINK_LIBRARIES( ${PROJECT_NAME} ${SEDEENSDK_LIBRARIES} 
-                       ${SEDEENSDK_OPENCV_LIBRARIES} stain::rc)
+TARGET_LINK_LIBRARIES( ${PROJECT_NAME} 
+                       ${SEDEENSDK_LIBRARIES} 
+                       ${SEDEENSDK_OPENCV_LIBRARIES} 
+                       stain::rc 
+                       ${MLPACK_LIBRARIES}
+                       ${MLPACK_REQUIRED_BOOST_LIBRARIES}
+                       ${ARMADILLO_LIBRARY}
+                       ${LAPACK_STATIC_LIBRARY}
+                       ${BLAS_STATIC_LIBRARY}
+                       )
 
 #Create or update the .info file in the build directory
 STRING( TIMESTAMP DATE_CREATED_TEXT "%Y-%m-%d" )
@@ -126,7 +171,14 @@ IF( ${SEDEEN_FOUND} )
   INSTALL(TARGETS ${PROJECT_NAME}
       LIBRARY DESTINATION "${PLUGIN_DESTINATION_DIR}")
   INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.info"
-          DESTINATION "${PLUGIN_DESTINATION_DIR}")
+      DESTINATION "${PLUGIN_DESTINATION_DIR}" )
+  INSTALL(DIRECTORY "${SEDEENSDK_DIR}/bin/" 
+      DESTINATION "${PLUGIN_DESTINATION_DIR}" 
+      FILES_MATCHING PATTERN "opencv*0.dll" )
+  INSTALL(FILES "${LAPACK_DYNAMIC_LIBRARY}" 
+      DESTINATION "${PLUGIN_DESTINATION_DIR}" )
+  INSTALL(FILES "${BLAS_DYNAMIC_LIBRARY}" 
+      DESTINATION "${PLUGIN_DESTINATION_DIR}" )
 ENDIF()
 
 #For debugging: shows all variables and their values

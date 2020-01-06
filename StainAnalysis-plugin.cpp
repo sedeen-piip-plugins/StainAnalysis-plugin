@@ -1,6 +1,6 @@
 /*=============================================================================
  *
- *  Copyright (c) 2019 Sunnybrook Research Institute
+ *  Copyright (c) 2020 Sunnybrook Research Institute
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,8 @@
 #include "StainAnalysis-plugin.h"
 #include "StainVectorMacenko.h"
 #include "StainVectorNiethammer.h"
+#include "StainVectorNMF.h"
+#include "StainVectorICA.h"
 #include "ODConversion.h"
 
 #include <sstream>
@@ -363,28 +365,52 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
             //here!!! here's the place for trying the next new thing.
 
             //Create an object to get stain vectors from, using the Macenko algorithm
-            std::shared_ptr<sedeen::image::StainVectorMacenko> stainsFromMacenko 
-                = std::make_shared<sedeen::image::StainVectorMacenko>(source_factory, 0.15, 1.0);
-            stainsFromMacenko->ComputeStainVectors(conv_matrix, 1000);
+            //std::shared_ptr<sedeen::image::StainVectorMacenko> stainsFromMacenko 
+            //    = std::make_shared<sedeen::image::StainVectorMacenko>(source_factory, 0.15, 1.0);
+            //stainsFromMacenko->ComputeStainVectors(conv_matrix, 1000);
 
 
-            //I need some priors to test with. Start with R+J.
-            double priors[9] = { 0.65,0.70,0.29,0.07,0.99,0.11,0.0,0.0,0.0};
+            //I need some priors to test with. R+J?
+            //double priors[9] = { 0.65,0.70,0.29,0.07,0.99,0.11,0.0,0.0,0.0};
 
             //Create an object to get stain vectors from, using the Niethammer algorithm
-            std::shared_ptr<sedeen::image::StainVectorNiethammer> stainsFromNiethammer
-                = std::make_shared<sedeen::image::StainVectorNiethammer>(source_factory);
-            stainsFromNiethammer->ComputeStainVectors(conv_matrix, priors, 100, 0.15, 1.0);
+            //std::shared_ptr<sedeen::image::StainVectorNiethammer> stainsFromNiethammer
+            //    = std::make_shared<sedeen::image::StainVectorNiethammer>(source_factory, 0.15, 1.0);
+            //stainsFromNiethammer->ComputeStainVectors(conv_matrix, 1000);
+
+
+            //Create an object to get stain vectors from, using NMF
+            std::shared_ptr<sedeen::image::StainVectorNMF> stainsFromNMF
+                = std::make_shared<sedeen::image::StainVectorNMF>(source_factory, 0.15);
+            //Then compute stain vectors
+            stainsFromNMF->ComputeStainVectors(conv_matrix, 1000);
+
+
+            //Create an object to get stain vectors from, using ICA
+            std::shared_ptr<sedeen::image::StainVectorICA> stainsFromICA
+                = std::make_shared<sedeen::image::StainVectorICA>(source_factory, 0.15);
+            //Then compute stain vectors
+            
 
 
             std::ostringstream ss;
 
-            std::array<double, 9> arrayOutPriors = stainsFromNiethammer->GetPriors();
-            ss << "The prior values passed to Niethammer:" << std::endl;
-            for (int i = 0; i < 9; i++) {
-                ss << arrayOutPriors[i] << ", ";
-            }
-            ss << std::endl;
+            //Let's try some things.
+
+
+            //pick up here!!! test the other Set/Get overloads
+
+            //stainsFromNiethammer->SetPriors(priors);
+            //double outPriors[9];
+
+            //stainsFromNiethammer->GetPriors(outPriors);
+
+            //ss << "So, can I set and get priors treating them as C arrays?" << std::endl;
+            //for (int i = 0; i < 9; i++) {
+            //    ss << outPriors[i] << ", ";
+            //}
+            //ss << std::endl;
+
           
             //TEMPORARY!
             //std::ostringstream ss;
