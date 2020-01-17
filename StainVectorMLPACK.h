@@ -21,7 +21,7 @@
  *  SOFTWARE.
  *
  *=============================================================================*/
-
+     
 #ifndef SEDEEN_SRC_FILTER_STAINVECTORMLPACK_H
 #define SEDEEN_SRC_FILTER_STAINVECTORMLPACK_H
 
@@ -33,8 +33,7 @@
 
 //MLPACK includes
 #include <mlpack/core.hpp>
-//#include <armadillo>
-
+#include <armadillo>
 
 namespace sedeen {
 namespace image {
@@ -45,22 +44,50 @@ public:
     ~StainVectorMLPACK();
 
     ///Utility method to check the equality of the contents of two Armadillo matrices (format used by MLPACK)
-    bool AreEqual(cv::InputArray array1, cv::InputArray array2);
+    template<class Ty>
+    static const bool AreEqual(const arma::Mat<Ty> &array1, const arma::Mat<Ty> &array2) {
+        // treat two empty arrays as identical
+        if (array1.empty() && array2.empty()) {
+            return true;
+        }
+        // if dimensionality is not identical, these arrays are not identical
+        if (array1.n_cols != array2.n_cols || array1.n_rows != array2.n_rows || array1.size() != array2.size()) {
+            return false;
+        }
+        //Use the Armadillo function approx_equal, which compares within a tolerance
+        //Use reldiff to make this method more general, so that the hardcoded tolerance 
+        //is relative to the scale of the largest element value
+        Ty tolerance = static_cast<Ty>(1e-6); 
+        return arma::approx_equal(array1, array2, "reldiff", tolerance);
+    }//end AreEqual
 
-protected:
-    ///Convert stain vector data as 9-element C array to Armadillo matrix (as row vectors)
-    void StainCArrayToArmaMat(double (&inutVectors)[9], cv::OutputArray outputData, 
-        const bool normalize = false, const int _numRows = -1);
-    ///Convert stain vector data from Armadillo matrix (as row vectors) to 9-element C array
-    void StainArmaMatToCArray(cv::InputArray inputData, double (&outputVectors)[9], const bool normalize = false);
+    ///Convert an OpenCV matrix to an Armadillo matrix of templated type
+    template<class Ty>
+    static const arma::Mat<Ty> CVMatToArmaMat(cv::InputArray _input) {
+        cv::Mat inputCVMat = _input.getMat();
+        //Armadillo stores in column-major order, whereas OpenCV uses row-major, so transpose first
+        cv::Mat transposedCV;
+        cv::transpose(inputCVMat, transposedCV);
+        arma::Mat<Ty> outArmaMat(reinterpret_cast<Ty*>(transposedCV.data), transposedCV.cols, transposedCV.rows);
+        return outArmaMat;
+    }//end CVMatToArmaMat
 
-    ///Convert an OpenCV matrix to an Armadillo matrix (note: CV is row-major order, Armadillo is column-major)
+    ///Convert an Armadillo matrix to an OpenCV matrix (note: CV data is row-major order, Armadillo is column-major)
+    template<class Ty>
+    static cv::Mat ArmaMatToCVMat(const arma::Mat<Ty> &inputArmaMat) {
+        int rows = static_cast<int>(inputArmaMat.n_rows);
+        int cols = static_cast<int>(inputArmaMat.n_cols);
+        cv::Mat typedMat = cv::Mat_<Ty>(cols, rows, const_cast<Ty*>(inputArmaMat.memptr()));
+        cv::Mat transposedMat;// (typedMat);
+        cv::transpose(typedMat, transposedMat);
+        return transposedMat;
+    }//end ArmaMatToCVMat
 
-
-
-    ///Convert an Armadillo matrix to an OpenCV matrix (note: CV is row-major order, Armadillo is column-major)
-
-
+    ///Convert an Armadillo matrix and assign to a cv::OutputArray reference (note: CV data is row-major order, Armadillo is column-major)
+    template<class Ty>
+    static void ArmaMatToCVMat(const arma::Mat<Ty> &inputArmaMat, cv::OutputArray outArray) {
+        outArray.assign(ArmaMatToCVMat<Ty>(inputArmaMat));
+    }//end ArmaMatToCVMat
 
 };
 

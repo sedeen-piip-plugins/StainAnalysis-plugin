@@ -33,7 +33,8 @@
 StainProfile::StainProfile() : m_stainSeparationAlgorithmOptions( 
     { "Ruifrok+Johnston Deconvolution",
       "Macenko 2-Stain Decomposition",
-      "Niethammer 2-Stain Decomposition" })
+      "Non-Negative Matrix Factorization",
+      "Independent Component Analysis" })
 {
     //Build the XML document structure
     BuildXMLDocument();

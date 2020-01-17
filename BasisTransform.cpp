@@ -41,7 +41,7 @@ BasisTransform::~BasisTransform(void) {
 }//end destructor
 
 
-void BasisTransform::NiethammerProjection(cv::InputArray sourcePoints, cv::OutputArray outputPoints,
+void BasisTransform::ProjectionOnly(cv::InputArray sourcePoints, cv::OutputArray outputPoints,
     cv::InputArray basisVectors,
     const VectorDirection &sourcePointDir /*= VectorDirection::ROWVECTORS*/) {
     if (sourcePoints.empty()) { return; }

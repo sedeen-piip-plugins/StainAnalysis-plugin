@@ -40,59 +40,59 @@
 
 namespace sedeen {
 
-	namespace image {
-		namespace tile {	
+namespace image {
+namespace tile {	
 
-			/// \ingroup algorithm_kernels
-			/// Color Deconvolution
-			/// Apply colour deconvolution method described in:
-			//Ruifrok AC, Johnston DA. Quantification of histochemical
-			//staining by color deconvolution. Analytical & Quantitative
-			//Cytology & Histology 2001; 23: 291-299
-			class PATHCORE_IMAGE_API ColorDeconvolution : public Kernel {
-			public:
-				/// Display options for the output image
-				enum DisplayOptions {
-					STAIN1,
-					STAIN2,
-					STAIN3
-				};
+	/// \ingroup algorithm_kernels
+	/// Color Deconvolution
+	/// Apply colour deconvolution method described in:
+	//Ruifrok AC, Johnston DA. Quantification of histochemical
+	//staining by color deconvolution. Analytical & Quantitative
+	//Cytology & Histology 2001; 23: 291-299
+	class PATHCORE_IMAGE_API ColorDeconvolution : public Kernel {
+	public:
+		/// Display options for the output image
+		enum DisplayOptions {
+			STAIN1,
+			STAIN2,
+			STAIN3
+		};
 
-				/// Creates a colour deconvolution Kernel with selected 
-				// color-deconvolution matrix
-				//
-				/// \param 
-				/// 
-                explicit ColorDeconvolution(DisplayOptions displayOption, std::shared_ptr<StainProfile>, bool, double);
+		/// Creates a colour deconvolution Kernel with selected 
+		// color-deconvolution matrix
+		//
+		/// \param 
+		/// 
+        explicit ColorDeconvolution(DisplayOptions displayOption, std::shared_ptr<StainProfile>, bool, double);
 
-				virtual ~ColorDeconvolution();
+		virtual ~ColorDeconvolution();
 
-			private:
-				/// \cond INTERNAL
+	private:
+		/// \cond INTERNAL
 
-				virtual RawImage doProcessData(const RawImage &source);
+		virtual RawImage doProcessData(const RawImage &source);
 
-				virtual const ColorSpace& doGetColorSpace() const;
+		virtual const ColorSpace& doGetColorSpace() const;
 
-				RawImage separateStains(const RawImage &source, double (&out)[9]);
-                RawImage thresholdOnly(const RawImage &source);
+		RawImage separateStains(const RawImage &source, double (&out)[9]);
+        RawImage thresholdOnly(const RawImage &source);
 
-                ///Arguments are: the three OD values for the pixel, the output array, the stain vector matrix, and the inverse of the matrix
-                void GetSeparateColorsForPixel(double (&pixelOD)[3], double (&RGB_sep)[9], 
-                    double (&stainVec_matrix)[9], double (&inverse_matrix)[9]);
+        ///Arguments are: the three OD values for the pixel, the output array, the stain vector matrix, and the inverse of the matrix
+        void GetSeparateColorsForPixel(double (&pixelOD)[3], double (&RGB_sep)[9], 
+            double (&stainVec_matrix)[9], double (&inverse_matrix)[9]);
 
-				// rows of matrix are stains, columns are color channels
-				ColorDeconvolution::DisplayOptions m_DisplayOption;	
-                bool m_applyThreshold;
-				double m_threshold;
+		// rows of matrix are stains, columns are color channels
+		ColorDeconvolution::DisplayOptions m_DisplayOption;	
+        bool m_applyThreshold;
+		double m_threshold;
 
-                ColorSpace m_colorSpace;
-                std::shared_ptr<StainProfile> m_stainProfile;
-				/// \endcond
-			};
+        ColorSpace m_colorSpace;
+        std::shared_ptr<StainProfile> m_stainProfile;
+		/// \endcond
+	};
 
-		} // namespace tile
-	} // namespace image
+} // namespace tile
+} // namespace image
 } // namespace sedeen
 #endif
 

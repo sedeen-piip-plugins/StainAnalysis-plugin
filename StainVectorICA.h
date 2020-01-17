@@ -40,9 +40,9 @@ public:
     ~StainVectorICA();
 
     ///Fill the 9-element array with three stain vectors
-    virtual void ComputeStainVectors(double (&outputVectors)[9]);
+    virtual void ComputeStainVectors(double(&outputVectors)[9]);
     ///Overload of the basic method, includes sampleSize parameter
-    void ComputeStainVectors(double (&outputVectors)[9], const int sampleSize);
+    void ComputeStainVectors(double(&outputVectors)[9], const int sampleSize);
 
     ///Get/Set the average optical density threshold
     inline const double GetODThreshold() const { return m_avgODThreshold; }
@@ -54,11 +54,19 @@ public:
     ///Get/Set the sample size, the number of pixels to choose
     inline void SetSampleSize(const int s) { m_sampleSize = s; }
 
+protected:
+    ///Get/Set the number of stains
+    inline const int GetNumStains() const { return m_numStains; }
+    ///Get/Set the number of stains
+    inline void SetNumStains(const int n) { m_numStains = n; }
+
 private:
     double m_avgODThreshold;
 
     ///The number of pixels that should be used to calculate the stain vectors
     int m_sampleSize;
+    ///The number of stains to obtain. Set to be 2 in member initialization of constructor.
+    int m_numStains;
 };
 
 } // namespace image

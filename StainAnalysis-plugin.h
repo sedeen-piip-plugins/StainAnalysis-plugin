@@ -42,7 +42,6 @@
 #include "StainProfile.h"
 #include "ColorDeconvolutionKernel.h"
 #include "StainVectorMacenko.h"
-#include "StainVectorNiethammer.h"
 
 namespace sedeen {
 namespace tile {

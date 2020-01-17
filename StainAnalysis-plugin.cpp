@@ -26,7 +26,6 @@
 //
 #include "StainAnalysis-plugin.h"
 #include "StainVectorMacenko.h"
-#include "StainVectorNiethammer.h"
 #include "StainVectorNMF.h"
 #include "StainVectorICA.h"
 #include "ODConversion.h"
@@ -164,8 +163,8 @@ void StainAnalysis::init(const image::ImageHandle& image) {
 
     // Init the user defined threshold value
 	//TEMPORARY: Can't set precision on DoubleParameter right now, so use 1/100 downscale
-    auto color = getColorSpace(image);
-    auto max_value = (1 << bitsPerChannel(color)) - 1;
+    //auto color = getColorSpace(image);
+    //auto max_value = (1 << bitsPerChannel(color)) - 1;
     m_threshold = createDoubleParameter(*this,
         "OD x100 Threshold",   // Widget label
         "A Threshold value",   // Widget tooltip
@@ -369,56 +368,26 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
             //    = std::make_shared<sedeen::image::StainVectorMacenko>(source_factory, 0.15, 1.0);
             //stainsFromMacenko->ComputeStainVectors(conv_matrix, 1000);
 
-
-            //I need some priors to test with. R+J?
-            //double priors[9] = { 0.65,0.70,0.29,0.07,0.99,0.11,0.0,0.0,0.0};
-
-            //Create an object to get stain vectors from, using the Niethammer algorithm
-            //std::shared_ptr<sedeen::image::StainVectorNiethammer> stainsFromNiethammer
-            //    = std::make_shared<sedeen::image::StainVectorNiethammer>(source_factory, 0.15, 1.0);
-            //stainsFromNiethammer->ComputeStainVectors(conv_matrix, 1000);
-
-
             //Create an object to get stain vectors from, using NMF
-            std::shared_ptr<sedeen::image::StainVectorNMF> stainsFromNMF
-                = std::make_shared<sedeen::image::StainVectorNMF>(source_factory, 0.15);
+            //std::shared_ptr<sedeen::image::StainVectorNMF> stainsFromNMF
+            //    = std::make_shared<sedeen::image::StainVectorNMF>(source_factory, 0.15);
             //Then compute stain vectors
-            stainsFromNMF->ComputeStainVectors(conv_matrix, 1000);
+            //stainsFromNMF->ComputeStainVectors(conv_matrix, 1000);
 
 
             //Create an object to get stain vectors from, using ICA
             std::shared_ptr<sedeen::image::StainVectorICA> stainsFromICA
                 = std::make_shared<sedeen::image::StainVectorICA>(source_factory, 0.15);
             //Then compute stain vectors
-            
-
-
-            std::ostringstream ss;
-
-            //Let's try some things.
-
-
-            //pick up here!!! test the other Set/Get overloads
-
-            //stainsFromNiethammer->SetPriors(priors);
-            //double outPriors[9];
-
-            //stainsFromNiethammer->GetPriors(outPriors);
-
-            //ss << "So, can I set and get priors treating them as C arrays?" << std::endl;
-            //for (int i = 0; i < 9; i++) {
-            //    ss << outPriors[i] << ", ";
-            //}
-            //ss << std::endl;
+            stainsFromICA->ComputeStainVectors(conv_matrix, 100);
 
           
             //TEMPORARY!
-            //std::ostringstream ss;
-            //ss << "Here is the output from getting the vectors by Macenko: " << std::endl;
-            ss << "Here is the output from getting the vectors by Niethammer: " << std::endl;
-            for (int i = 0; i < 9; i++) {
-                ss << conv_matrix[i] << ", ";
-            }
+            std::ostringstream ss;
+            //ss << "Here is the output from getting the vectors by ICA: " << std::endl;
+            //for (int i = 0; i < 9; i++) {
+            //    ss << conv_matrix[i] << ", ";
+            //}
 
 
             ss << std::endl;
@@ -436,7 +405,7 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
         //TEMPORARY
         //Change the contents of the chosenStainProfile
         //REENABLE THIS WHEN YOU'RE READY TO TEST
-        //chosenStainProfile->SetProfilesFromDoubleArray(conv_matrix);
+        chosenStainProfile->SetProfilesFromDoubleArray(conv_matrix);
 
 
 

@@ -48,10 +48,7 @@ public:
     BasisTransform();
     virtual ~BasisTransform();
 
-
-    //Make versions of methods that are useful for Niethammer, and refactor later
-
-    void NiethammerProjection(cv::InputArray sourcePoints, cv::OutputArray outputPoints, cv::InputArray basisVectors,
+    void ProjectionOnly(cv::InputArray sourcePoints, cv::OutputArray outputPoints, cv::InputArray basisVectors,
         const VectorDirection &sourcePointDir = VectorDirection::ROWVECTORS);
 
 

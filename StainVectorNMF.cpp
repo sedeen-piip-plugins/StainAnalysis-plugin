@@ -24,9 +24,7 @@
 
 #include "StainVectorNMF.h"
 
-
 #include <mlpack/methods/amf/amf.hpp>
-
 
 //#include <chrono>
 //#include <random>
@@ -45,6 +43,7 @@ StainVectorNMF::StainVectorNMF(std::shared_ptr<tile::Factory> source,
     double ODthreshold /*= 0.15 */)
     : StainVectorMLPACK(source),
     m_sampleSize(0), //Must set to greater than 0 to ComputeStainVectors
+    m_numStains(2),  //Can be 2 or 3
     m_avgODThreshold(ODthreshold) //assign default value
 {}//end constructor
 
@@ -65,104 +64,28 @@ void StainVectorNMF::ComputeStainVectors(double (&outputVectors)[9]) {
     bool samplingSuccess = theSampler->ChooseRandomPixels(samplePixels, sampleSize, ODthreshold);
     if (!samplingSuccess) { return; }
 
-
-
     //Convert samplePixels from CV to Armadillo
+    arma::Mat<double> armaSamplePixels = CVMatToArmaMat<double>(samplePixels);
 
-
-
-    arma::mat armaSamplePixels = arma::randu<arma::mat>(3,3);
-    size_t rank = 3;
-    arma::mat basisMat, encodingMat;
+    //The rank sets the number of columns in the basis matrix, and rows in the encoding matrix
+    //It is the number of stains we are attempting to decompose the data points into
+    //Valid values are 2 and 3 (enforce this)
+    if (GetNumStains() > 3 || GetNumStains() < 2) { return; }
+    size_t rank = static_cast<size_t>(GetNumStains());
+    arma::Mat<double> basisMat, encodingMat;
     mlpack::amf::NMFALSFactorizer nmfFactorizer;
+    //Perform non-negative matrix factorization
+    double residue = nmfFactorizer.Apply(armaSamplePixels, rank, basisMat, encodingMat);
 
-    mlpack::amf::AMF<> amf;
-    amf.Apply(armaSamplePixels, rank, basisMat, encodingMat);
-
-    //double residue = nmfFactorizer.Apply(armaSamplePixels, rank, basisMat, encodingMat);
-
-
-
-    //Temp file output
-    std::fstream tempOut;
-    tempOut.open("D:\\mschumaker\\projects\\Sedeen\\testData\\output\\tempout-ComputeStainVectorsNMF.txt", std::fstream::out);
-
-
-    //Create a class to perform the basis transformation of the sample pixels
-    //std::unique_ptr<BasisTransform> theBasisTransform = std::make_unique<BasisTransform>();
-    //Both the input and output data points should be the matrix rows (columns are pixel elements)
-    //cv::Mat projectedPoints;
-    //theBasisTransform->PCAPointTransform(samplePixels, projectedPoints);
-
-    //Now, the only reason to see the basis vectors in this class is out of curiosity
-    //cv::Mat basisVectors;
-    //bool getBasisSuccess = theBasisTransform->GetBasisVectors(basisVectors);
-
-    std::stringstream scov;
-    //scov << "The basis vectors are: " << basisVectors << std::endl;
-    //scov << "the projectedPoints are: " << std::endl;
-    //scov << projectedPoints << std::endl;
-
-    scov << "So what is the NMF output? " << std::endl;
-    scov << "basisMat: " << basisMat << std::endl;
-    scov << "encodingMat: " << encodingMat << std::endl;
-    //scov << "residue: " << residue << std::endl;
-
-
-    //Create a class to histogram the results and find 2D vectors corresponding to percentile thresholds
-    //std::unique_ptr<MacenkoHistogram> theHistogram = std::make_unique<MacenkoHistogram>();
-    //cv::Mat percentileThreshVectors;
-    //theHistogram->PercentileThresholdVectors(projectedPoints, percentileThreshVectors, this->GetPercentileThreshold());
-
-    //scov << "The percentile threshold vectors: " << std::endl;
-    //scov << percentileThreshVectors << std::endl;
-
-
-    //Back-project to get un-normalized stain vectors. DO NOT translate to the mean after backprojection.
-    //cv::Mat backProjectedVectors;
-    //theBasisTransform->backProjectPoints(percentileThreshVectors, backProjectedVectors, false); //useMean=false
-
-    //scov << "The back projected percentileThreshVectors: " << std::endl;
-    //scov << backProjectedVectors << std::endl;
-
-
+    //The stain values are in the encoding matrix. Convert to output array
+    cv::Mat encodingAsCV = ArmaMatToCVMat<double>(encodingMat);
     //Convert to C array and normalize rows
-    //double tempStainVecOutput[9] = {0.0};
-    //StainArmaMatToCArray(backProjectedVectors, tempStainVecOutput, true);
-    //for (int i = 0; i < 9; i++) {
-    //    outputVectors[i] = tempStainVecOutput[i];
-    //}
-
-
-
-
-    //scov << "Testing CVMat to C array conversion (normalize=true): " << std::endl;
-    //for (int i = 0; i < 9; i++) {
-    //    scov << tempStainVecOutput[i] << ", ";
-    //}
-    //scov << std::endl;
-    
-
-
-
-    //Test converting it the other way
-    //cv::Mat convertBack;
-    //StainCArrayToCVMat(tempStainVecOutput, convertBack, true);
-
-    //scov << "Testing C array to CVMat conversion (normalize=true): " << std::endl;
-    //scov << convertBack << std::endl;
-
-
-    tempOut << scov.str() << std::endl;
-    tempOut.close();
-
-
-
-
-
+    double tempStainVecOutput[9] = {0.0};
+    StainCVMatToCArray(encodingAsCV, tempStainVecOutput, true);
+    for (int i = 0; i < 9; i++) {
+        outputVectors[i] = tempStainVecOutput[i];
+    }
 }//end single-parameter ComputeStainVectors
-
-
 
 //This overload does not have a default value for sampleSize, so it requires at two arguments
 void StainVectorNMF::ComputeStainVectors(double (&outputVectors)[9], int sampleSize) {

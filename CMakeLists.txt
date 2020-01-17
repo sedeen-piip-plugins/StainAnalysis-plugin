@@ -127,13 +127,11 @@ ADD_LIBRARY( ${PROJECT_NAME} MODULE
              StainVectorMLPACK.h StainVectorMLPACK.cpp
              StainVectorPixelROI.h StainVectorPixelROI.cpp
              StainVectorMacenko.h StainVectorMacenko.cpp
-             StainVectorNiethammer.h StainVectorNiethammer.cpp
              StainVectorNMF.h StainVectorNMF.cpp 
              StainVectorICA.h StainVectorICA.cpp 
              BasisTransform.h BasisTransform.cpp
              AngleHistogram.h AngleHistogram.cpp
              MacenkoHistogram.h MacenkoHistogram.cpp
-             NiethammerHistogram.h NiethammerHistogram.cpp
              )
 
 # Link the library against the Sedeen SDK libraries
@@ -168,17 +166,17 @@ ENDIF()
 
 # Install the plugin and .info file in the PLUGIN_DESTINATION_DIR directory
 IF( ${SEDEEN_FOUND} )
-  INSTALL(TARGETS ${PROJECT_NAME}
-      LIBRARY DESTINATION "${PLUGIN_DESTINATION_DIR}")
+  INSTALL(TARGETS ${PROJECT_NAME} LIBRARY 
+     DESTINATION "${PLUGIN_DESTINATION_DIR}")
   INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.info"
-      DESTINATION "${PLUGIN_DESTINATION_DIR}" )
+     DESTINATION "${PLUGIN_DESTINATION_DIR}" )
   INSTALL(DIRECTORY "${SEDEENSDK_DIR}/bin/" 
-      DESTINATION "${PLUGIN_DESTINATION_DIR}" 
-      FILES_MATCHING PATTERN "opencv*0.dll" )
+     DESTINATION "${PLUGIN_DESTINATION_DIR}" 
+     FILES_MATCHING PATTERN "opencv*0.dll" )
   INSTALL(FILES "${LAPACK_DYNAMIC_LIBRARY}" 
-      DESTINATION "${PLUGIN_DESTINATION_DIR}" )
+     DESTINATION "${PLUGIN_DESTINATION_DIR}" )
   INSTALL(FILES "${BLAS_DYNAMIC_LIBRARY}" 
-      DESTINATION "${PLUGIN_DESTINATION_DIR}" )
+     DESTINATION "${PLUGIN_DESTINATION_DIR}" )
 ENDIF()
 
 #For debugging: shows all variables and their values

@@ -24,6 +24,9 @@
 
 #include "StainVectorICA.h"
 
+//The RADICAL algorithm for independent component analysis (ICA)
+#include <mlpack/methods/radical/radical.hpp>
+
 //#include <chrono>
 //#include <random>
 #include <fstream>
@@ -41,6 +44,7 @@ StainVectorICA::StainVectorICA(std::shared_ptr<tile::Factory> source,
     double ODthreshold /*= 0.15 */)
     : StainVectorMLPACK(source),
     m_sampleSize(0), //Must set to greater than 0 to ComputeStainVectors
+    m_numStains(2),  //Can be 2 or 3
     m_avgODThreshold(ODthreshold) //assign default value
 {}//end constructor
 
@@ -61,86 +65,66 @@ void StainVectorICA::ComputeStainVectors(double (&outputVectors)[9]) {
     bool samplingSuccess = theSampler->ChooseRandomPixels(samplePixels, sampleSize, ODthreshold);
     if (!samplingSuccess) { return; }
 
+    //Convert samplePixels from CV to Armadillo
+    arma::Mat<double> armaSamplePixels = CVMatToArmaMat<double>(samplePixels);
+    arma::Mat<double> transposedArmaPixels = arma::trans(armaSamplePixels);
+
+
+    //Implement the RADICAL algorithm
+    //RADICAL has a number of parameters with default values
+    //Define them here for clarity and potential tuning
+    //Descriptions from https://rcppmlpack.github.io/mlpack-doxygen/classmlpack_1_1radical_1_1Radical.html
+    const double noiseStdDev = 0.175; //Std deviation of the Gaussian noise added to the replicates of the data points during Radical2D
+    const size_t replicates = 30;     //Number of Gaussian-perturbed replicates to use (per point) in Radical2D
+    const size_t angles = 150;        //Number of angles to consider in brute-force search during Radical2D
+    const size_t sweeps = 0;          //Number of sweeps. Each sweep calls Radical2D once for each pair of dimensions
+    const size_t m = 0;               //The variable m from Vasicek's m-spacing estimator of entropy.
+    mlpack::radical::Radical radicalICA(noiseStdDev, replicates, angles, sweeps, m);
+    arma::Mat<double> independentComponents, unmixingMatrix;
+    radicalICA.DoRadical(transposedArmaPixels, independentComponents, unmixingMatrix);
+
+
+    //Ok, I can run ICA, but the results aren't useful to me. Can I improve on this?
+
+
+
+    //The stain values are in the encoding matrix. Convert to output array
+    //cv::Mat encodingAsCV = ArmaMatToCVMat<double>(encodingMat);
+
+
     //Temp file output
     std::fstream tempOut;
     tempOut.open("D:\\mschumaker\\projects\\Sedeen\\testData\\output\\tempout-ComputeStainVectorsICA.txt", std::fstream::out);
 
-
-    //Create a class to perform the basis transformation of the sample pixels
-    //std::unique_ptr<BasisTransform> theBasisTransform = std::make_unique<BasisTransform>();
-    //Both the input and output data points should be the matrix rows (columns are pixel elements)
-    cv::Mat projectedPoints;
-    //theBasisTransform->PCAPointTransform(samplePixels, projectedPoints);
-
-    //Now, the only reason to see the basis vectors in this class is out of curiosity
-    //cv::Mat basisVectors;
-    //bool getBasisSuccess = theBasisTransform->GetBasisVectors(basisVectors);
-
     std::stringstream scov;
-    //scov << "The basis vectors are: " << basisVectors << std::endl;
-    //scov << "the projectedPoints are: " << std::endl;
-    //scov << projectedPoints << std::endl;
+
+    scov << "These are the inputs in CV format: " << std::endl;
+    scov << samplePixels << std::endl;
+    scov << "\n\nThese are the transposed inputs in Armadillo format: " << std::endl;
+    scov << transposedArmaPixels << std::endl;
 
 
-
-
-    //Create a class to histogram the results and find 2D vectors corresponding to percentile thresholds
-    //std::unique_ptr<MacenkoHistogram> theHistogram = std::make_unique<MacenkoHistogram>();
-    //cv::Mat percentileThreshVectors;
-    //theHistogram->PercentileThresholdVectors(projectedPoints, percentileThreshVectors, this->GetPercentileThreshold());
-
-    //scov << "The percentile threshold vectors: " << std::endl;
-    //scov << percentileThreshVectors << std::endl;
-
-
-    //Back-project to get un-normalized stain vectors. DO NOT translate to the mean after backprojection.
-    //cv::Mat backProjectedVectors;
-    //theBasisTransform->backProjectPoints(percentileThreshVectors, backProjectedVectors, false); //useMean=false
-
-    //scov << "The back projected percentileThreshVectors: " << std::endl;
-    //scov << backProjectedVectors << std::endl;
-
+    scov << "\n\nSo what is the ICA output? " << std::endl;
+    scov << "independentComponents: " << independentComponents << std::endl;
+    scov << "unmixingMatrix: " << unmixingMatrix << std::endl;
 
     //Convert to C array and normalize rows
-    //double tempStainVecOutput[9] = {0.0};
-    //StainCVMatToCArray(backProjectedVectors, tempStainVecOutput, true);
-    //for (int i = 0; i < 9; i++) {
-    //    outputVectors[i] = tempStainVecOutput[i];
-    //}
-
-
-
-
-    //scov << "Testing CVMat to C array conversion (normalize=true): " << std::endl;
-    //for (int i = 0; i < 9; i++) {
-    //    scov << tempStainVecOutput[i] << ", ";
-    //}
-    //scov << std::endl;
-    
-
-
-
-    //Test converting it the other way
-    //cv::Mat convertBack;
-    //StainCArrayToCVMat(tempStainVecOutput, convertBack, true);
-
-    //scov << "Testing C array to CVMat conversion (normalize=true): " << std::endl;
-    //scov << convertBack << std::endl;
+    double tempStainVecOutput[9] = {0.0};
+    //StainCVMatToCArray(unmixingAsCV, tempStainVecOutput, true);
+    for (int i = 0; i < 9; i++) {
+        outputVectors[i] = tempStainVecOutput[i];
+    }
 
 
     tempOut << scov.str() << std::endl;
     tempOut.close();
-
-
-
-
 
 }//end single-parameter ComputeStainVectors
 
 
 
 //This overload does not have a default value for sampleSize, so it requires at two arguments
-void StainVectorICA::ComputeStainVectors(double(&outputVectors)[9], int sampleSize) {
+void StainVectorICA::ComputeStainVectors(double (&outputVectors)[9], int sampleSize) {
     if (this->GetSourceFactory() == nullptr) { return; }
     //Set member variables with the argument values
     this->SetSampleSize(sampleSize);

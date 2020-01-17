@@ -35,7 +35,7 @@ StainVectorOpenCV::StainVectorOpenCV(std::shared_ptr<tile::Factory> source)
 StainVectorOpenCV::~StainVectorOpenCV(void) {
 }//end destructor
 
-bool StainVectorOpenCV::AreEqual(cv::InputArray array1, cv::InputArray array2) {
+const bool StainVectorOpenCV::AreEqual(cv::InputArray array1, cv::InputArray array2) {
     // treat two empty arrays as identical
     if (array1.empty() && array2.empty()) {
         return true;
@@ -52,7 +52,7 @@ bool StainVectorOpenCV::AreEqual(cv::InputArray array1, cv::InputArray array2) {
 }//end AreEqual
 
 void StainVectorOpenCV::StainCArrayToCVMat(double(&inputVectors)[9], cv::OutputArray outputData,
-    const bool normalize /* = false*/, const int _numRows /*= -1 */) {
+    const bool normalize /* = false*/, const int _numRows /*= -1 */) const {
     //If _numRows == 0, no output should be produced
     if (_numRows == 0) { return; }
     //Possible values for outRows are 1, 2, or 3
@@ -75,7 +75,8 @@ void StainVectorOpenCV::StainCArrayToCVMat(double(&inputVectors)[9], cv::OutputA
     outputData.assign(outputMat);
 }//end StainCArrayToCVMat
 
-void StainVectorOpenCV::StainCVMatToCArray(cv::InputArray inputData, double(&outputVectors)[9], const bool normalize /* = false*/) {
+void StainVectorOpenCV::StainCVMatToCArray(cv::InputArray inputData, double(&outputVectors)[9], 
+    const bool normalize /* = false*/) const {
     double tempOutput[9] = { 0.0 };
     if (inputData.empty()) { return; }
     cv::Mat inputMatSquare, _inputMat(inputData.getMat());

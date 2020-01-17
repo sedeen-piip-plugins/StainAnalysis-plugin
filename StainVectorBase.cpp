@@ -39,21 +39,5 @@ StainVectorBase::~StainVectorBase(void) {
 void StainVectorBase::ComputeStainVectors(double (&outputVectors)[9]) {
 }//end ComputeStainVectors
 
-bool StainVectorBase::AreEqual(cv::InputArray array1, cv::InputArray array2) {
-    // treat two empty arrays as identical
-    if (array1.empty() && array2.empty()) {
-        return true;
-    }
-    // if dimensionality is not identical, these arrays are not identical
-    if (array1.cols() != array2.cols() || array1.rows() != array2.rows() || array1.dims() != array2.dims()) {
-        return false;
-    }
-    //Compare NOT equal, then count NON-zero (there isn't a countZero function in OpenCV).
-    cv::Mat diff;
-    cv::compare(array1, array2, diff, cv::CmpTypes::CMP_NE);
-    int nz = cv::countNonZero(diff);
-    return (nz == 0);
-}//end AreEqual
-
 } // namespace image
 } // namespace sedeen
