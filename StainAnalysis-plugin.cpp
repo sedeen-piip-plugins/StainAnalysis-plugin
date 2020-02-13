@@ -376,11 +376,10 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
 
 
             //Create an object to get stain vectors from, using ICA
-            std::shared_ptr<sedeen::image::StainVectorICA> stainsFromICA
-                = std::make_shared<sedeen::image::StainVectorICA>(source_factory, 0.15);
+            //std::shared_ptr<sedeen::image::StainVectorICA> stainsFromICA
+            //    = std::make_shared<sedeen::image::StainVectorICA>(source_factory, 0.15);
             //Then compute stain vectors
-            stainsFromICA->ComputeStainVectors(conv_matrix, 100);
-
+            //stainsFromICA->ComputeStainVectors(conv_matrix, 100);
           
             //TEMPORARY!
             std::ostringstream ss;
@@ -405,7 +404,7 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
         //TEMPORARY
         //Change the contents of the chosenStainProfile
         //REENABLE THIS WHEN YOU'RE READY TO TEST
-        chosenStainProfile->SetProfilesFromDoubleArray(conv_matrix);
+        //chosenStainProfile->SetProfilesFromDoubleArray(conv_matrix);
 
 
 
@@ -431,10 +430,10 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
     std::shared_ptr<GraphicItemBase> region = m_regionToProcess;
     if (pipeline_changed && (nullptr != region)) {
         // Constrain the output of the pipeline to the region of interest provided
-        auto constained_factory = std::make_shared<RegionFactory>(m_colorDeconvolution_factory, region->graphic());
+        auto constrained_factory = std::make_shared<RegionFactory>(m_colorDeconvolution_factory, region->graphic());
 
         // Wrap resulting Factory in a Cache for speedy results
-        m_colorDeconvolution_factory = std::make_shared<Cache>(constained_factory, RecentCachePolicy(30));
+        m_colorDeconvolution_factory = std::make_shared<Cache>(constrained_factory, RecentCachePolicy(30));
     }
 
     return pipeline_changed;

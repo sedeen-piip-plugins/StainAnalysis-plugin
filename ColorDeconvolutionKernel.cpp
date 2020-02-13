@@ -52,10 +52,8 @@ namespace tile {
         for (int i = 0; i < 3; i++) {
             //Color images: adjust pixel value, assign
             colorImages.push_back(RawImage(imageSize, ColorSpace(ColorModel::RGBA, ChannelType::UInt8)));
-            colorImages[i].fill(0);
+            colorImages[i].fill(ChannelValue(0)); //ChannelValue is a std::variant, so values can be retrieved as multiple types
         }
-        //Get the number of stains in the profile
-        //int numStains = m_stainProfile->GetNumberOfStainComponents();
 
         //The inverse can't be calculated if there is a row of zeros. Replace these values first.
         //If there is a row of zeros, replace it. Use the default replacement row.
@@ -159,7 +157,7 @@ namespace tile {
         for (int i = 0; i < 3; i++) {
             //Color images: adjust pixel value, assign
             colorImages.push_back(RawImage(imageSize, ColorSpace(ColorModel::RGBA, ChannelType::UInt8)));
-            colorImages[i].fill(0);
+            colorImages[i].fill(ChannelValue(0)); //ChannelValue is a std::variant, allowing data to be multiple types
         }
 
         //Perform faster OD conversions using a lookup table
