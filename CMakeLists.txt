@@ -88,15 +88,29 @@ FetchContent_Declare(
 FetchContent_GetProperties(TinyXML2)
 STRING(TOLOWER "TinyXML2" TinyXML2Name)
 IF(NOT ${TinyXML2Name}_POPULATED)
-  #Fetch TinyXML2 using the details from FetchContent_Declare 	
+  #Fetch TinyXML2 using the details from FetchContent_Declare
   FetchContent_Populate(TinyXML2)
 ENDIF()
+
+#Fetch the OpticalDensityThreshold respository. Do not build as a subproject
+FetchContent_Declare(
+  OpticalDensityThreshold
+  GIT_REPOSITORY https://github.com/sedeen-piip-plugins/OpticalDensityThreshold.git
+  GIT_TAG a91cd4f93146429e1d97f44e4e4ccfbd22af181a
+)
+FetchContent_GetProperties(OpticalDensityThreshold)
+STRING(TOLOWER "OpticalDensityThreshold" OpticalDensityThresholdName)
+IF(NOT ${OpticalDensityThresholdName}_POPULATED)
+  FetchContent_Populate(OpticalDensityThreshold)
+ENDIF()
+SET(OPTICAL_DENSITY_THRESHOLD_DIR ${${OpticalDensityThresholdName}_SOURCE_DIR})
 
 INCLUDE_DIRECTORIES( ${INCLUDE_DIRECTORIES} 
                      ${SEDEENSDK_INCLUDE_DIR} 
                      ${SEDEENSDK_OPENCV_INCLUDE_DIR}
                      ${BOOST_ROOT} 
                      ${${TinyXML2Name}_SOURCE_DIR}
+                     ${OPTICAL_DENSITY_THRESHOLD_DIR}
                      ${MLPACK_INCLUDE_DIR}
                      ${ARMADILLO_INCLUDE_DIR}
                      )
@@ -116,9 +130,11 @@ ADD_LIBRARY( ${PROJECT_NAME} MODULE
              ${PROJECT_NAME}.h 
              ${${TinyXML2Name}_SOURCE_DIR}/tinyxml2.h 
              ${${TinyXML2Name}_SOURCE_DIR}/tinyxml2.cpp
+             ${OPTICAL_DENSITY_THRESHOLD_DIR}/ODConversion.h
+             ${OPTICAL_DENSITY_THRESHOLD_DIR}/ODThresholdKernel.h
+             ${OPTICAL_DENSITY_THRESHOLD_DIR}/ODThresholdKernel.cpp
              StainProfile.h StainProfile.cpp 
              ColorDeconvolutionKernel.h ColorDeconvolutionKernel.cpp
-             ODConversion.h 
              StainVectorMath.h StainVectorMath.cpp
              StainRGBFromROI.h StainRGBFromROI.cpp
              RandomWSISampler.h RandomWSISampler.cpp
@@ -128,7 +144,6 @@ ADD_LIBRARY( ${PROJECT_NAME} MODULE
              StainVectorPixelROI.h StainVectorPixelROI.cpp
              StainVectorMacenko.h StainVectorMacenko.cpp
              StainVectorNMF.h StainVectorNMF.cpp 
-             StainVectorICA.h StainVectorICA.cpp 
              BasisTransform.h BasisTransform.cpp
              AngleHistogram.h AngleHistogram.cpp
              MacenkoHistogram.h MacenkoHistogram.cpp

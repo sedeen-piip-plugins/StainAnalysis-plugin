@@ -77,9 +77,9 @@ public:
     ///Get/Set the name of stain three
     const std::string GetNameOfStainThree();
 
-    ///Get/Set the name of the stain separation algorithm currently selected
+    ///Get/Set the name of the stain separation method currently selected
     bool SetNameOfStainSeparationAlgorithm(const std::string &);
-    ///Get/Set the name of the stain separation algorithm currently selected
+    ///Get/Set the name of the stain separation method currently selected
     const std::string GetNameOfStainSeparationAlgorithm();
 
     ///Set the RGB values for stain one as three doubles
@@ -115,6 +115,11 @@ public:
     bool readStainProfile(std::string);
     /// Public read method - reads profile from embedded resource
     bool readStainProfile(const char *, size_t);
+
+
+    pick up here!!!
+        GetStainAnalysisModelOptions()
+
 
     ///Request the list of possible stain separation algorithm names from the class, static defined in constructor
     const std::vector<std::string> GetStainSeparationAlgorithmOptions();
@@ -181,6 +186,8 @@ private:
     tinyxml2::XMLError parseXMLDoc();
 
 private:
+    ///Store the list of possible stain analysis model names here
+    const std::vector<std::string> m_stainAnalysisModelOptions;
     ///Store the list of possible stain separation algorithm names here
 	const std::vector<std::string> m_stainSeparationAlgorithmOptions;
 

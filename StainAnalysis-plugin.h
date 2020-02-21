@@ -126,6 +126,8 @@ private:
 
 private:
     //Member variables
+    std::vector<std::string> m_stainAnalysisModelOptions;
+    std::vector<std::string> m_separationAlgorithmOptions;
     std::vector<std::string> m_stainVectorProfileOptions;
     std::vector<std::string> m_stainToDisplayOptions;
     double m_thresholdDefaultVal;

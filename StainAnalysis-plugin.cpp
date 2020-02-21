@@ -27,7 +27,6 @@
 #include "StainAnalysis-plugin.h"
 #include "StainVectorMacenko.h"
 #include "StainVectorNMF.h"
-#include "StainVectorICA.h"
 #include "ODConversion.h"
 
 #include <sstream>
@@ -113,6 +112,16 @@ StainAnalysis::StainAnalysis()
         m_stainVectorProfileOptions.push_back("Profile failed to load");
     }
 
+    //Create a temporary stain profile, use it to populate 
+    //the analysis model and separation algorithm lists
+    auto tempStainProfile = std::make_shared<StainProfile>();
+    //The stain analysis model options
+    m_stainAnalysisModelOptions = tempStainProfile->GetStainAnalysisModelOptions();
+    //The stain separation algorithm options
+    m_separationAlgorithmOptions = tempStainProfile->GetStainSeparationAlgorithmOptions();
+    //Clean up
+    tempStainProfile.reset();
+
     //Define the default list of names of stains to display
     m_stainToDisplayOptions.push_back("Stain 1");
     m_stainToDisplayOptions.push_back("Stain 2");
@@ -135,14 +144,6 @@ void StainAnalysis::init(const image::ImageHandle& image) {
     m_openProfile = createOpenFileDialogParameter(*this, "Stain Profile File",
         "Open a file containing a stain vector profile",
         openFileDialogOptions, true);
-
-	//Get the list of available stain separation algorithms from a temp StainProfile object
-	auto tempStainProfile = std::make_shared<StainProfile>();
-	std::vector<std::string> tempStainSeparationOptions = tempStainProfile->GetStainSeparationAlgorithmOptions();
-	tempStainProfile.reset();
-    m_stainSeparationAlgorithm = createOptionParameter(*this, "Stain Separation Algorithm",
-        "Select the stain separation algorithm to use to separate the stain components", 0,
-		tempStainSeparationOptions, false);
 
     m_stainVectorProfile = createOptionParameter(*this, "Stain Vector Profile",
         "Select the stain vector profile to use; either from the file, or one of the pre-defined profiles", 0,
