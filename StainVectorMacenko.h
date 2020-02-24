@@ -37,7 +37,7 @@ namespace image {
 class PATHCORE_IMAGE_API StainVectorMacenko : public StainVectorOpenCV {
 public:
     StainVectorMacenko(std::shared_ptr<tile::Factory> source,
-        double ODthreshold = 0.15, double percentileThreshold = 1.0);
+        double ODthreshold = 0.15, double percentileThreshold = 1.0, int numHistoBins = 1024);
     virtual ~StainVectorMacenko();
 
     ///Fill the 9-element array with three stain vectors
@@ -60,9 +60,15 @@ public:
     ///Get/Set the sample size, the number of pixels to choose
     inline void SetSampleSize(const int s) { m_sampleSize = s; }
 
+    ///Get/Set the number of bins in the angle histogram (in MacenkoHistogram)
+    inline const int GetNumHistogramBins() const { return m_numHistogramBins; }
+    ///Get/Set the number of bins in the angle histogram (in MacenkoHistogram)
+    inline void SetNumHistogramBins(const int n) { m_numHistogramBins = n; }
+
 private:
     double m_avgODThreshold;
     double m_percentileThreshold;
+    int m_numHistogramBins;
 
     ///The number of pixels that should be used to calculate the stain vectors
     int m_sampleSize;

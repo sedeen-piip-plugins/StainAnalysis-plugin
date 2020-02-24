@@ -51,25 +51,15 @@ void AngleHistogram::FillHistogram(cv::InputArray inVals, cv::OutputArray outHis
     FillHistogram(inVals, outHist, nbins, rangeArray);
 }//end FillHistogram (public 2-parameter)
 
-
 void AngleHistogram::FillHistogram(cv::InputArray inVals, cv::OutputArray outHist,
     int nbins, std::array<float, 2> rangeArray) {
     if (inVals.empty()) { return; }
     if (rangeArray[1] <= rangeArray[0]) { return; }
     if (nbins <= 0) { return; }
 
-    //Temp file output
-    std::fstream tempOut;
-    tempOut.open("D:\\mschumaker\\projects\\Sedeen\\testData\\output\\tempout-theHistogram.txt", std::fstream::out);
-    std::stringstream sh;
-
     //cv::calcHist only operates on floats, so convert data type
     cv::Mat _vals, floatVals;
     _vals = inVals.getMat();
-
-    sh << "The values before conversion: " << std::endl;
-    sh << inVals.getMat() << std::endl;
-
     _vals.convertTo(floatVals, cv::DataType<float>::type);
 
     //Fill the histogram
@@ -83,15 +73,8 @@ void AngleHistogram::FillHistogram(cv::InputArray inVals, cv::OutputArray outHis
     cv::calcHist(&floatVals, 1, channels, cv::Mat(), theHist, 1, histSize, histRange, uniform, accumulate);
     //The resulting type of theHist elements is float
 
-    sh << "Here's the histogram: " << std::endl;
-    sh << theHist << std::endl;
-
-    tempOut << sh.str() << std::endl;
-    tempOut.close();
-
     outHist.assign(theHist);
 }//end FillHistogram (protected 4-parameter overload)
-
 
 void AngleHistogram::VectorsToAngles(cv::InputArray inputVectors, cv::OutputArray outputAngles) {
     //Check if inputVectors not empty, and there are at least two columns
@@ -158,7 +141,7 @@ void AngleHistogram::AnglesToVectors(const std::array<float, 2> &inputAngles, cv
     outputVectors.assign(cartesianVectors);
 }//end AnglesToVectors
 
-    ///Given member variable values for range and nbins, convert an angle value to a float bin value
+///Given member variable values for range and nbins, convert an angle value to a float bin value
 const float AngleHistogram::AngleToHistogramBin(const float &angle) const {
     std::array<float, 2> range = this->GetHistogramRange();
     int nbins = this->GetNumHistogramBins();

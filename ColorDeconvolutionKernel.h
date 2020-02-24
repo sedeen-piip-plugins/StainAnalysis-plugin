@@ -63,7 +63,8 @@ namespace tile {
 		//
 		/// \param 
 		/// 
-        explicit ColorDeconvolution(DisplayOptions displayOption, std::shared_ptr<StainProfile>, bool, double);
+        explicit ColorDeconvolution(DisplayOptions displayOption, std::shared_ptr<StainProfile>, 
+            bool applyThreshold, double threshold);
 
 		virtual ~ColorDeconvolution();
 

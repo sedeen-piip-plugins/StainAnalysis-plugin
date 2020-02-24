@@ -43,7 +43,7 @@ BasisTransform::~BasisTransform(void) {
 
 void BasisTransform::ProjectionOnly(cv::InputArray sourcePoints, cv::OutputArray outputPoints,
     cv::InputArray basisVectors,
-    const VectorDirection &sourcePointDir /*= VectorDirection::ROWVECTORS*/) {
+    const VectorDirection &sourcePointDir /* = VectorDirection::ROWVECTORS */) {
     if (sourcePoints.empty()) { return; }
 
     //Get the source points as a matrix

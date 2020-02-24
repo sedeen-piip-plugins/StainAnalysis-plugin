@@ -96,7 +96,7 @@ ENDIF()
 FetchContent_Declare(
   OpticalDensityThreshold
   GIT_REPOSITORY https://github.com/sedeen-piip-plugins/OpticalDensityThreshold.git
-  GIT_TAG a91cd4f93146429e1d97f44e4e4ccfbd22af181a
+  GIT_TAG 0593181fdab683e9ef87d497f6be63b426866263
 )
 FetchContent_GetProperties(OpticalDensityThreshold)
 STRING(TOLOWER "OpticalDensityThreshold" OpticalDensityThresholdName)

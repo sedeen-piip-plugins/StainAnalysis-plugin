@@ -53,11 +53,13 @@ namespace sedeen {
 namespace image {
 
 StainVectorMacenko::StainVectorMacenko(std::shared_ptr<tile::Factory> source,
-    double ODthreshold /*= 0.15 */, double percentileThreshold /*= 1.0 */)
+    double ODthreshold /* = 0.15 */, double percentileThreshold /* = 1.0 */,
+    int numHistoBins /* = 1024 */)
     : StainVectorOpenCV(source),
     m_sampleSize(0), //Must set to greater than 0 to ComputeStainVectors
     m_avgODThreshold(ODthreshold), //assign default value
-    m_percentileThreshold(percentileThreshold) //assign default value
+    m_percentileThreshold(percentileThreshold), //assign default value
+    m_numHistogramBins(numHistoBins) //assign default value
 {}//end constructor
 
 StainVectorMacenko::~StainVectorMacenko(void) {
@@ -103,9 +105,10 @@ void StainVectorMacenko::ComputeStainVectors(double (&outputVectors)[9]) {
 
 
     //Create a class to histogram the results and find 2D vectors corresponding to percentile thresholds
-    std::unique_ptr<MacenkoHistogram> theHistogram = std::make_unique<MacenkoHistogram>();
+    std::unique_ptr<MacenkoHistogram> theHistogram
+        = std::make_unique<MacenkoHistogram>(this->GetPercentileThreshold(), this->GetNumHistogramBins());
     cv::Mat percentileThreshVectors;
-    theHistogram->PercentileThresholdVectors(projectedPoints, percentileThreshVectors, this->GetPercentileThreshold());
+    theHistogram->PercentileThresholdVectors(projectedPoints, percentileThreshVectors);
 
     scov << "The percentile threshold vectors: " << std::endl;
     scov << percentileThreshVectors << std::endl;

@@ -110,9 +110,9 @@ private:
     GraphicItemParameter m_regionToProcess; //single output region
 
     OptionParameter m_stainToDisplay;
-    BoolParameter m_applyThreshold;
+    BoolParameter m_applyDisplayThreshold;
     /// User defined Threshold value.
-    algorithm::DoubleParameter m_threshold;
+    algorithm::DoubleParameter m_displayThreshold;
 
     /// The output result
     ImageResult m_result;			
@@ -130,8 +130,8 @@ private:
     std::vector<std::string> m_separationAlgorithmOptions;
     std::vector<std::string> m_stainVectorProfileOptions;
     std::vector<std::string> m_stainToDisplayOptions;
-    double m_thresholdDefaultVal;
-    double m_thresholdMaxVal;
+    double m_displayThresholdDefaultVal;
+    double m_displayThresholdMaxVal;
 };
 
 } // namespace algorithm

@@ -28,13 +28,13 @@
 #include <cmath>
 #include <sstream>
 #include <fstream>
+#include <iterator>
 #include <tinyxml2.h>
 
-StainProfile::StainProfile() : m_stainSeparationAlgorithmOptions( 
-    { "Ruifrok+Johnston Deconvolution",
-      "Macenko 2-Stain Decomposition",
-      "Non-Negative Matrix Factorization",
-      "Independent Component Analysis" })
+StainProfile::StainProfile() 
+    : m_stainAnalysisModelOptions( { "Ruifrok+Johnston Deconvolution" } ),
+    m_stainSeparationAlgorithmOptions( {"Region-of-Interest Selection", 
+        "Macenko Decomposition", "Non-Negative Matrix Factorization" } )
 {
     //Build the XML document structure
     BuildXMLDocument();
@@ -48,7 +48,10 @@ StainProfile::StainProfile(StainProfile &s)
     this->SetNameOfStainOne(s.GetNameOfStainOne());
     this->SetNameOfStainTwo(s.GetNameOfStainTwo());
     this->SetNameOfStainThree(s.GetNameOfStainThree());
+    this->SetNameOfStainAnalysisModel(s.GetNameOfStainAnalysisModel());
     this->SetNameOfStainSeparationAlgorithm(s.GetNameOfStainSeparationAlgorithm());
+    this->SetAllAnalysisModelParameters(s.GetAllAnalysisModelParameters());
+    this->SetAllSeparationAlgorithmParameters(s.GetAllSeparationAlgorithmParameters());
     this->SetStainOneRGB(s.GetStainOneRGB());
     this->SetStainTwoRGB(s.GetStainTwoRGB());
     this->SetStainThreeRGB(s.GetStainThreeRGB());
@@ -57,8 +60,8 @@ StainProfile::StainProfile(StainProfile &s)
 StainProfile::~StainProfile() {
     //Smartpointer used for m_xmlDoc, 
     //and an XMLDocument handles memory management for all its child objects.
-    //No explicit delete required. reset() is an option, though.
-}
+    //No explicit delete required.
+}//end destructor
 
 bool StainProfile::SetNameOfStainProfile(const std::string &name) {
     //Direct assignment. Add checks if necessary.
@@ -69,19 +72,19 @@ bool StainProfile::SetNameOfStainProfile(const std::string &name) {
         m_rootElement->SetAttribute(nameOfStainProfileAttribute(), name.c_str());
         return true;
     }
-}
+}//end SetNameOfStainProfile
 
-const std::string StainProfile::GetNameOfStainProfile() {
-    std::string result("");
+const std::string StainProfile::GetNameOfStainProfile() const {
+    std::string result;
     if (m_rootElement == nullptr) {
-        return "";
+        result = std::string();
     }
     else {
         const char* name = m_rootElement->Attribute(nameOfStainProfileAttribute());
-        result = (name == nullptr) ? "" : std::string(name);
+        result = (name == nullptr) ? std::string() : std::string(name);
     }
     return result;
-}
+}//end GetNameOfStainProfile
 
 bool StainProfile::SetNumberOfStainComponents(const int &components) {
     if (m_componentsElement == nullptr) {
@@ -97,9 +100,9 @@ bool StainProfile::SetNumberOfStainComponents(const int &components) {
         m_componentsElement->SetAttribute(numberOfStainsAttribute(), -1);
         return false;
     }
-}
+}//end SetNumberOfStainComponents
 
-const int StainProfile::GetNumberOfStainComponents() {
+const int StainProfile::GetNumberOfStainComponents() const {
     int components(-1);
     if (m_componentsElement == nullptr) {
         return -1;
@@ -111,7 +114,7 @@ const int StainProfile::GetNumberOfStainComponents() {
         }
     }
     return components;
-}
+}//end GetNumberOfStainComponents
 
 bool StainProfile::SetNameOfStainOne(const std::string &name) {
     //Direct assignment.
@@ -122,19 +125,19 @@ bool StainProfile::SetNameOfStainOne(const std::string &name) {
         m_stainOneElement->SetAttribute(nameOfStainAttribute(), name.c_str());
         return true;
     }
-}
+}//end SetNameOfStainOne
 
-const std::string StainProfile::GetNameOfStainOne() {
-    std::string result("");
+const std::string StainProfile::GetNameOfStainOne() const {
+    std::string result;
     if (m_stainOneElement == nullptr) {
-        return "";
+        result = std::string();
     }
     else {
         const char* name = m_stainOneElement->Attribute(nameOfStainAttribute());
-        result = (name == nullptr) ? "" : std::string(name);
+        result = (name == nullptr) ? std::string() : std::string(name);
     }
     return result;
-}
+}//end GetNameOfStainOne
 
 bool StainProfile::SetNameOfStainTwo(const std::string &name) {
     //Direct assignment.
@@ -145,19 +148,19 @@ bool StainProfile::SetNameOfStainTwo(const std::string &name) {
         m_stainTwoElement->SetAttribute(nameOfStainAttribute(), name.c_str());
         return true;
     }
-}
+}//end SetNameOfStainTwo
 
-const std::string StainProfile::GetNameOfStainTwo() {
-    std::string result("");
+const std::string StainProfile::GetNameOfStainTwo() const {
+    std::string result;
     if (m_stainTwoElement == nullptr) {
-        return "";
+        result = std::string();
     }
     else {
         const char* name = m_stainTwoElement->Attribute(nameOfStainAttribute());
-        result = (name == nullptr) ? "" : std::string(name);
+        result = (name == nullptr) ? std::string() : std::string(name);
     }
     return result;
-}
+}//end GetNameOfStainTwo
 
 bool StainProfile::SetNameOfStainThree(const std::string &name) {
     //Direct assignment
@@ -168,19 +171,43 @@ bool StainProfile::SetNameOfStainThree(const std::string &name) {
         m_stainThreeElement->SetAttribute(nameOfStainAttribute(), name.c_str());
         return true;
     }
-}
+}//end SetNameOfStainThree
 
-const std::string StainProfile::GetNameOfStainThree() {
-    std::string result("");
+const std::string StainProfile::GetNameOfStainThree() const {
+    std::string result;
     if (m_stainThreeElement == nullptr) {
-        return "";
+        result = std::string();
     }
     else {
         const char* name = m_stainThreeElement->Attribute(nameOfStainAttribute());
-        result = (name == nullptr) ? "" : std::string(name);
+        result = (name == nullptr) ? std::string() : std::string(name);
     }
     return result;
-}
+}//end GetNameOfStainThree
+
+bool StainProfile::SetNameOfStainAnalysisModel(const std::string &name) {
+    //Check if the stain analysis model name given is in the valid list
+    //If not, do not assign value and return false
+    if (std::find(m_stainAnalysisModelOptions.begin(), m_stainAnalysisModelOptions.end(), name)
+        != m_stainAnalysisModelOptions.end()) {
+        //Found. Assign name 
+        m_analysisModelElement->SetAttribute(analysisModelNameAttribute(), name.c_str());
+        return true;
+    }//else
+    return false;
+}//end SetNameOfStainAnalysisModel
+
+const std::string StainProfile::GetNameOfStainAnalysisModel() const {
+    std::string result;
+    if (m_analysisModelElement == nullptr) {
+        result = std::string();
+    }
+    else {
+        const char* am = m_analysisModelElement->Attribute(analysisModelNameAttribute());
+        result = (am == nullptr) ? std::string() : std::string(am);
+    }
+    return result;
+}//end GetNameOfStainAnalysisModel
 
 bool StainProfile::SetNameOfStainSeparationAlgorithm(const std::string &name) {
     //Check if the stain separation algorithm name given is in the valid list
@@ -192,25 +219,25 @@ bool StainProfile::SetNameOfStainSeparationAlgorithm(const std::string &name) {
         return true;
     }//else
     return false;
-}
+}//end SetNameOfStainSeparationAlgorithm
 
-const std::string StainProfile::GetNameOfStainSeparationAlgorithm() {
-    std::string result("");
+const std::string StainProfile::GetNameOfStainSeparationAlgorithm() const {
+    std::string result;
     if (m_algorithmElement == nullptr) {
-        return "";
+        result = std::string();
     }
     else {
         const char* alg = m_algorithmElement->Attribute(algorithmNameAttribute());
-        result = (alg == nullptr) ? "" : std::string(alg);
+        result = (alg == nullptr) ? std::string() : std::string(alg);
     }
     return result;
-}
+}//end GetNameOfStainSeparationAlgorithm
 
-bool StainProfile::SetStainOneRGB(double r, double g, double b) {
+bool StainProfile::SetStainOneRGB(const double &r, const double &g, const double &b) {
     //Place data into a std::array, pass to other overload of this method
     std::array<double, 3> rgb = { r,g,b };
     return SetStainOneRGB(rgb);
-}
+}//end SetStainOneRGB
 
 bool StainProfile::SetStainOneRGB(double rgb[])
 {
@@ -261,7 +288,7 @@ bool StainProfile::SetStainOneRGB(const std::array<double, 3> &rgb_in) {
     return true;
 }//end SetStainOneRGB(std::array)
 
-const std::array<double, 3> StainProfile::GetStainOneRGB() {
+const std::array<double, 3> StainProfile::GetStainOneRGB() const {
     //Create a zero array to return
     std::array<double, 3> out = { 0.0,0.0,0.0 };
     double r, g, b; //temp values
@@ -290,11 +317,11 @@ const std::array<double, 3> StainProfile::GetStainOneRGB() {
     return out;
 }//end GetStainOneRGB
 
-bool StainProfile::SetStainTwoRGB(double r, double g, double b) {
+bool StainProfile::SetStainTwoRGB(const double &r, const double &g, const double &b) {
     //Place data into a std::array, pass to other overload of this method
     std::array<double, 3> rgb = { r,g,b };
     return SetStainTwoRGB(rgb);
-}
+}//end SetStainTwoRGB
 
 bool StainProfile::SetStainTwoRGB(double rgb[]) {
     //Check length of rgb first
@@ -343,7 +370,7 @@ bool StainProfile::SetStainTwoRGB(const std::array<double, 3> &rgb_in) {
     return true;
 }//end SetStainTwoRGB(std::array)
 
-const std::array<double, 3> StainProfile::GetStainTwoRGB() {
+const std::array<double, 3> StainProfile::GetStainTwoRGB() const {
     //Create a zero array to return
     std::array<double, 3> out = { 0.0,0.0,0.0 };
     double r, g, b; //temp values
@@ -372,11 +399,11 @@ const std::array<double, 3> StainProfile::GetStainTwoRGB() {
     return out;
 }//end GetStainTwoRGB
 
-bool StainProfile::SetStainThreeRGB(double r, double g, double b) {
+bool StainProfile::SetStainThreeRGB(const double &r, const double &g, const double &b) {
     //Place data into a std::array, pass to other overload of this method
     std::array<double, 3> rgb = { r,g,b };
     return SetStainThreeRGB(rgb);
-}
+}//end SetStainThreeRGB
 
 bool StainProfile::SetStainThreeRGB(double rgb[])
 {
@@ -426,7 +453,7 @@ bool StainProfile::SetStainThreeRGB(const std::array<double, 3> &rgb_in) {
     return true;
 }//end SetStainThreeRGB(std::array)
 
-const std::array<double, 3> StainProfile::GetStainThreeRGB() {
+const std::array<double, 3> StainProfile::GetStainThreeRGB() const {
     //Create a zero array to return
     std::array<double, 3> out = { 0.0,0.0,0.0 };
     double r, g, b; //temp values
@@ -455,15 +482,15 @@ const std::array<double, 3> StainProfile::GetStainThreeRGB() {
     return out;
 }//end GetStainThreeRGB
 
-bool StainProfile::GetProfilesAsDoubleArray(double (&profileArray)[9]) {
+bool StainProfile::GetProfilesAsDoubleArray(double (&profileArray)[9]) const {
     return GetProfilesAsDoubleArray(profileArray, false);
 }//end GetProfileAsDoubleArray
 
-bool StainProfile::GetNormalizedProfilesAsDoubleArray(double (&profileArray)[9]) {
+bool StainProfile::GetNormalizedProfilesAsDoubleArray(double (&profileArray)[9]) const {
     return GetProfilesAsDoubleArray(profileArray, true);
 }//end GetNormalizedProfilesAsDoubleArray
 
-bool StainProfile::GetProfilesAsDoubleArray(double (&profileArray)[9], bool normalize) {
+bool StainProfile::GetProfilesAsDoubleArray(double (&profileArray)[9], bool normalize) const {
     //This method fills the values of profileArray from local stain profile
     //Assigns 0.0 for elements corresponding to components beyond the number set in the profile
     int components = this->GetNumberOfStainComponents();
@@ -507,7 +534,7 @@ bool StainProfile::SetProfilesFromDoubleArray(double (&profileArray)[9]) {
     return (check1 && check2 && check3);
 }//end SetProfileFromDoubleArray
 
-bool StainProfile::checkFile(std::string fileString, std::string op) {
+bool StainProfile::checkFile(const std::string &fileString, const std::string &op) {
     if (fileString.empty()) {
         return false;
     }
@@ -538,7 +565,7 @@ bool StainProfile::checkFile(std::string fileString, std::string op) {
 }//end checkFile
 
 ///Public write method, calls private write method
-bool StainProfile::writeStainProfile(std::string fileString) {
+bool StainProfile::writeStainProfile(const std::string &fileString) {
     bool checkResult = this->checkFile(fileString, "w");
     if (!checkResult) {
         return false;
@@ -556,7 +583,7 @@ bool StainProfile::writeStainProfile(std::string fileString) {
 }//end writeStainProfile
 
 ///Public read method, calls private write method
-bool StainProfile::readStainProfile(std::string fileString) {
+bool StainProfile::readStainProfile(const std::string &fileString) {
     bool checkResult = this->checkFile(fileString, "r");
     if (!checkResult) {
         return false;
@@ -584,7 +611,7 @@ bool StainProfile::readStainProfile(const char *str, size_t size) {
 }  // end readStainProfile
 
 ///Private write method that deals with TinyXML2
-tinyxml2::XMLError StainProfile::writeStainProfileToXML(std::string fileString) {
+tinyxml2::XMLError StainProfile::writeStainProfileToXML(const std::string &fileString) {
     //Write it!
     tinyxml2::XMLError eResult = this->GetXMLDoc()->SaveFile(fileString.c_str());
     XMLCheckResult(eResult);
@@ -592,7 +619,7 @@ tinyxml2::XMLError StainProfile::writeStainProfileToXML(std::string fileString) 
     return tinyxml2::XML_SUCCESS;
 }//end writeStainProfileToXML
 
-tinyxml2::XMLError StainProfile::readStainProfileFromXMLFile(std::string fileString) {
+tinyxml2::XMLError StainProfile::readStainProfileFromXMLFile(const std::string &fileString) {
     //Clear the current structure
     bool clearSuccessful = ClearXMLDocument();
     if (!clearSuccessful) {
@@ -652,38 +679,65 @@ tinyxml2::XMLError StainProfile::parseXMLDoc() {
         tempStain = tempStain->NextSiblingElement(stainTag());
     }
 
+    m_analysisModelElement = m_rootElement->FirstChildElement(analysisModelTag());
+    if (m_analysisModelElement == nullptr) {
+        return tinyxml2::XML_ERROR_PARSING_ELEMENT;
+    }
+    //Parsing any parameters of this element is handled by Get methods
+
     m_algorithmElement = m_rootElement->FirstChildElement(algorithmTag());
     if (m_algorithmElement == nullptr) {
         return tinyxml2::XML_ERROR_PARSING_ELEMENT;
     }
-    m_parameterElement = m_algorithmElement->FirstChildElement(parameterTag());
-    if (m_parameterElement == nullptr) {
-      // do nothing, for now. The only separation algorithm has no parameters
-      // return tinyxml2::XML_ERROR_PARSING_ELEMENT;
-    }
+    //Parsing any parameters of this element is handled by Get methods
 
     return tinyxml2::XML_SUCCESS;
 }//end parseXMLDoc
 
-const std::vector<std::string> StainProfile::GetStainSeparationAlgorithmOptions() {
-    return m_stainSeparationAlgorithmOptions;
-}
+const std::vector<std::string> StainProfile::GetStainAnalysisModelOptions() const {
+    return m_stainAnalysisModelOptions;
+}//end GetStainAnalysisModelOptions
 
-const std::string StainProfile::GetStainSeparationAlgorithmName(int index) {
+const std::vector<std::string> StainProfile::GetStainSeparationAlgorithmOptions() const {
+    return m_stainSeparationAlgorithmOptions;
+}//end GetStainSeparationAlgorithmOptions
+
+const int StainProfile::GetVectorIndexFromName(const std::string &name, const std::vector<std::string> &vec) const {
+    int outIndex(-1);
+    auto it = std::find(vec.begin(), vec.end(), name);
+    if (it != vec.end()) {
+        outIndex = static_cast<int>(std::distance(vec.begin(), it));
+    }
+    else {
+        outIndex = -1;
+    }
+    return outIndex;
+}//end GetVectorIndexFromName
+
+const std::string StainProfile::GetValueFromStringVector(const int &index,
+    const std::vector<std::string> &vec) const {
     //Check that the given index value is valid
     //Use the vector::at operator to do bounds checking
     std::string name;
     try {
-        name = m_stainSeparationAlgorithmOptions.at(index);
+        name = vec.at(index);
     }
     catch (const std::out_of_range& rangeerr) {
         rangeerr.what();
-        //The index is out of range. Return ""
-        return "";
+        //The index is out of range. Return empty string
+        return std::string();
     }
     //name found. Return it.
     return name;
-}//end GetStainSeparationAlgorithmOptions
+}//end GetValueFromStringVector
+
+const std::string StainProfile::GetStainAnalysisModelName(const int &index) const {
+    return GetValueFromStringVector(index, m_stainAnalysisModelOptions);
+}//end GetStainAnalysisModelName
+
+const std::string StainProfile::GetStainSeparationAlgorithmName(const int &index) const {
+    return GetValueFromStringVector(index, m_stainSeparationAlgorithmOptions);
+}//end GetStainSeparationAlgorithmName
 
 bool StainProfile::BuildXMLDocument() {
     //Instantiate the XMLDocument as shared_ptr
@@ -764,11 +818,13 @@ bool StainProfile::BuildXMLDocument() {
     bValThree->SetText(0);
     m_stainThreeElement->InsertEndChild(bValThree);
 
+    //analysis model tag
+    m_analysisModelElement = m_xmlDoc->NewElement(analysisModelTag());
+    m_rootElement->InsertEndChild(m_analysisModelElement);
+
     //algorithm tag, which can contain parameter values needed by the algorithm
     m_algorithmElement = m_xmlDoc->NewElement(algorithmTag());
     m_rootElement->InsertEndChild(m_algorithmElement);
-    m_parameterElement = m_xmlDoc->NewElement(parameterTag());
-    m_algorithmElement->InsertEndChild(m_parameterElement);
 
     return true;
 }//end BuildXMLDocument
@@ -793,14 +849,15 @@ bool StainProfile::CheckXMLDocument() {
         auto c = this->GetNameOfStainOne();
         auto d = this->GetNameOfStainTwo();
         auto e = this->GetNameOfStainThree();
-        auto f = this->GetNameOfStainSeparationAlgorithm();
-        auto g = this->GetStainOneRGB();
-        auto h = this->GetStainTwoRGB();
-        auto i = this->GetStainThreeRGB();
-        double j[9] = { 0.0 };
-        bool k = this->GetProfilesAsDoubleArray(j, true);
-        bool l = this->GetProfilesAsDoubleArray(j, false);
-        if (!k || !l) {
+        auto f = this->GetNameOfStainAnalysisModel();
+        auto g = this->GetNameOfStainSeparationAlgorithm();
+        auto h = this->GetStainOneRGB();
+        auto i = this->GetStainTwoRGB();
+        auto j = this->GetStainThreeRGB();
+        double k[9] = { 0.0 };
+        bool l = this->GetProfilesAsDoubleArray(k, true);
+        bool m = this->GetProfilesAsDoubleArray(k, false);
+        if (!l || !m) {
             return false;
         }
     }
@@ -821,10 +878,15 @@ bool StainProfile::ClearXMLDocument() {
     this->SetNameOfStainOne("");
     this->SetNameOfStainTwo("");
     this->SetNameOfStainThree("");
+    this->SetNameOfStainAnalysisModel("");
     this->SetNameOfStainSeparationAlgorithm(""); 
 
     //Clear the stain vector values using the specific method in this class
     this->ClearStainVectorValues();
+    //Clear the analysis model parameters (if any)
+    this->ClearAllAnalysisModelParameters();
+    //Clear the separation algorithm parameters (if any)
+    this->ClearAllSeparationAlgorithmParameters();
 
     //Success
     return true;
@@ -840,4 +902,332 @@ bool StainProfile::ClearStainVectorValues() {
     //Success
     return true;
 }//end ClearStainVectorValues
+
+bool StainProfile::ClearChildren(tinyxml2::XMLElement* el, const std::string &tag /*= std::string()*/) {
+    bool success = true;
+    bool errorVal = false;
+    if (el != nullptr) {
+        if (!el->NoChildren()) {
+            if (tag.empty()) {
+                //If no tag was specified, delete all children
+                el->DeleteChildren();
+                return success;
+            }
+            else {
+                while (RemoveSingleChild(el, tag)) {
+                    ;//as long as RemoveSingleChild returns true, repeat running it
+                }
+                return success;
+            }
+        }//else
+        return errorVal;
+    }//else
+    return errorVal;
+}//end ClearChildren
+
+bool StainProfile::ClearAllAnalysisModelParameters() {
+    std::string tag = std::string(parameterTag());
+    return ClearChildren(m_analysisModelElement, tag);
+}//end ClearAnalysisModelParameters
+
+bool StainProfile::ClearAllSeparationAlgorithmParameters() {
+    std::string tag = std::string(parameterTag());
+    return ClearChildren(m_algorithmElement, tag);
+}//end ClearSeparationAlgorithmParameters
+
+bool StainProfile::RemoveSingleChild(tinyxml2::XMLElement* el, const std::string &tag /*= std::string()*/,
+    const std::string &att /*= std::string()*/, const std::string &val /*= std::string()*/) {
+    bool success = true;
+    bool errorVal = false;
+    tinyxml2::XMLElement* child;
+    if (el != nullptr) {
+        if (!el->NoChildren()) {
+            //Get a reference to the child to be deleted, if it can be found
+            if (tag.empty()) {
+                //If tag is an empty string, the child to be deleted is the first one,
+                //without regard to its xml tag
+                child = el->FirstChildElement();
+                //If there is no valid child, return errorVal
+                if (child == nullptr) { return errorVal; }
+            }
+            else {
+                //If no attribute is specified, choose the first child with the given tag
+                if (att.empty()) {
+                    child = el->FirstChildElement(tag.c_str());
+                }
+                else {
+                    tinyxml2::XMLElement* tempChild = el->FirstChildElement(tag.c_str());
+                    //loop through all child elements with this tag
+                    bool attFound = false;
+                    while (tempChild != nullptr) {
+                        if (val.empty()) {
+                            //If the parameter has the given attribute set to anything,
+                            //set attFound to true
+                            const char* tempAtt = tempChild->Attribute(att.c_str());
+                            if (tempAtt != nullptr) { attFound = true; }
+                        }
+                        else {
+                            //If there is a requested value for the attribute, test with it
+                            const char* tempAtt = tempChild->Attribute(att.c_str(), val.c_str());
+                            if (tempAtt != nullptr) { attFound = true; }
+                        }
+                        if (attFound) {
+                            child = tempChild;
+                            break;
+                        }
+                        //else
+                        tempChild = tempChild->NextSiblingElement(tag.c_str());
+                    }//end while
+                }
+            }
+
+            //If a child to be deleted is found, delete it, otherwise return errorVal
+            if (child != nullptr) {
+                el->DeleteChild(child);
+                return success;
+            }
+            //else
+            return errorVal;
+        }//else
+        return errorVal;
+    }//else
+    return errorVal;
+}//end RemoveSingleChild
+
+bool StainProfile::RemoveAnalysisModelParameter(const std::string &pType) {
+    std::string paramTag = std::string(parameterTag());
+    std::string paramAtt = std::string(parameterTypeAttribute());
+    return RemoveSingleChild(m_analysisModelElement, paramTag, paramAtt, pType);
+}//end RemoveAnalysisModelParameter
+
+bool StainProfile::RemoveSeparationAlgorithmParameter(const std::string &pType) {
+    std::string paramTag = std::string(parameterTag());
+    std::string paramAtt = std::string(parameterTypeAttribute());
+    return RemoveSingleChild(m_algorithmElement, paramTag, paramAtt, pType);
+}//end RemoveSeparationAlgorithmParameter
+
+const std::map<std::string, std::string> StainProfile::GetAllParameters(tinyxml2::XMLElement* el) const {
+    auto errorVal = std::map<std::string, std::string>();
+    auto theMap = std::map<std::string, std::string>();
+    if (el == nullptr) { return errorVal; } //if nothing can be set, return an empty map
+    if (m_xmlDoc == nullptr) { return errorVal; } //if there is no xml document, return errorVal
+    //This gets the value of a parameter with param-type given by the type argument, if defined
+    const char* paramTag = parameterTag();
+    const char* paramAtt = parameterTypeAttribute();
+
+    //Get the first child element, or return empty string if not found
+    tinyxml2::XMLElement* tempParam = el->FirstChildElement(paramTag);
+    //Return errorVal if there are no parameter tags
+    if (tempParam == nullptr) { return errorVal; }
+    while (tempParam != nullptr) {
+        const char* tempAtt = tempParam->Attribute(paramAtt);
+        const char* tempVal = tempParam->Value();
+        //If both values exist, create a pair and append to the map
+        if ((tempAtt != nullptr) && (tempVal != nullptr)) {
+            std::pair<std::string, std::string> tempPair
+                = std::pair<std::string, std::string>(std::string(tempAtt), std::string(tempVal));
+            theMap.insert(tempPair);
+        }
+        //repeat loop until there are no more parameters
+        tempParam = tempParam->NextSiblingElement(paramTag);
+    }
+    return theMap;
+}//end GetAllParameters
+
+bool StainProfile::SetAllParameters(tinyxml2::XMLElement* el, const std::map<std::string, std::string>& p) {
+    if (p.empty()) { return false; }     //if nothing can be set, return false
+    if (el == nullptr) { return false; } //if nothing can be set, return false
+    //Clear all children of the element node before assignment
+    this->ClearChildren(el);
+
+    //Iterate over map, create and assign all parameter element nodes
+    for (auto it = p.begin(); it != p.end(); ++it) {
+        std::string key = it->first;
+        std::string val = it->second;
+        bool checkVal = this->SetSingleParameter(el, key, val);
+        if (!checkVal) { return false; }
+    }
+    return true;
+}//end SetAllParameters
+
+const std::map<std::string, std::string> StainProfile::GetAllAnalysisModelParameters() const {
+    return GetAllParameters(m_analysisModelElement);
+}//end GetAnalysisModelParameters
+
+bool StainProfile::SetAllAnalysisModelParameters(const std::map<std::string, std::string>& p) {
+    return SetAllParameters(m_analysisModelElement, p);
+}//end SetAnalysisModelParameters
+
+const std::map<std::string, std::string> StainProfile::GetAllSeparationAlgorithmParameters() const {
+    return GetAllParameters(m_algorithmElement);
+}//end GetSeparationAlgorithmParameters
+
+bool StainProfile::SetAllSeparationAlgorithmParameters(const std::map<std::string, std::string>& p) {
+    return SetAllParameters(m_algorithmElement, p);
+}//end SetSeparationAlgorithmParameters
+
+const std::string StainProfile::GetSingleParameter(tinyxml2::XMLElement* el, const std::string &type) const {
+    std::string errorVal = std::string(); //an empty string
+    std::string outString = std::string();
+    if (el == nullptr) { return errorVal; } //if there is no element to get from, return errorVal
+    if (m_xmlDoc == nullptr) { return errorVal; } //if there is no xml document, return errorVal
+    if (type.empty()) { return errorVal; } //if no type is specified, return errorVal
+
+    //This gets the value of a parameter with param-type given by the type argument, if defined
+    const char* paramTag = parameterTag();
+    const char* paramAtt = parameterTypeAttribute();
+
+    //Get the first child element, or return empty string if not found
+    tinyxml2::XMLElement* tempParam = el->FirstChildElement(paramTag);
+    //Return errorVal if there are no parameter tags
+    if (tempParam == nullptr) { return errorVal; }
+    while (tempParam != nullptr) {
+        if (tempParam->Attribute(paramAtt, type.c_str())) {
+            const char *buffer = tempParam->Value();
+            if (buffer == nullptr) {
+                //The parameter of the right type was found, but has no value set
+                outString = errorVal;
+            }
+            else {
+                outString = std::string(buffer);
+            }
+            break;
+        }
+        //else repeat loop
+        tempParam = tempParam->NextSiblingElement(paramTag);
+    }
+    return outString;
+}//end GetSingleParameter
+
+bool StainProfile::SetSingleParameter(tinyxml2::XMLElement* el, const std::string &type, const std::string &val) {
+    if (type.empty()) { return false; }   //if there is no type, nothing can be set; return false
+    if (el == nullptr) { return false; } //if nothing can be set, return false
+    if (m_xmlDoc == nullptr) { return false; } //if there is no xml document, return false
+    //This sets the value of a parameter with param-type given by the type argument
+    const char* paramTag = parameterTag();
+    const char* paramAtt = parameterTypeAttribute();
+    bool attFound = false;
+    //Get the first child element, if none while loop will not be entered
+    tinyxml2::XMLElement* tempParam = el->FirstChildElement(paramTag);
+    //If at least one parameter exists, loop through to find parameter of given type
+    while (tempParam != nullptr) {
+        const char* tempAtt = tempParam->Attribute(paramAtt, type.c_str());
+        if (tempAtt != nullptr) {
+            tempParam->SetText(val.c_str());
+            attFound = true;
+        }
+        //else
+        //move to next parameter, prepare to repeat
+        tempParam = tempParam->NextSiblingElement(paramTag);
+    }
+    //if while loop was entered and attribute of given type was not found, create and add it
+    if(!attFound) {
+        //Create a new parameter, add to XML document model
+        tinyxml2::XMLElement* newParam = m_xmlDoc->NewElement(parameterTag());
+        newParam->SetAttribute(parameterTypeAttribute(), type.c_str());
+        newParam->SetText(val.c_str());
+        el->InsertEndChild(newParam);
+    }
+    return true;
+}//end SetSingleParameter
+
+const std::string StainProfile::GetSingleAnalysisModelParameter(const std::string &type) const {
+    return GetSingleParameter(m_analysisModelElement, type);
+}//end GetSingleAnalysisModelParameter
+
+bool StainProfile::SetSingleAnalysisModelParameter(const std::string &type, const std::string &val) {
+    return SetSingleParameter(m_analysisModelElement, type, val);
+}//end SetSingleAnalysisModelParameter
+
+const std::string StainProfile::GetSingleSeparationAlgorithmParameter(const std::string &type) const {
+    return GetSingleParameter(m_algorithmElement, type);
+}//end GetSingleSeparationAlgorithmParameter
+
+bool StainProfile::SetSingleSeparationAlgorithmParameter(const std::string &type, const std::string &val) {
+    return SetSingleParameter(m_algorithmElement, type, val);
+}//end SetSingleSeparationAlgorithmParameter
+
+const long int StainProfile::GetSeparationAlgorithmNumPixelsParameter() const {
+    std::string type = this->pTypeNumPixels();
+    std::string oss = this->GetSingleSeparationAlgorithmParameter(type);
+    long int outVal(-1); //Set error value here
+    //Convert oss to long int, if possible. Catch all exceptions (invalid_argument and out_of_range)
+    try {
+        outVal = std::stol(oss);
+    }
+    catch (...) {
+        //No additional actions required
+    }
+    return outVal;
+}//end GetSeparationAlgorithmNumPixelsParameter
+
+bool StainProfile::SetSeparationAlgorithmNumPixelsParameter(const long int& p) {
+    std::string type = this->pTypeNumPixels();
+    std::stringstream ss;
+    ss << p; // << std::endl;
+    return this->SetSingleSeparationAlgorithmParameter(type, ss.str());
+}//end SetSeparationAlgorithmNumPixelsParameter
+
+const double StainProfile::GetSeparationAlgorithmThresholdParameter() const {
+    std::string type = this->pTypeThreshold();
+    std::string oss = this->GetSingleSeparationAlgorithmParameter(type);
+    double outVal(-1.); //Set error value here
+    //Convert oss to double, if possible. Catch all exceptions (invalid_argument and out_of_range)
+    try {
+        outVal = std::stod(oss);
+    }
+    catch (...) {
+        //No additional actions required
+    }
+    return outVal;
+}//end GetSeparationAlgorithmThresholdParameter
+
+bool StainProfile::SetSeparationAlgorithmThresholdParameter(const double& p) {
+    std::string type = this->pTypeThreshold();
+    std::stringstream ss;
+    ss << p; // << std::endl;
+    return this->SetSingleSeparationAlgorithmParameter(type, ss.str());
+}//end SetSeparationAlgorithmThresholdParameter
+
+const double StainProfile::GetSeparationAlgorithmPercentileParameter() const {
+    std::string type = this->pTypePercentile();
+    std::string oss = this->GetSingleSeparationAlgorithmParameter(type);
+    double outVal(-1.); //Set error value here
+    //Convert oss to double, if possible. Catch all exceptions (invalid_argument and out_of_range)
+    try {
+        outVal = std::stod(oss);
+    }
+    catch (...) {
+        //No additional actions required
+    }
+    return outVal;
+}//end GetSeparationAlgorithmPercentileParameter
+
+bool StainProfile::SetSeparationAlgorithmPercentileParameter(const double& p) {
+    std::string type = this->pTypePercentile();
+    std::stringstream ss;
+    ss << p; // << std::endl;
+    return this->SetSingleSeparationAlgorithmParameter(type, ss.str());
+}//end SetSeparationAlgorithmPercentileParameter
+
+const int StainProfile::GetSeparationAlgorithmHistogramBinsParameter() const {
+    std::string type = this->pTypeHistoBins();
+    std::string oss = this->GetSingleSeparationAlgorithmParameter(type);
+    int outVal(-1); //Set error value here
+    //Convert oss to int, if possible. Catch all exceptions (invalid_argument and out_of_range)
+    try {
+        outVal = std::stoi(oss);
+    }
+    catch (...) {
+        //No additional actions required
+    }
+    return outVal;
+}//end GetSeparationAlgorithmHistogramBinsParameter
+
+bool StainProfile::SetSeparationAlgorithmHistogramBinsParameter(const int& p) {
+    std::string type = this->pTypeHistoBins();
+    std::stringstream ss;
+    ss << p; // << std::endl;
+    return this->SetSingleSeparationAlgorithmParameter(type, ss.str());
+}//end SetSeparationAlgorithmHistogramBinsParameter
 

@@ -67,13 +67,13 @@ StainAnalysis::StainAnalysis()
     m_stainVectorProfile(),
     m_regionToProcess(),
     m_stainToDisplay(),
-    m_applyThreshold(),
-    m_threshold(),
+    m_applyDisplayThreshold(),
+    m_displayThreshold(),
     m_result(),
     m_outputText(),
     m_report(""),
-    m_thresholdDefaultVal(20.0),
-    m_thresholdMaxVal(300.0),
+    m_displayThresholdDefaultVal(20.0),
+    m_displayThresholdMaxVal(300.0),
     m_colorDeconvolution_factory(nullptr)
 {
     // Build the list of stain vector file names
@@ -112,8 +112,7 @@ StainAnalysis::StainAnalysis()
         m_stainVectorProfileOptions.push_back("Profile failed to load");
     }
 
-    //Create a temporary stain profile, use it to populate 
-    //the analysis model and separation algorithm lists
+    //Populate the analysis model and separation algorithm lists with a temporary StainProfile
     auto tempStainProfile = std::make_shared<StainProfile>();
     //The stain analysis model options
     m_stainAnalysisModelOptions = tempStainProfile->GetStainAnalysisModelOptions();
@@ -158,7 +157,7 @@ void StainAnalysis::init(const image::ImageHandle& image) {
         "Choose which of the defined stains to show in the display area", 0, m_stainToDisplayOptions, false);
 
     //User can choose whether to apply the threshold or not
-    m_applyThreshold = createBoolParameter(*this, "Display with Threshold Applied",
+    m_applyDisplayThreshold = createBoolParameter(*this, "Display with Threshold Applied",
         "If Display with Threshold Applied is set, the threshold value in the slider below will be applied to the stain-separated image",
         true, false); //default value, optional
 
@@ -166,12 +165,12 @@ void StainAnalysis::init(const image::ImageHandle& image) {
 	//TEMPORARY: Can't set precision on DoubleParameter right now, so use 1/100 downscale
     //auto color = getColorSpace(image);
     //auto max_value = (1 << bitsPerChannel(color)) - 1;
-    m_threshold = createDoubleParameter(*this,
+    m_displayThreshold = createDoubleParameter(*this,
         "OD x100 Threshold",   // Widget label
         "A Threshold value",   // Widget tooltip
-        m_thresholdDefaultVal, // Initial value
+        m_displayThresholdDefaultVal, // Initial value
         0.0,                   // minimum value
-        m_thresholdMaxVal,     // maximum value
+        m_displayThresholdMaxVal,     // maximum value
         false);
 
     // Bind result
@@ -315,8 +314,8 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
          || m_stainSeparationAlgorithm.isChanged() 
          || m_stainVectorProfile.isChanged() 
          || m_stainToDisplay.isChanged() 
-         || m_applyThreshold.isChanged() 
-         || m_threshold.isChanged() 
+         || m_applyDisplayThreshold.isChanged() 
+         || m_displayThreshold.isChanged() 
          || m_displayArea.isChanged()
          || (nullptr == m_colorDeconvolution_factory) )
     {
@@ -413,7 +412,7 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
         //Scale down the threshold to create more precision
         auto colorDeconvolution_kernel =
             std::make_shared<image::tile::ColorDeconvolution>(DisplayOption, chosenStainProfile, 
-                m_applyThreshold, m_threshold/100.0);  //Need to tell it whether to use the threshold or not
+                m_applyDisplayThreshold, m_displayThreshold/100.0);  //Need to tell it whether to use the threshold or not
 
         // Create a Factory for the composition of these Kernels
         auto non_cached_factory =

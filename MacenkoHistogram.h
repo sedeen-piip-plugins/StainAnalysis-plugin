@@ -44,10 +44,6 @@ public:
     virtual ~MacenkoHistogram();
 
     ///Given a set of 2D vectors (rows), find angle (w/ atan2), histogram, find vectors at hi/lo percentile thresholds
-    bool PercentileThresholdVectors(cv::InputArray projectedPoints, cv::OutputArray percentileThreshPoints, 
-        const double &percentileThresholdValue);
-
-    ///Two-parameter overload of PercentileThresholdVectors, uses the member variable value for the percentileThresholdValue
     bool PercentileThresholdVectors(cv::InputArray projectedPoints, cv::OutputArray percentileThreshPoints);
 
     ///Given a histogram with range and nbins set in member variables, find values at percentile thresholds
