@@ -31,25 +31,27 @@
 
 #include "StainVectorBase.h"
 
- //OpenCV include
-#include <opencv2/core/core.hpp>
-
 namespace sedeen {
 namespace image {
 
 class PATHCORE_IMAGE_API StainVectorPixelROI : public StainVectorBase {
 public:
-    StainVectorPixelROI(std::shared_ptr<tile::Factory> source);
+    StainVectorPixelROI(std::shared_ptr<tile::Factory> source, 
+        const std::vector<std::shared_ptr<GraphicItemBase>> regions_of_interest);
     virtual ~StainVectorPixelROI();
 
-    long long ChooseRandomPixels(cv::Mat outputMatrix, int numberOfPixels, bool suppressZeros);
+    ///Fill the 9-element array with three stain vectors
+    virtual void ComputeStainVectors(double(&outputVectors)[9]);
+
+    ///Get/Set the vector of regions of interest
+    inline const std::vector<std::shared_ptr<GraphicItemBase>> GetRegionsOfInterest() const { return m_regionsOfInterest; }
+    ///Get/Set the vector of regions of interest
+    inline void SetRegionsOfInterest(const std::vector<std::shared_ptr<GraphicItemBase>> roi) { m_regionsOfInterest = roi; }
+
+    void getmeanRGBODfromROI(RawImage, double(&rgbOD)[3]);
 
 private:
-    std::shared_ptr<tile::Factory> m_sourceFactory;
-
-private:
-    //TODO: replace this with a threshold factory applied BEFORE creating an instance of this class
-    double m_avgODThreshold;
+    std::vector<std::shared_ptr<GraphicItemBase>> m_regionsOfInterest;
 };
 
 } // namespace image

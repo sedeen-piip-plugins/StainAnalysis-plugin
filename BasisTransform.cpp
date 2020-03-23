@@ -514,7 +514,7 @@ void BasisTransform::OptimizeBasisVectorSigns(cv::InputArray sourcePoints, /*ass
 
     //HACK!
     //int numTestPixels = this->GetNumTestingPixels();
-    int numTestPixels = 0; 
+    long int numTestPixels = 0; 
     
     
     
@@ -656,7 +656,7 @@ void BasisTransform::OptimizeBasisVectorSigns(cv::InputArray sourcePoints, /*ass
 
 
 
-void BasisTransform::CreatePixelSubsample(cv::InputArray sourcePixels, cv::OutputArray subsample, int numberOfPixels) {
+void BasisTransform::CreatePixelSubsample(cv::InputArray sourcePixels, cv::OutputArray subsample, long int numberOfPixels) {
     cv::Mat tempSubsampleMat;
     if (numberOfPixels < 1) {
         return;
@@ -674,8 +674,8 @@ void BasisTransform::CreatePixelSubsample(cv::InputArray sourcePixels, cv::Outpu
     std::uniform_int_distribution<int> randSourcePixelIndex(0, sourcePixels.rows() - 1);
     //Create a list of pixel (row) indices for the randomized subset, without duplication
     std::vector<int> pixelList;
-    for (int px = 0; px < numberOfPixels; px++) {
-        int countLimit = 2 * numberOfPixels; //loop count limit (just in case)
+    for (long int px = 0; px < numberOfPixels; px++) {
+        long int countLimit = 2 * numberOfPixels; //loop count limit (just in case)
         bool newIndexFound = false;
         int attemptNumber = 0;
         while (!newIndexFound && (attemptNumber < countLimit)) {

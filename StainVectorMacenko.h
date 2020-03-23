@@ -43,7 +43,7 @@ public:
     ///Fill the 9-element array with three stain vectors
     virtual void ComputeStainVectors(double (&outputVectors)[9]);
     ///Overload of the basic method, includes sampleSize parameter
-    void ComputeStainVectors(double (&outputVectors)[9], int sampleSize);
+    void ComputeStainVectors(double (&outputVectors)[9], long int sampleSize);
 
     ///Get/Set the average optical density threshold
     inline const double GetODThreshold() const { return m_avgODThreshold; }
@@ -56,9 +56,9 @@ public:
     inline void SetPercentileThreshold(const double p) { m_percentileThreshold = p; }
 
     ///Get/Set the sample size, the number of pixels to choose
-    inline const int GetSampleSize() const { return m_sampleSize; }
+    inline const long int GetSampleSize() const { return m_sampleSize; }
     ///Get/Set the sample size, the number of pixels to choose
-    inline void SetSampleSize(const int s) { m_sampleSize = s; }
+    inline void SetSampleSize(const long int s) { m_sampleSize = s; }
 
     ///Get/Set the number of bins in the angle histogram (in MacenkoHistogram)
     inline const int GetNumHistogramBins() const { return m_numHistogramBins; }
@@ -71,7 +71,7 @@ private:
     int m_numHistogramBins;
 
     ///The number of pixels that should be used to calculate the stain vectors
-    int m_sampleSize;
+    long int m_sampleSize;
 };
 
 } // namespace image

@@ -1021,7 +1021,7 @@ const std::map<std::string, std::string> StainProfile::GetAllParameters(tinyxml2
     if (tempParam == nullptr) { return errorVal; }
     while (tempParam != nullptr) {
         const char* tempAtt = tempParam->Attribute(paramAtt);
-        const char* tempVal = tempParam->Value();
+        const char* tempVal = tempParam->GetText();
         //If both values exist, create a pair and append to the map
         if ((tempAtt != nullptr) && (tempVal != nullptr)) {
             std::pair<std::string, std::string> tempPair

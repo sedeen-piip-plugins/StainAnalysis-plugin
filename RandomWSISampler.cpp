@@ -50,7 +50,7 @@ RandomWSISampler::RandomWSISampler(std::shared_ptr<tile::Factory> source)
 RandomWSISampler::~RandomWSISampler(void) {
 }//end destructor
 
-bool RandomWSISampler::ChooseRandomPixels(cv::OutputArray outputArray, const int numberOfPixels, const double ODthreshold,
+bool RandomWSISampler::ChooseRandomPixels(cv::OutputArray outputArray, const long int numberOfPixels, const double ODthreshold,
     const int level /* = 0 */, const int focusPlane /* = -1 */, const int band /* = -1 */) {
     if (this->GetSourceFactory() == nullptr) { return false; }
     auto source = this->GetSourceFactory();
@@ -97,7 +97,7 @@ bool RandomWSISampler::ChooseRandomPixels(cv::OutputArray outputArray, const int
     std::unique_ptr<u16[]> tileSamplingCountArray = std::make_unique<u16[]>(numTilesOnLevel);
     //Initialize a uniform distribution to choose tile indices
     std::uniform_int_distribution<s32> randTileIndex(0, numTilesOnLevel - 1);
-    for (int spx = 0; spx < numberOfPixels; spx++) {
+    for (long int spx = 0; spx < numberOfPixels; spx++) {
         s32 newIndex = randTileIndex(m_rgen);
         tileSamplingCountArray[newIndex]++;
     }

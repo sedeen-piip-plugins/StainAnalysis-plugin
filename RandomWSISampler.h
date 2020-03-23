@@ -45,7 +45,7 @@ public:
     virtual ~RandomWSISampler();
 
     ///Populate an OutputArray with pixels chosen without duplication from the source tile factory
-    virtual bool ChooseRandomPixels(cv::OutputArray outputMatrix, const int numberOfPixels, const double ODthreshold,
+    virtual bool ChooseRandomPixels(cv::OutputArray outputMatrix, const long int numberOfPixels, const double ODthreshold,
         const int level = 0, const int focusPlane = -1, const int band = -1); //Negative indicates to use the source default values
 
     //TODO: make a random tile and sub-tile chooser too

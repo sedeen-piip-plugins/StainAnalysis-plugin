@@ -109,7 +109,7 @@ protected:
     void backProjectPoints(cv::InputArray projectedPoints, cv::OutputArray backProjPoints, 
         cv::InputArray basisVectors, cv::InputArray means, bool addMean = true) const;
     ///Randomly choose numberOfPixels rows from sourcePixels, copy them to the subsample OutputArray.
-    void CreatePixelSubsample(cv::InputArray sourcePixels, cv::OutputArray subsample, const int numberOfPixels);
+    void CreatePixelSubsample(cv::InputArray sourcePixels, cv::OutputArray subsample, const long int numberOfPixels);
     ///Set the member basis vectors. Second parameter is direction of input vectors. Store basis vectors as row vectors.
     void SetBasisVectors(cv::InputArray basisVectors, const VectorDirection &vecDir = VectorDirection::ROWVECTORS);
     ///Set the member point mean

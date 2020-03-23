@@ -136,7 +136,6 @@ ADD_LIBRARY( ${PROJECT_NAME} MODULE
              StainProfile.h StainProfile.cpp 
              ColorDeconvolutionKernel.h ColorDeconvolutionKernel.cpp
              StainVectorMath.h StainVectorMath.cpp
-             StainRGBFromROI.h StainRGBFromROI.cpp
              RandomWSISampler.h RandomWSISampler.cpp
              StainVectorBase.h StainVectorBase.cpp
              StainVectorOpenCV.h StainVectorOpenCV.cpp

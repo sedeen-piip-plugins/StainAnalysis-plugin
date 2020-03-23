@@ -42,8 +42,6 @@
 #include <fstream>
 #include <sstream>
 
-//For now, include ODConversion here, but try to do the OD conversion and thresholding
-//in a kernel, and use a factory to apply it before passing the factory to this class
 #include "ODConversion.h"
 #include "StainVectorMath.h"
 #include "MacenkoHistogram.h"
@@ -68,7 +66,7 @@ StainVectorMacenko::~StainVectorMacenko(void) {
 void StainVectorMacenko::ComputeStainVectors(double (&outputVectors)[9]) {
     if (this->GetSourceFactory() == nullptr) { return; }
     //Using this overload of the method requires setting sample size in advance
-    int sampleSize = this->GetSampleSize();
+    long int sampleSize = this->GetSampleSize();
     if (sampleSize <= 0) { return; }
     double ODthreshold = this->GetODThreshold();
     double percentileThreshold = this->GetPercentileThreshold();
@@ -78,6 +76,8 @@ void StainVectorMacenko::ComputeStainVectors(double (&outputVectors)[9]) {
     cv::Mat samplePixels;
     auto theSampler = this->GetRandomWSISampler();
     if (theSampler == nullptr) { return; }
+    
+    //TODO change to long int!
     bool samplingSuccess = theSampler->ChooseRandomPixels(samplePixels, sampleSize, ODthreshold);
     if (!samplingSuccess) { return; }
 
@@ -159,7 +159,7 @@ void StainVectorMacenko::ComputeStainVectors(double (&outputVectors)[9]) {
 
 
 //This overload does not have a default value for sampleSize, so it requires at two arguments
-void StainVectorMacenko::ComputeStainVectors(double (&outputVectors)[9], const int sampleSize) {
+void StainVectorMacenko::ComputeStainVectors(double (&outputVectors)[9], const long int sampleSize) {
     if (this->GetSourceFactory() == nullptr) { return; }
     //Set member variables with the argument values
     this->SetSampleSize(sampleSize);

@@ -31,8 +31,6 @@
 #include <fstream>
 #include <sstream>
 
-//For now, include ODConversion here, but try to do the OD conversion and thresholding
-//in a kernel, and use a factory to apply it before passing the factory to this class
 #include "ODConversion.h"
 #include "StainVectorMath.h"
 
@@ -53,7 +51,7 @@ StainVectorNMF::~StainVectorNMF(void) {
 void StainVectorNMF::ComputeStainVectors(double (&outputVectors)[9]) {
     if (this->GetSourceFactory() == nullptr) { return; }
     //Using this overload of the method requires setting sample size in advance
-    int sampleSize = this->GetSampleSize();
+    long int sampleSize = this->GetSampleSize();
     if (sampleSize <= 0) { return; }
     double ODthreshold = this->GetODThreshold();
 
@@ -88,7 +86,7 @@ void StainVectorNMF::ComputeStainVectors(double (&outputVectors)[9]) {
 }//end single-parameter ComputeStainVectors
 
 //This overload does not have a default value for sampleSize, so it requires at two arguments
-void StainVectorNMF::ComputeStainVectors(double (&outputVectors)[9], int sampleSize) {
+void StainVectorNMF::ComputeStainVectors(double (&outputVectors)[9], long int sampleSize) {
     if (this->GetSourceFactory() == nullptr) { return; }
     //Set member variables with the argument values
     this->SetSampleSize(sampleSize);

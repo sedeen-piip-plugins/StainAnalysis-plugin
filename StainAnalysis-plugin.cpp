@@ -25,6 +25,7 @@
 // StainAnalysis-plugin.cpp : Defines the exported functions for the DLL application.
 //
 #include "StainAnalysis-plugin.h"
+#include "StainVectorPixelROI.h"
 #include "StainVectorMacenko.h"
 #include "StainVectorNMF.h"
 #include "ODConversion.h"
@@ -341,9 +342,6 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
         //Do this to test out the Macenko method of getting stain vectors
         //Reorganize the UI later
 
-
-        //Values to use in getting the stain vectors
-        auto display_resolution = getDisplayResolution(image(), m_displayArea);
 
         ////Build the color deconvolution channel
         int numStains = 2;   //TEMPORARY! m_numberOfStainComponents;
