@@ -25,9 +25,6 @@
 // StainAnalysis-plugin.cpp : Defines the exported functions for the DLL application.
 //
 #include "StainAnalysis-plugin.h"
-#include "StainVectorPixelROI.h"
-#include "StainVectorMacenko.h"
-#include "StainVectorNMF.h"
 #include "ODConversion.h"
 
 #include <sstream>
@@ -99,13 +96,13 @@ StainAnalysis::StainAnalysis()
         //Convert path to string, read stain profile, and check whether the read was successful
         auto const fs = cmrc::stain::get_filesystem();
         if (auto const is_file = fs.is_file((*it).generic_string())) {
-          auto const file = fs.open((*it).generic_string());
-          if (tsp->readStainProfile(file.begin(), file.size())) {
-            m_stainProfileList.push_back(tsp);
-            // Get the name of the profile
-            m_stainVectorProfileOptions.push_back(tsp->GetNameOfStainProfile());
-            continue;
-          }
+            auto const file = fs.open((*it).generic_string());
+            if (tsp->readStainProfile(file.begin(), file.size())) {
+                m_stainProfileList.push_back(tsp);
+                // Get the name of the profile
+                m_stainVectorProfileOptions.push_back(tsp->GetNameOfStainProfile());
+                continue;
+            }
         }
 
         // make a dummy one
@@ -338,75 +335,6 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
         }
 
 
-
-        //Do this to test out the Macenko method of getting stain vectors
-        //Reorganize the UI later
-
-
-        ////Build the color deconvolution channel
-        int numStains = 2;   //TEMPORARY! m_numberOfStainComponents;
-
-
-        //std::shared_ptr<StainProfile> MacenkoStainProfile = std::make_shared<StainProfile>(*(m_stainProfileList.at(1)));
-
-
-        if ((numStains <= 0) || (numStains > 3)) {
-            return false;
-        }
-        else if (numStains == 2) {
-
-            //Get the two stain vectors with the Macenko method
-            //I also want to know how long this takes to run.
-
-
-            //here!!! here's the place for trying the next new thing.
-
-            //Create an object to get stain vectors from, using the Macenko algorithm
-            //std::shared_ptr<sedeen::image::StainVectorMacenko> stainsFromMacenko 
-            //    = std::make_shared<sedeen::image::StainVectorMacenko>(source_factory, 0.15, 1.0);
-            //stainsFromMacenko->ComputeStainVectors(conv_matrix, 1000);
-
-            //Create an object to get stain vectors from, using NMF
-            //std::shared_ptr<sedeen::image::StainVectorNMF> stainsFromNMF
-            //    = std::make_shared<sedeen::image::StainVectorNMF>(source_factory, 0.15);
-            //Then compute stain vectors
-            //stainsFromNMF->ComputeStainVectors(conv_matrix, 1000);
-
-
-            //Create an object to get stain vectors from, using ICA
-            //std::shared_ptr<sedeen::image::StainVectorICA> stainsFromICA
-            //    = std::make_shared<sedeen::image::StainVectorICA>(source_factory, 0.15);
-            //Then compute stain vectors
-            //stainsFromICA->ComputeStainVectors(conv_matrix, 100);
-          
-            //TEMPORARY!
-            std::ostringstream ss;
-            //ss << "Here is the output from getting the vectors by ICA: " << std::endl;
-            //for (int i = 0; i < 9; i++) {
-            //    ss << conv_matrix[i] << ", ";
-            //}
-
-
-            ss << std::endl;
-            m_outputText.sendText(ss.str());
-
-
-        }
-        else {
-            m_outputText.sendText("Currently testing algorithms that only accept two stains. Set the number of stains to 2.");
-            return false;
-        }
-
-
-
-        //TEMPORARY
-        //Change the contents of the chosenStainProfile
-        //REENABLE THIS WHEN YOU'RE READY TO TEST
-        //chosenStainProfile->SetProfilesFromDoubleArray(conv_matrix);
-
-
-
-
         //Scale down the threshold to create more precision
         auto colorDeconvolution_kernel =
             std::make_shared<image::tile::ColorDeconvolution>(DisplayOption, chosenStainProfile, 
@@ -449,21 +377,20 @@ std::string StainAnalysis::generateCompleteReport(std::shared_ptr<StainProfile> 
 
 std::string StainAnalysis::generateStainProfileReport(std::shared_ptr<StainProfile> theProfile) const
 {
-    //If the pointer to theProfile is null, return an error description
-    if(theProfile == nullptr) { 
-        return "Error reading the stain profile. Please try a different stain profile or restart."; 
-    }
+    //I think using assert is a little too strong here. Use different error handling.
+    assert(nullptr != theProfile);
 
     int numStains = theProfile->GetNumberOfStainComponents();
     if (numStains < 0) {
-        return "Error reading the stain profile. Please try a different stain profile or restart.";
+        return "Error reading the stain profile. Please change your settings and try again.";
     }
     //Get the profile contents, place in the output stringstream
     std::ostringstream ss;
-	ss << std::left << std::setw(5);
+    ss << std::left << std::setw(5);
     ss << "Using stain profile: " << theProfile->GetNameOfStainProfile() << std::endl;
     ss << "Number of component stains: " << numStains << std::endl;
     ss << std::endl;
+
     //These are cumulative, not if...else
     //Stain one
     if (numStains >= 1) {
@@ -471,9 +398,9 @@ std::string StainAnalysis::generateStainProfileReport(std::shared_ptr<StainProfi
         ss << std::left;
         ss << "Stain 1: " << theProfile->GetNameOfStainOne() << std::endl;
         ss << "R: " << std::setw(10) << std::setprecision(5) << rgb[0] <<
-              "G: " << std::setw(10) << std::setprecision(5) << rgb[1] <<
-              "B: " << std::setw(10) << std::setprecision(5) << rgb[2] <<
-              std::endl;
+            "G: " << std::setw(10) << std::setprecision(5) << rgb[1] <<
+            "B: " << std::setw(10) << std::setprecision(5) << rgb[2] <<
+            std::endl;
     }
     //Stain two
     if (numStains >= 2) {
@@ -481,9 +408,9 @@ std::string StainAnalysis::generateStainProfileReport(std::shared_ptr<StainProfi
         ss << std::left;
         ss << "Stain 2: " << theProfile->GetNameOfStainTwo() << std::endl;
         ss << "R: " << std::setw(10) << std::setprecision(5) << rgb[0] <<
-              "G: " << std::setw(10) << std::setprecision(5) << rgb[1] <<
-              "B: " << std::setw(10) << std::setprecision(5) << rgb[2] <<
-              std::endl;
+            "G: " << std::setw(10) << std::setprecision(5) << rgb[1] <<
+            "B: " << std::setw(10) << std::setprecision(5) << rgb[2] <<
+            std::endl;
     }
     //Stain three
     if (numStains == 3) {
@@ -491,13 +418,61 @@ std::string StainAnalysis::generateStainProfileReport(std::shared_ptr<StainProfi
         ss << std::left;
         ss << "Stain 3: " << theProfile->GetNameOfStainThree() << std::endl;
         ss << "R: " << std::setw(10) << std::setprecision(5) << rgb[0] <<
-              "G: " << std::setw(10) << std::setprecision(5) << rgb[1] <<
-              "B: " << std::setw(10) << std::setprecision(5) << rgb[2] <<
-              std::endl;
+            "G: " << std::setw(10) << std::setprecision(5) << rgb[1] <<
+            "B: " << std::setw(10) << std::setprecision(5) << rgb[2] <<
+            std::endl;
     }
+    ss << std::endl;
+
+    //Analysis model and parameters
+    std::string analysisModel = theProfile->GetNameOfStainAnalysisModel();
+    auto analysisModelParameters = theProfile->GetAllAnalysisModelParameters();
+    if (!analysisModel.empty()) {
+        ss << "Stain analysis model: " << analysisModel << std::endl;
+    }
+    if (!analysisModelParameters.empty()) {
+        ss << generateParameterMapReport(analysisModelParameters) << std::endl;
+    }
+
+    //Separation algorithm and parameters
+    std::string separationAlgorithm = theProfile->GetNameOfStainSeparationAlgorithm();
+    auto separationAlgorithmParameters = theProfile->GetAllSeparationAlgorithmParameters();
+    if (!separationAlgorithm.empty()) {
+        ss << "Stain separation algorithm: " << separationAlgorithm << std::endl;
+    }
+    if (!separationAlgorithmParameters.empty()) {
+        ss << generateParameterMapReport(separationAlgorithmParameters) << std::endl;
+    }
+
     //Complete, return the string
     return ss.str();
 }//end generateStainProfileReport
+
+std::string StainAnalysis::generateParameterMapReport(std::map<std::string, std::string> p) const {
+    std::stringstream ss;
+    //Possible parameters are: pTypeNumPixels(), pTypeThreshold(), pTypePercentile(), pTypeHistoBins()
+    for (auto it = p.begin(); it != p.end(); ++it) {
+        std::string key = it->first;
+        std::string val = it->second;
+        if (!key.compare(StainProfile::pTypeNumPixels())) {
+            ss << "Number of pixels sampled: " << val << std::endl;
+        }
+        else if (!key.compare(StainProfile::pTypeThreshold())) {
+            ss << "Optical Density threshold : " << val << std::endl;
+        }
+        else if (!key.compare(StainProfile::pTypePercentile())) {
+            ss << "Histogram range percentile: " << val << std::endl;
+        }
+        else if (!key.compare(StainProfile::pTypeHistoBins())) {
+            ss << "Number of histogram bins: " << val << std::endl;
+        }
+        else {
+            //Unknown key, output anyway
+            ss << key << ": " << val << std::endl;
+        }
+    }
+    return ss.str();
+}//end generateParameterMapReport
 
 std::string StainAnalysis::generatePixelFractionReport() const {
     if (m_colorDeconvolution_factory == nullptr) {

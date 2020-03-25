@@ -80,6 +80,8 @@ private:
     std::string generateCompleteReport(std::shared_ptr<StainProfile>) const;
     ///Create a text report summarizing the stain vector profile
 	std::string generateStainProfileReport(std::shared_ptr<StainProfile>) const;
+    ///Create the portion of a text report with model/algorithm parameters from the stain vector profile.
+    std::string generateParameterMapReport(std::map<std::string, std::string>) const;
     ///Create a text report stating what fraction of the processing area is covered by the filtered output
 	std::string generatePixelFractionReport(void) const;
 

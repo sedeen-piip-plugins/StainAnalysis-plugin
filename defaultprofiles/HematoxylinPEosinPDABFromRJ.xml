@@ -16,7 +16,6 @@
             <stain-value value-type="b">0.78</stain-value>
         </stain>
     </components>
-    <algorithm alg-name="Ruifrok+Johnston Deconvolution">
-        <parameter/>
-    </algorithm>
+    <analysis-model model-name="Ruifrok+Johnston Deconvolution"/>
+    <algorithm alg-name="Pre-Defined"/>
 </stain-profile>

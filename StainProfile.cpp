@@ -34,7 +34,7 @@
 StainProfile::StainProfile() 
     : m_stainAnalysisModelOptions( { "Ruifrok+Johnston Deconvolution" } ),
     m_stainSeparationAlgorithmOptions( {"Region-of-Interest Selection", 
-        "Macenko Decomposition", "Non-Negative Matrix Factorization" } )
+        "Macenko Decomposition", "Non-Negative Matrix Factorization", "Pre-Defined" } )
 {
     //Build the XML document structure
     BuildXMLDocument();
@@ -582,7 +582,7 @@ bool StainProfile::writeStainProfile(const std::string &fileString) {
     return false;
 }//end writeStainProfile
 
-///Public read method, calls private write method
+///Public read method, calls private read method
 bool StainProfile::readStainProfile(const std::string &fileString) {
     bool checkResult = this->checkFile(fileString, "r");
     if (!checkResult) {
@@ -600,7 +600,7 @@ bool StainProfile::readStainProfile(const std::string &fileString) {
     return false;
 }//end readStainProfile
 
-/// Public read method, calls private write method
+/// Public read method, calls private read method
 bool StainProfile::readStainProfile(const char *str, size_t size) {
     tinyxml2::XMLError eResult = this->readStainProfileFromXMLString(str, size);
     if (eResult == tinyxml2::XML_SUCCESS) {
@@ -645,7 +645,7 @@ tinyxml2::XMLError StainProfile::readStainProfileFromXMLString(const char *str, 
   XMLCheckResult(eResult);
 
   return parseXMLDoc();
-}  // end readStainProfileFromXMLFile
+}  // end readStainProfileFromXMLString
 
 tinyxml2::XMLError StainProfile::parseXMLDoc() {
     // Assign the member pointers to children in the loaded data structure
