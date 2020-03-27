@@ -238,9 +238,7 @@ void StainAnalysis::run() {
 		// Update the output text report
 		if (false == askedToStop()) {
 			auto report = generateCompleteReport(chosenStainProfile);
-			
-            //TEMPORARY!!!
-            //m_outputText.sendText(report);
+            m_outputText.sendText(report);
 		}
 	}
 
@@ -458,7 +456,7 @@ std::string StainAnalysis::generateParameterMapReport(std::map<std::string, std:
             ss << "Number of pixels sampled: " << val << std::endl;
         }
         else if (!key.compare(StainProfile::pTypeThreshold())) {
-            ss << "Optical Density threshold : " << val << std::endl;
+            ss << "Optical Density threshold applied when computing stain vectors: " << val << std::endl;
         }
         else if (!key.compare(StainProfile::pTypePercentile())) {
             ss << "Histogram range percentile: " << val << std::endl;
@@ -529,7 +527,7 @@ std::string StainAnalysis::generatePixelFractionReport() const {
     //ss << "The absolute number of covered pixels is: " << numPixels << std::endl;
     //ss << "The absolute number of ROI pixels is: " << totalNumPixels << std::endl;
     ss << "Percent of processed region covered by" << std::endl; 
-    ss << "stain, above threshold : ";
+    ss << "stain, above the displayed threshold : ";
 	ss << std::fixed << std::setprecision(3) << coveredFraction*100  << " %" << std::endl;
 	ss << std::endl;
 

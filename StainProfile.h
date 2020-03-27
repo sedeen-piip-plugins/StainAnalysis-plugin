@@ -259,8 +259,6 @@ public:
     static inline const char* pTypeHistoBins() { return "histo-bins"; }
 
 private:
-
-    //TODO: remove temp stuff
     ///Build the XMLDocument data structure
     bool BuildXMLDocument();
     ///Check if the basic structure of the member XMLDocument has been assembled

@@ -1083,7 +1083,7 @@ const std::string StainProfile::GetSingleParameter(tinyxml2::XMLElement* el, con
     if (tempParam == nullptr) { return errorVal; }
     while (tempParam != nullptr) {
         if (tempParam->Attribute(paramAtt, type.c_str())) {
-            const char *buffer = tempParam->Value();
+            const char *buffer = tempParam->GetText();
             if (buffer == nullptr) {
                 //The parameter of the right type was found, but has no value set
                 outString = errorVal;
@@ -1150,6 +1150,7 @@ bool StainProfile::SetSingleSeparationAlgorithmParameter(const std::string &type
 const long int StainProfile::GetSeparationAlgorithmNumPixelsParameter() const {
     std::string type = this->pTypeNumPixels();
     std::string oss = this->GetSingleSeparationAlgorithmParameter(type);
+
     long int outVal(-1); //Set error value here
     //Convert oss to long int, if possible. Catch all exceptions (invalid_argument and out_of_range)
     try {
