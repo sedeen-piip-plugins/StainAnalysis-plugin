@@ -30,7 +30,6 @@
 #include "Image.h"
 
 #include <cstdio>
-//#include <fstream>
 #include <sstream>
 #include <memory>
 #include <filesystem> //Requires C++17

@@ -67,6 +67,9 @@ StainAnalysis::StainAnalysis()
     m_stainToDisplay(),
     m_applyDisplayThreshold(),
     m_displayThreshold(),
+    m_saveSeparatedImage(),
+    m_saveFileFormat(),
+    m_saveFileAs(),
     m_result(),
     m_outputText(),
     m_report(""),
@@ -123,6 +126,22 @@ StainAnalysis::StainAnalysis()
     m_stainToDisplayOptions.push_back("Stain 1");
     m_stainToDisplayOptions.push_back("Stain 2");
     m_stainToDisplayOptions.push_back("Stain 3");
+
+    //Choose what format to write the separated images in
+    //Define the list of possible save types (flat image vs whole slide image)
+    m_saveFileFormatOptions.push_back("Flat image (tif/png/bmp/gif/jpg)");
+    //TODO: enable saving a whole slide image
+    //m_saveFileFormatOptions.push_back("Whole Slide Image (.svs)");
+
+    //List the actual extensions that should be included in the save dialog window
+    m_saveFileExtensionText.push_back("tif");
+    m_saveFileExtensionText.push_back("png");
+    m_saveFileExtensionText.push_back("bmp");
+    m_saveFileExtensionText.push_back("gif");
+    m_saveFileExtensionText.push_back("jpg");
+    //TODO: enable saving a whole slide image
+    //m_saveFileExtensionText.push_back("svs");
+
 }//end constructor
 
 StainAnalysis::~StainAnalysis() {
@@ -155,8 +174,8 @@ void StainAnalysis::init(const image::ImageHandle& image) {
         "Choose which of the defined stains to show in the display area", 0, m_stainToDisplayOptions, false);
 
     //User can choose whether to apply the threshold or not
-    m_applyDisplayThreshold = createBoolParameter(*this, "Display with Threshold Applied",
-        "If Display with Threshold Applied is set, the threshold value in the slider below will be applied to the stain-separated image",
+    m_applyDisplayThreshold = createBoolParameter(*this, "Apply Threshold",
+        "If Apply Threshold is set, the threshold value in the slider below will be applied to the stain-separated images, including in the saved images",
         true, false); //default value, optional
 
     // Init the user defined threshold value
@@ -165,16 +184,31 @@ void StainAnalysis::init(const image::ImageHandle& image) {
     //auto max_value = (1 << bitsPerChannel(color)) - 1;
     m_displayThreshold = createDoubleParameter(*this,
         "OD x100 Threshold",   // Widget label
-        "A Threshold value",   // Widget tooltip
+        "Threshold value to apply to the separated images. Images will be saved with this threshold applied.",   // Widget tooltip
         m_displayThresholdDefaultVal, // Initial value
         0.0,                   // minimum value
         m_displayThresholdMaxVal,     // maximum value
         false);
 
+    //Allow the user to write separated images to file
+    m_saveSeparatedImage = createBoolParameter(*this, "Save Separated Image",
+        "If checked, the final image will be saved to an output file, of the type chosen in the Save File Format list.",
+        false, false);
+
+    m_saveFileFormat = createOptionParameter(*this, "Save File Format",
+        "Output image files can be saved as one of five flat image types.",
+        0, m_saveFileFormatOptions, false);
+
+    //Allow the user to choose where to save the image files
+    sedeen::file::FileDialogOptions saveFileDialogOptions = defineSaveFileDialogOptions();
+    m_saveFileAs = createSaveFileDialogParameter(*this, "Save As...",
+        "The output image will be saved to this file name. If the file name includes an extension of type TIF/PNG/BMP/GIF/JPG, it will override the Save File Format choice.",
+        saveFileDialogOptions, true);
+
     // Bind result
     m_outputText = createTextResult(*this, "Text Result");
     m_result = createImageResult(*this, " StainAnalysisResult");
-
+      
 }//end init
 
 void StainAnalysis::run() {
@@ -229,8 +263,46 @@ void StainAnalysis::run() {
 
 	// Update results
 	if ( pipeline_changed || display_changed || stainProfile_changed || loadedFile_changed ) {
+        //Check whether the user wants to write to image files, that the field is not blank,
+        //and that the file can be created or written to
+        std::string outputFilePath;
+        if (m_saveSeparatedImage == true) {
+            //Get the full path file name from the file dialog parameter
+            sedeen::algorithm::parameter::SaveFileDialog::DataType fileDialogDataType = this->m_saveFileAs;
+            outputFilePath = fileDialogDataType.getFilename();
+            //Is the file field blank?
+            if (outputFilePath.empty()) {
+                m_outputText.sendText("The filename is blank. Please choose a file to save the image to, or uncheck Save Separated Images.");
+                return;
+            }
+            //Does it exist or can it be created, and can it be written to?
+            bool validFileCheck = StainProfile::checkFile(outputFilePath, "w");
+            if (!validFileCheck) {
+                m_outputText.sendText("The file name selected cannot be written to. Please choose another, or check the permissions of the directory.");
+                return;
+            }
+            //Does it have a valid extension? RawImage.save relies on the extension to determine save format
+            std::string theExt = getExtension(outputFilePath);
+            int extensionIndex = findExtensionIndex(theExt);
+            //findExtensionIndex returns -1 if not found
+            if (extensionIndex == -1) {
+                std::stringstream ss;
+                ss << "The extension of the file is not a valid type. The file extension must be: ";
+                auto vec = m_saveFileExtensionText;
+                for (auto it = vec.begin(); it != vec.end()-1; ++it) {
+                    ss << (*it) << ", ";
+                }
+                std::string last = vec.back();
+                ss << "or " << last << ". Choose a correct file type and try again." << std::endl;
+                m_outputText.sendText(ss.str());
+                return;
+            }
+        }
 
-		m_result.update(m_colorDeconvolution_factory, m_displayArea, *this);
+        //This is where the magic happens.
+        if (nullptr != m_colorDeconvolution_factory) {
+            m_result.update(m_colorDeconvolution_factory, m_displayArea, *this);
+        }
 
         //A previous version included an "intermediate result" here, to display
         //a blurry temporary image (rather than just black) while calculations proceeded
@@ -240,7 +312,21 @@ void StainAnalysis::run() {
 			auto report = generateCompleteReport(chosenStainProfile);
             m_outputText.sendText(report);
 		}
-	}
+
+        //If an output file should be written and the algorithm ran successfully, save images
+        if (m_saveSeparatedImage == true) {
+            //Save the result as a flat image file
+            bool saveResult = SaveFlatImageToFile(outputFilePath);
+            //Check whether saving was successful
+            if (!saveResult) {
+                m_outputText.sendText("Could not save the stain-separated image. Verify that the file name is correct, and try again.");
+                return;
+            }
+        }
+        else { //m_saveSeparatedImage == false
+            //do nothing 
+        }
+	}//end if UI changes
 
 	// Ensure we run again after an abort
 	// a small kludge that causes buildPipeline() to return TRUE
@@ -248,50 +334,6 @@ void StainAnalysis::run() {
         m_colorDeconvolution_factory.reset();
 	}
 }//end run
-
-///Define the open file dialog options outside of init
-sedeen::file::FileDialogOptions StainAnalysis::defineOpenFileDialogOptions() {
-    sedeen::file::FileDialogOptions theOptions;
-    theOptions.caption = "Open stain vector profile: ";
-    //theOptions.flags = sedeen::file::FileDialogFlags:: None currently needed
-    //theOptions.startDir; //no current preference
-    //Define the file type dialog filter
-    sedeen::file::FileDialogFilter theDialogFilter;
-    theDialogFilter.name = "Stain Vector Profile (*.xml)";
-    theDialogFilter.extensions.push_back("xml");
-    theOptions.filters.push_back(theDialogFilter);
-    return theOptions;
-}//end defineOpenFileDialogOptions
-
-///Access the member file dialog parameter, load into member stain profile
-bool StainAnalysis::LoadStainProfileFromFileDialog() {
-    //Get the full path file name from the file dialog parameter
-    sedeen::algorithm::parameter::OpenFileDialog::DataType fileDialogDataType = this->m_openProfile;
-    if (fileDialogDataType.empty()) {
-        //There is nothing selected in the file dialog box
-        return false;
-    }
-    //else
-    auto profileLocation = fileDialogDataType.at(0);
-    std::string theFile = profileLocation.getFilename();
-
-    //Does it exist and can it be read from?
-    if (StainProfile::checkFile(theFile, "r")) {     
-        //Read the stain profile, return false if reading fails        
-        bool readFileCheck = m_LoadedStainProfile->readStainProfile(theFile);
-        if (readFileCheck) {
-            m_stainProfileFullPathNames[0] = theFile;
-            return true;
-        }
-        else {
-            m_LoadedStainProfile->ClearProfile();
-            m_stainProfileFullPathNames[0] = "";
-            return false;
-        }
-    }
-    //else
-    return false;
-}//end LoadStainProfileFromFileDialog
 
 bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfile, bool somethingChanged) {
     using namespace image::tile;
@@ -313,6 +355,9 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
          || m_applyDisplayThreshold.isChanged() 
          || m_displayThreshold.isChanged() 
          || m_displayArea.isChanged()
+         || m_saveSeparatedImage.isChanged()
+         || m_saveFileFormat.isChanged()
+         || m_saveFileAs.isChanged()
          || (nullptr == m_colorDeconvolution_factory) )
     {
         //Choose value from the enumeration in ColorDeconvolution
@@ -332,7 +377,6 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
             break;
         }
 
-
         //Scale down the threshold to create more precision
         auto colorDeconvolution_kernel =
             std::make_shared<image::tile::ColorDeconvolution>(DisplayOption, chosenStainProfile, 
@@ -349,7 +393,6 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
         pipeline_changed = true;
     }//end if parameter values changed
 
-    //
     // Constrain processing to the region of interest provided, if set
     std::shared_ptr<GraphicItemBase> region = m_regionToProcess;
     if (pipeline_changed && (nullptr != region)) {
@@ -363,13 +406,137 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
     return pipeline_changed;
 }//end buildPipeline
 
+///Define the open file dialog options outside of init
+sedeen::file::FileDialogOptions StainAnalysis::defineOpenFileDialogOptions() {
+    sedeen::file::FileDialogOptions theOptions;
+    theOptions.caption = "Open stain vector profile: ";
+    //theOptions.flags = sedeen::file::FileDialogFlags:: None currently needed
+    //theOptions.startDir; //no current preference
+    //Define the file type dialog filter
+    sedeen::file::FileDialogFilter theDialogFilter;
+    theDialogFilter.name = "Stain Vector Profile (*.xml)";
+    theDialogFilter.extensions.push_back("xml");
+    theOptions.filters.push_back(theDialogFilter);
+    return theOptions;
+}//end defineOpenFileDialogOptions
+
+///Define the save file dialog options outside of init
+sedeen::file::FileDialogOptions StainAnalysis::defineSaveFileDialogOptions() {
+    sedeen::file::FileDialogOptions theOptions;
+    theOptions.caption = "Save separated images as...";
+    //theOptions.flags = sedeen::file::FileDialogFlags:: None currently needed
+    //theOptions.startDir; //no current preference
+    //Define the file type dialog filter
+    sedeen::file::FileDialogFilter theDialogFilter;
+    theDialogFilter.name = "Image type";
+    //Add extensions in m_saveFileExtensionText to theDialogFilter.extensions 
+    //Note: std::copy does not work here
+    for (auto it = m_saveFileExtensionText.begin(); it != m_saveFileExtensionText.end(); ++it) {
+        theDialogFilter.extensions.push_back(*it);
+    }
+    theOptions.filters.push_back(theDialogFilter);
+    return theOptions;
+}//end defineSaveFileDialogOptions
+
+///Access the member file dialog parameter, load into member stain profile
+bool StainAnalysis::LoadStainProfileFromFileDialog() {
+    //Get the full path file name from the file dialog parameter
+    sedeen::algorithm::parameter::OpenFileDialog::DataType fileDialogDataType = this->m_openProfile;
+    if (fileDialogDataType.empty()) {
+        //There is nothing selected in the file dialog box
+        return false;
+    }
+    //else
+    auto profileLocation = fileDialogDataType.at(0);
+    std::string theFile = profileLocation.getFilename();
+
+    //Does it exist and can it be read from?
+    if (StainProfile::checkFile(theFile, "r")) {
+        //Read the stain profile, return false if reading fails        
+        bool readFileCheck = m_LoadedStainProfile->readStainProfile(theFile);
+        if (readFileCheck) {
+            m_stainProfileFullPathNames[0] = theFile;
+            return true;
+        }
+        else {
+            m_LoadedStainProfile->ClearProfile();
+            m_stainProfileFullPathNames[0] = "";
+            return false;
+        }
+    }
+    //else
+    return false;
+}//end LoadStainProfileFromFileDialog
+
+bool StainAnalysis::SaveFlatImageToFile(const std::string &p) {
+    //It is assumed that error checks have already been performed, and that the type is valid
+    //In RawImage::save, the used file format is defined by the file extension.
+    //Supported extensions are : .tif, .png, .bmp, .gif, .jpg
+    std::string outFilePath = p;
+    bool imageSaved = false;
+    //Access the output from the output factory
+    auto outputFactory = m_colorDeconvolution_factory;
+    auto compositor = std::make_unique<image::tile::Compositor>(outputFactory);
+    sedeen::image::RawImage outputImage;
+
+    //Has a region of interest been set?
+    bool roiSet = m_regionToProcess.isUserDefined();
+    std::shared_ptr<GraphicItemBase> theRegion = m_regionToProcess;
+    //If a region of interest has been set, constrain output to that area
+    if (roiSet && theRegion != nullptr) {
+        Rect rect = containingRect(theRegion->graphic());
+        //If an ROI is set, output the highest resolution (level 0)
+        outputImage = compositor->getImage(0, rect);
+    }
+    else { 
+        //No region of interest set. Constrain to display area
+        DisplayRegion region = m_displayArea;
+        outputImage = compositor->getImage(region.source_region, region.output_size);
+    }
+    //Save the outputImage to a file at the given location
+    imageSaved = outputImage.save(outFilePath);
+    return imageSaved; //true on successful save, false otherwise
+}//end SaveFlatImageToFile
+
+const std::string StainAnalysis::getExtension(const std::string &p) {
+    namespace fs = std::filesystem; //an alias
+    const std::string errorVal = std::string(); //empty
+    //Convert the string to a filesystem::path
+    fs::path filePath(p);
+    //Does the filePath have an extension?
+    bool hasExtension = filePath.has_extension();
+    if (!hasExtension) { return errorVal; }
+    //else
+    fs::path ext = filePath.extension();
+    return ext.string();
+}//end getExtension
+
+const int StainAnalysis::findExtensionIndex(const std::string &x) const {
+    const int notFoundVal = -1; //return -1 if not found
+    //This method works if the extension has a leading . or not
+    std::string theExt(x);
+    auto range = std::find(theExt.begin(), theExt.end(), '.');
+    theExt.erase(range);
+    //Find the extension in the m_saveFileExtensionText vector
+    auto vec = m_saveFileExtensionText;
+    auto vecIt = std::find(vec.begin(), vec.end(), theExt);
+    if (vecIt != vec.end()) {
+        ptrdiff_t vecDiff = vecIt - vec.begin();
+        int extLoc = static_cast<int>(vecDiff);
+        return extLoc;
+    }
+    else {
+        return notFoundVal;
+    }
+}//end fileExtensionIndex
+
 std::string StainAnalysis::generateCompleteReport(std::shared_ptr<StainProfile> theProfile) const {
     //Combine the output of the stain profile report
     //and the pixel fraction report, return the full string
     std::ostringstream ss;
     ss << generateStainProfileReport(theProfile);
     ss << std::endl;
-    ss << generatePixelFractionReport();
+    //ss << generatePixelFractionReport();
     return ss.str();
 }//end generateCompleteReport
 

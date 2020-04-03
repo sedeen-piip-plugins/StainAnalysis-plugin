@@ -25,11 +25,12 @@
 #include "StainProfile.h"
 
 #include <stdexcept>
-#include <cmath>
+//#include <cmath>
 #include <sstream>
 #include <fstream>
 #include <iterator>
 #include <tinyxml2.h>
+#include <filesystem> //requires C++17
 
 StainProfile::StainProfile() 
     : m_stainAnalysisModelOptions( { "Ruifrok+Johnston Deconvolution" } ),
@@ -535,33 +536,47 @@ bool StainProfile::SetProfilesFromDoubleArray(double (&profileArray)[9]) {
 }//end SetProfileFromDoubleArray
 
 bool StainProfile::checkFile(const std::string &fileString, const std::string &op) {
-    if (fileString.empty()) {
-        return false;
-    }
-    //Check if the file exists
-    std::fstream theFile(fileString.c_str());
-    bool fileExists = (bool)theFile;
+    namespace fs = std::filesystem;
+    const bool success = true;
+    const bool errorVal = false;
+    if (fileString.empty()) { return errorVal; }
+    //Convert the input fileString into a filesystem::path type
+    fs::path theFilePath = fs::path(fileString);
+    //Check if the file exists 
+    bool fileExists = fs::exists(theFilePath);
 
-    //If read, check file is readable
-    //If write, check that the file can be created or written to
-    if (!op.compare("r")) {
+    //If op is set to "r" (read), check that the file can be opened for reading
+    if (!op.compare("r") && fileExists) {
         std::ifstream inFile(fileString.c_str());
-        return (inFile.good() && fileExists);
+        bool result = inFile.good();
+        inFile.close();
+        return result;
     }
-    else if (!op.compare("w")) {
-        std::ofstream outFile(fileString.c_str());
-        bool outFileGood = outFile.good();
-        bool outFileWritable = outFile.is_open();
-        //If the file can be written to, return true
-        if (outFileGood && outFileWritable) {
-            return true;
-        }
-        else {
-            return false;
-        }
+    //If op is set to "w" (write) and the file exists, check without overwriting
+    else if (!op.compare("w") && fileExists) {
+        //Open for appending (do not overwrite current contents)
+        std::ofstream outFile(fileString.c_str(), std::ios::app);
+        bool result = outFile.good();
+        outFile.close();
+        return result;
     }
-    //else
-    return false;
+    //If op is set to "w" (write) and the file does not exist, check if the directory exists
+    else if (!op.compare("w") && !fileExists) {
+        fs::path parentPath = theFilePath.parent_path();
+        bool dirExists = fs::is_directory(parentPath);
+        //If it does not exist, return errorVal
+        if (!dirExists) { return errorVal; }
+        //If it exists, does someone (anyone) have write permission?
+        fs::file_status dirStatus = fs::status(parentPath);
+        fs::perms dPerms = dirStatus.permissions();
+        bool someoneCanWrite = ((dPerms & fs::perms::owner_write) != fs::perms::none)
+            || ((dPerms & fs::perms::group_write) != fs::perms::none)
+            || ((dPerms & fs::perms::others_write) != fs::perms::none);
+        return dirExists && someoneCanWrite;
+    }
+    else {
+        return errorVal;
+    }
 }//end checkFile
 
 ///Public write method, calls private write method
@@ -904,8 +919,8 @@ bool StainProfile::ClearStainVectorValues() {
 }//end ClearStainVectorValues
 
 bool StainProfile::ClearChildren(tinyxml2::XMLElement* el, const std::string &tag /*= std::string()*/) {
-    bool success = true;
-    bool errorVal = false;
+    const bool success = true;
+    const bool errorVal = false;
     if (el != nullptr) {
         if (!el->NoChildren()) {
             if (tag.empty()) {
@@ -937,8 +952,8 @@ bool StainProfile::ClearAllSeparationAlgorithmParameters() {
 
 bool StainProfile::RemoveSingleChild(tinyxml2::XMLElement* el, const std::string &tag /*= std::string()*/,
     const std::string &att /*= std::string()*/, const std::string &val /*= std::string()*/) {
-    bool success = true;
-    bool errorVal = false;
+    const bool success = true;
+    const bool errorVal = false;
     tinyxml2::XMLElement* child;
     if (el != nullptr) {
         if (!el->NoChildren()) {
@@ -1007,7 +1022,7 @@ bool StainProfile::RemoveSeparationAlgorithmParameter(const std::string &pType) 
 }//end RemoveSeparationAlgorithmParameter
 
 const std::map<std::string, std::string> StainProfile::GetAllParameters(tinyxml2::XMLElement* el) const {
-    auto errorVal = std::map<std::string, std::string>();
+    const auto errorVal = std::map<std::string, std::string>();
     auto theMap = std::map<std::string, std::string>();
     if (el == nullptr) { return errorVal; } //if nothing can be set, return an empty map
     if (m_xmlDoc == nullptr) { return errorVal; } //if there is no xml document, return errorVal
@@ -1067,7 +1082,7 @@ bool StainProfile::SetAllSeparationAlgorithmParameters(const std::map<std::strin
 }//end SetSeparationAlgorithmParameters
 
 const std::string StainProfile::GetSingleParameter(tinyxml2::XMLElement* el, const std::string &type) const {
-    std::string errorVal = std::string(); //an empty string
+    const std::string errorVal = std::string(); //an empty string
     std::string outString = std::string();
     if (el == nullptr) { return errorVal; } //if there is no element to get from, return errorVal
     if (m_xmlDoc == nullptr) { return errorVal; } //if there is no xml document, return errorVal

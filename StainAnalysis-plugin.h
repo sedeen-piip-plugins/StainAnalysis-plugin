@@ -63,11 +63,8 @@ public:
 
 private:
 	// virtual function
-	virtual void run();
-	virtual void init(const image::ImageHandle& image);
-
-    //Define the open file dialog options outside of init
-    sedeen::file::FileDialogOptions defineOpenFileDialogOptions();
+    virtual void init(const image::ImageHandle& image);
+    virtual void run();
 
 	/// Creates the Color Deconvolution pipeline with a cache
 	//
@@ -76,14 +73,32 @@ private:
 	/// otherwise
 	bool buildPipeline(std::shared_ptr<StainProfile>, bool);
 
+    //Define the open file dialog options outside of init
+    sedeen::file::FileDialogOptions defineOpenFileDialogOptions();
+
+    ///Define the save file dialog options outside of init
+    sedeen::file::FileDialogOptions defineSaveFileDialogOptions();
+
+    ///Access the member file dialog parameter, if possible load the stain profile, return true on success
+    bool LoadStainProfileFromFileDialog();
+
+    ///Save the separated image to a TIF/PNG/BMP/GIF/JPG flat format file
+    bool SaveFlatImageToFile(const std::string &p);
+
+    ///Given a full file path as a string, identify if there is an extension and return it
+    const std::string StainAnalysis::getExtension(const std::string &p);
+
+    ///Search the m_saveFileExtensionText vector for a given extension, and return the index, or -1 if not found
+    const int findExtensionIndex(const std::string &x) const;
+
     ///Create a text report that combines the output of the stain profile and pixel fraction reports
     std::string generateCompleteReport(std::shared_ptr<StainProfile>) const;
     ///Create a text report summarizing the stain vector profile
-	std::string generateStainProfileReport(std::shared_ptr<StainProfile>) const;
+    std::string generateStainProfileReport(std::shared_ptr<StainProfile>) const;
     ///Create the portion of a text report with model/algorithm parameters from the stain vector profile.
     std::string generateParameterMapReport(std::map<std::string, std::string>) const;
     ///Create a text report stating what fraction of the processing area is covered by the filtered output
-	std::string generatePixelFractionReport(void) const;
+    std::string generatePixelFractionReport(void) const;
 
 private:
     ///Names of the default stain profile files
@@ -91,9 +106,6 @@ private:
     inline static const std::string HematoxylinPEosinFromRJFilename()     { return "defaultprofiles/HematoxylinPEosinFromRJ.xml"; }
     inline static const std::string HematoxylinPDABFromRJFilename()       { return "defaultprofiles/HematoxylinPDABFromRJ.xml"; }
     inline static const std::string HematoxylinPEosinPDABFromRJFilename() { return "defaultprofiles/HematoxylinPEosinPDABFromRJ.xml"; }
-
-    ///Access the member file dialog parameter, if possible load the stain profile, return true on success
-    bool LoadStainProfileFromFileDialog();
 
     ///List of the full path file names of the stain profiles
     std::vector<std::filesystem::path> m_stainProfileFullPathNames;
@@ -116,6 +128,13 @@ private:
     /// User defined Threshold value.
     algorithm::DoubleParameter m_displayThreshold;
 
+    ///User choice whether to save the chosen separated image as output
+    BoolParameter m_saveSeparatedImage;
+    ///Choose what format to write the separated images in
+    OptionParameter m_saveFileFormat;
+    ///User choice of file name stem and type
+    SaveFileDialogParameter m_saveFileAs;
+
     /// The output result
     ImageResult m_result;			
     TextResult m_outputText;
@@ -124,7 +143,7 @@ private:
     /// The intermediate image factory after color deconvolution
     std::shared_ptr<image::tile::Factory> m_colorDeconvolution_factory;
 
-    std::ofstream log_file;
+    //std::ofstream log_file;
 
 private:
     //Member variables
@@ -132,6 +151,8 @@ private:
     std::vector<std::string> m_separationAlgorithmOptions;
     std::vector<std::string> m_stainVectorProfileOptions;
     std::vector<std::string> m_stainToDisplayOptions;
+    std::vector<std::string> m_saveFileFormatOptions;
+    std::vector<std::string> m_saveFileExtensionText;
     double m_displayThresholdDefaultVal;
     double m_displayThresholdMaxVal;
 };
