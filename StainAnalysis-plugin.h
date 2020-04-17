@@ -40,6 +40,7 @@
 
 //Plugin headers
 #include "StainProfile.h"
+#include "ODThresholdKernel.h"
 #include "ColorDeconvolutionKernel.h"
 
 namespace sedeen {
@@ -81,6 +82,9 @@ private:
 
     ///Access the member file dialog parameter, if possible load the stain profile, return true on success
     bool LoadStainProfileFromFileDialog();
+
+    ///Compare the number of pixels to be saved in an output file against a threshold value, return true if above threshold.
+    bool CheckOutputImageSize(const double &thresholdVal);
 
     ///Save the separated image to a TIF/PNG/BMP/GIF/JPG flat format file
     bool SaveFlatImageToFile(const std::string &p);
@@ -140,7 +144,7 @@ private:
     TextResult m_outputText;
     std::string m_report;
 
-    /// The intermediate image factory after color deconvolution
+    /// The image factory after color deconvolution
     std::shared_ptr<image::tile::Factory> m_colorDeconvolution_factory;
 
     //std::ofstream log_file;
@@ -155,6 +159,8 @@ private:
     std::vector<std::string> m_saveFileExtensionText;
     double m_displayThresholdDefaultVal;
     double m_displayThresholdMaxVal;
+    ///Number of pixels in an image to be saved over which the user will receive a warning.
+    double m_pixelWarningThreshold;
 };
 
 } // namespace algorithm

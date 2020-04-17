@@ -75,6 +75,7 @@ StainAnalysis::StainAnalysis()
     m_report(""),
     m_displayThresholdDefaultVal(20.0),
     m_displayThresholdMaxVal(300.0),
+    m_pixelWarningThreshold(1e7), //10,000,000 pixels
     m_colorDeconvolution_factory(nullptr)
 {
     // Build the list of stain vector file names
@@ -307,25 +308,63 @@ void StainAnalysis::run() {
         //A previous version included an "intermediate result" here, to display
         //a blurry temporary image (rather than just black) while calculations proceeded
 
-		// Update the output text report
-		if (false == askedToStop()) {
-			auto report = generateCompleteReport(chosenStainProfile);
-            m_outputText.sendText(report);
-		}
-
-        //If an output file should be written and the algorithm ran successfully, save images
+        //Determine whether to warn the user about the size of the image to be saved
+        bool proceedToSaveImage = false;
+        std::string saveInfoAppendToReport = std::string();
         if (m_saveSeparatedImage == true) {
-            //Save the result as a flat image file
-            bool saveResult = SaveFlatImageToFile(outputFilePath);
-            //Check whether saving was successful
-            if (!saveResult) {
-                m_outputText.sendText("Could not save the stain-separated image. Verify that the file name is correct, and try again.");
-                return;
+            //Check whether the output image as specified will have more pixels than the given threshold
+            bool largeOutputFlag = CheckOutputImageSize(m_pixelWarningThreshold);
+            if (largeOutputFlag) {
+                //The output file size will be large and will take a long time to save
+
+
+
+                //Prompt user for approval to proceed
+                bool userApproval = false;
+
+
+
+                if (userApproval) {
+                    proceedToSaveImage = true;
+                }
+                else {
+                    //User chose not to proceed with saving
+                    std::stringstream ss;
+                    ss << std::endl <<  "Saving the stain-separated image was cancelled." << std::endl;
+                    saveInfoAppendToReport = ss.str();
+                }
+            }
+            else {
+                proceedToSaveImage = true;
             }
         }
-        else { //m_saveSeparatedImage == false
-            //do nothing 
-        }
+
+		// Update the output text report
+		if (false == askedToStop()) {
+			std::string report = generateCompleteReport(chosenStainProfile);
+            if (!saveInfoAppendToReport.empty()) {
+                report.append(saveInfoAppendToReport);
+            }
+
+            //If an output file should be written and the algorithm ran successfully, save images
+            if ((m_saveSeparatedImage == true) && (proceedToSaveImage == true)) {
+                //Save the result as a flat image file
+                bool saveResult = SaveFlatImageToFile(outputFilePath);
+                //Check whether saving was successful
+                std::stringstream ss;
+                if (saveResult) {
+                    ss << std::endl << "Stain-separated image saved as " << outputFilePath << std::endl;
+                    report.append(ss.str());
+                }
+                else {
+                    ss << std::endl << "Saving the stain-separated image failed. Please check the file name and directory permissions." << std::endl;
+                    report.append(ss.str());
+                }
+            }
+
+            //Finally, send the report to the results window
+            m_outputText.sendText(report);
+		}
 	}//end if UI changes
 
 	// Ensure we run again after an abort
@@ -467,6 +506,57 @@ bool StainAnalysis::LoadStainProfileFromFileDialog() {
     //else
     return false;
 }//end LoadStainProfileFromFileDialog
+
+bool StainAnalysis::CheckOutputImageSize(const double &thresholdVal) {
+    bool overThresholdFlag = false;
+    //Has a region of interest been set?
+    bool roiSet = m_regionToProcess.isUserDefined();
+    std::shared_ptr<GraphicItemBase> theRegionOfInterest = m_regionToProcess;
+    DisplayRegion displayRegion = m_displayArea;
+    auto displayAreaSize = displayRegion.output_size;
+
+    //If a region of interest has been set, use the 
+    if (roiSet && theRegionOfInterest != nullptr) {
+        Rect rect = containingRect(theRegionOfInterest->graphic());
+        double sizeFromRect = static_cast<double>(rect.height())
+            * static_cast<double>(rect.width());
+        overThresholdFlag = (sizeFromRect > thresholdVal) ? true : false;
+    }
+    else {
+        //No region of interest set. Constrain to display area
+        double sizeFromDisplayArea = static_cast<double>(displayAreaSize.height())
+            * static_cast<double>(displayAreaSize.width());
+        overThresholdFlag = (sizeFromDisplayArea > thresholdVal) ? true : false;
+    }
+
+    return overThresholdFlag;
+}//end CheckOutputImageSize
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 bool StainAnalysis::SaveFlatImageToFile(const std::string &p) {
     //It is assumed that error checks have already been performed, and that the type is valid
