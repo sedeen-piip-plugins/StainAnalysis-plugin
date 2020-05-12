@@ -29,10 +29,18 @@
 #include <array>
 #include <cmath>
 #include <numeric>
+#include <algorithm>
 
 ///A class with static methods to operate on stain vectors
 class StainVectorMath
 {
+public:
+    ///Sort order for the stain vectors in SortStainVectors.
+    enum SortOrder {
+        ASCENDING,
+        DESCENDING
+    };
+
 public:
     ///Compute the inverse of a 3x3 matrix using Boost qvm
     static void Compute3x3MatrixInverse(const double (&inputMat)[9], double (&inversionMat)[9]);
@@ -51,6 +59,9 @@ public:
 
     ///Multiply a 3x3 matrix and a 3x1 vector to produce a 3x1 vector
     static void Multiply3x3MatrixAndVector(const double (&inputMat)[9], const double (&inputVec)[3], double (&outputVec)[3]);
+
+    ///Sort a 9-element stain vector profile according to R, G, and B values, in ascending or descending order depending on the third argument value.
+    static void SortStainVectors(const double(&inputMat)[9], double(&outputMat)[9], const int &sortOrder = SortOrder::DESCENDING);
 
     ///Return an array of values of type Ty with size N normalized to unit length. Returns input array if norm is 0.
     template<class Ty, std::size_t N> 

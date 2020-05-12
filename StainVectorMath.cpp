@@ -197,3 +197,62 @@ void StainVectorMath::Multiply3x3MatrixAndVector(const double (&inputMat)[9], co
     outputVec[2] = boost::qvm::A<2>(outputQVMVector);
     //void return
 }//end Multiply3x3MatrixAndVector
+
+void StainVectorMath::SortStainVectors(const double(&inputMat)[9], double(&outputMat)[9],
+    const int &sortOrder /*= SortOrder::ASCENDING */) {
+    //Define lambdas to set how to compare two stain vectors (as 3-element arrays)
+    auto ascLambda = [](const std::array<double, 3> a, const std::array<double, 3> b) {
+        double prec = 1e-3;
+        //Always put (0,0,0) stain vectors at the end
+        double aSum = std::accumulate(a.begin(), a.end(), 0.0);
+        double bSum = std::accumulate(b.begin(), b.end(), 0.0);
+        if (aSum < prec) { return false; }
+        if (bSum < prec) { return true; }
+        //If first element is the same within error, sort by second element
+        if (std::abs(a[0] - b[0]) > prec) { return a[0] < b[0]; }
+        //If second element is the same within error, sort by third element
+        else if (std::abs(a[1] - b[1]) > prec) { return a[1] < b[1]; }
+        else { return a[2] < b[2]; }
+    };
+
+    auto descLambda = [](const std::array<double, 3> a, const std::array<double, 3> b) {
+        double prec = 1e-3;
+        //Always put (0,0,0) stain vectors at the end
+        double aSum = std::accumulate(a.begin(), a.end(), 0.0);
+        double bSum = std::accumulate(b.begin(), b.end(), 0.0);
+        if (aSum < prec) { return false; }
+        if (bSum < prec) { return true; }
+        //If first element is the same within error, sort by second element
+        if (std::abs(a[0] - b[0]) > prec) { return a[0] > b[0]; }
+        //If second element is the same within error, sort by third element
+        else if (std::abs(a[1] - b[1]) > prec) { return a[1] > b[1]; }
+        else { return a[2] >= b[2]; }
+    };
+
+    //Bundle the input values in rows of three
+    std::vector<std::array<double, 3>> inputRows;
+    inputRows.push_back(std::array<double, 3>({ inputMat[0], inputMat[1], inputMat[2] }));
+    inputRows.push_back(std::array<double, 3>({ inputMat[3], inputMat[4], inputMat[5] }));
+    inputRows.push_back(std::array<double, 3>({ inputMat[6], inputMat[7], inputMat[8] }));
+    //Create output rows
+    std::vector<std::array<double, 3>> outputRows = inputRows;
+
+    //Sort according to the right lambda
+    if (sortOrder == SortOrder::ASCENDING) {
+        std::sort(outputRows.begin(), outputRows.end(), ascLambda);
+    }
+    else if (sortOrder == SortOrder::DESCENDING) {
+        std::sort(outputRows.begin(), outputRows.end(), descLambda);
+    }
+    else {
+        //do not fill the output matrix
+        return;
+    }
+
+    //Assign to the output matrix
+    for (int x = 0; x < 9; x++) {
+        int i = x / 3;
+        int j = x % 3;
+        outputMat[x] = outputRows[i][j];
+    }
+}//end SortStainVectors

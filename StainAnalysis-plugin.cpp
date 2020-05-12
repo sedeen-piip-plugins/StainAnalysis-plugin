@@ -319,8 +319,13 @@ void StainAnalysis::run() {
 
 
 
+                //TODO
+
+
                 //Prompt user for approval to proceed
                 bool userApproval = false;
+
+
 
 
 
@@ -531,32 +536,6 @@ bool StainAnalysis::CheckOutputImageSize(const double &thresholdVal) {
 
     return overThresholdFlag;
 }//end CheckOutputImageSize
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 bool StainAnalysis::SaveFlatImageToFile(const std::string &p) {
     //It is assumed that error checks have already been performed, and that the type is valid
