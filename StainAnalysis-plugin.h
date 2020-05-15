@@ -83,8 +83,11 @@ private:
     ///Access the member file dialog parameter, if possible load the stain profile, return true on success
     bool LoadStainProfileFromFileDialog();
 
-    ///Compare the number of pixels to be saved in an output file against a threshold value, return true if above threshold.
-    bool CheckOutputImageSize(const double &thresholdVal);
+    ///Get the expected number of pixels to be saved in an output file.
+    double EstimateOutputImageSize();
+    ///Get a human-readable estimate of the storage space required for an output file (with 4 bytes per pixel).
+    std::string EstimateImageStorageSize(const double &pix);
+
 
     ///Save the separated image to a TIF/PNG/BMP/GIF/JPG flat format file
     bool SaveFlatImageToFile(const std::string &p);

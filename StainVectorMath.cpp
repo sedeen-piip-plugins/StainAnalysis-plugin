@@ -204,8 +204,8 @@ void StainVectorMath::SortStainVectors(const double(&inputMat)[9], double(&outpu
     auto ascLambda = [](const std::array<double, 3> a, const std::array<double, 3> b) {
         double prec = 1e-3;
         //Always put (0,0,0) stain vectors at the end
-        double aSum = std::accumulate(a.begin(), a.end(), 0.0);
-        double bSum = std::accumulate(b.begin(), b.end(), 0.0);
+        double aSum = std::abs(std::accumulate(a.begin(), a.end(), 0.0));
+        double bSum = std::abs(std::accumulate(b.begin(), b.end(), 0.0));
         if (aSum < prec) { return false; }
         if (bSum < prec) { return true; }
         //If first element is the same within error, sort by second element
@@ -218,8 +218,8 @@ void StainVectorMath::SortStainVectors(const double(&inputMat)[9], double(&outpu
     auto descLambda = [](const std::array<double, 3> a, const std::array<double, 3> b) {
         double prec = 1e-3;
         //Always put (0,0,0) stain vectors at the end
-        double aSum = std::accumulate(a.begin(), a.end(), 0.0);
-        double bSum = std::accumulate(b.begin(), b.end(), 0.0);
+        double aSum = std::abs(std::accumulate(a.begin(), a.end(), 0.0));
+        double bSum = std::abs(std::accumulate(b.begin(), b.end(), 0.0));
         if (aSum < prec) { return false; }
         if (bSum < prec) { return true; }
         //If first element is the same within error, sort by second element
@@ -237,7 +237,7 @@ void StainVectorMath::SortStainVectors(const double(&inputMat)[9], double(&outpu
     //Create output rows
     std::vector<std::array<double, 3>> outputRows = inputRows;
 
-    //Sort according to the right lambda
+    //Sort using the appropriate lambda
     if (sortOrder == SortOrder::ASCENDING) {
         std::sort(outputRows.begin(), outputRows.end(), ascLambda);
     }

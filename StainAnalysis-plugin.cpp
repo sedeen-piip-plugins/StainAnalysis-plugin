@@ -75,7 +75,7 @@ StainAnalysis::StainAnalysis()
     m_report(""),
     m_displayThresholdDefaultVal(20.0),
     m_displayThresholdMaxVal(300.0),
-    m_pixelWarningThreshold(1e7), //10,000,000 pixels
+    m_pixelWarningThreshold(1e8), //100,000,000 pixels, ~400 MB
     m_colorDeconvolution_factory(nullptr)
 {
     // Build the list of stain vector file names
@@ -298,6 +298,25 @@ void StainAnalysis::run() {
                 m_outputText.sendText(ss.str());
                 return;
             }
+
+            //Check whether the output image as specified will have more pixels than the given threshold
+            double estPixels = EstimateOutputImageSize();
+            bool largeOutputFlag = (estPixels > m_pixelWarningThreshold) ? true : false;
+            std::string estStorageSize = EstimateImageStorageSize(estPixels);
+            std::stringstream fileSaveUpdate;
+            if (largeOutputFlag) {
+                //The output file size will be large and will take a long time to save
+                fileSaveUpdate << "WARNING: The region to be saved is large. This may take a long time to complete." << std::endl;
+                fileSaveUpdate << "The estimated size of the output file to be saved is " << estStorageSize << std::endl;
+                fileSaveUpdate << "Saving image as " << outputFilePath << std::endl;
+            }
+            else {
+                fileSaveUpdate << "Stain separation and image saving in progress." << std::endl;
+                fileSaveUpdate << "Saving image as " << outputFilePath << std::endl;
+            }
+            //Write temporary text to the result window. 
+            //It will be replaced when file saving is finished.
+            m_outputText.sendText(fileSaveUpdate.str());
         }
 
         //This is where the magic happens.
@@ -308,51 +327,11 @@ void StainAnalysis::run() {
         //A previous version included an "intermediate result" here, to display
         //a blurry temporary image (rather than just black) while calculations proceeded
 
-        //Determine whether to warn the user about the size of the image to be saved
-        bool proceedToSaveImage = false;
-        std::string saveInfoAppendToReport = std::string();
-        if (m_saveSeparatedImage == true) {
-            //Check whether the output image as specified will have more pixels than the given threshold
-            bool largeOutputFlag = CheckOutputImageSize(m_pixelWarningThreshold);
-            if (largeOutputFlag) {
-                //The output file size will be large and will take a long time to save
-
-
-
-                //TODO
-
-
-                //Prompt user for approval to proceed
-                bool userApproval = false;
-
-
-
-
-
-                if (userApproval) {
-                    proceedToSaveImage = true;
-                }
-                else {
-                    //User chose not to proceed with saving
-                    std::stringstream ss;
-                    ss << std::endl <<  "Saving the stain-separated image was cancelled." << std::endl;
-                    saveInfoAppendToReport = ss.str();
-                }
-            }
-            else {
-                proceedToSaveImage = true;
-            }
-        }
-
 		// Update the output text report
 		if (false == askedToStop()) {
 			std::string report = generateCompleteReport(chosenStainProfile);
-            if (!saveInfoAppendToReport.empty()) {
-                report.append(saveInfoAppendToReport);
-            }
-
             //If an output file should be written and the algorithm ran successfully, save images
-            if ((m_saveSeparatedImage == true) && (proceedToSaveImage == true)) {
+            if (m_saveSeparatedImage == true) {
                 //Save the result as a flat image file
                 bool saveResult = SaveFlatImageToFile(outputFilePath);
                 //Check whether saving was successful
@@ -512,30 +491,55 @@ bool StainAnalysis::LoadStainProfileFromFileDialog() {
     return false;
 }//end LoadStainProfileFromFileDialog
 
-bool StainAnalysis::CheckOutputImageSize(const double &thresholdVal) {
-    bool overThresholdFlag = false;
+double StainAnalysis::EstimateOutputImageSize() {
     //Has a region of interest been set?
     bool roiSet = m_regionToProcess.isUserDefined();
     std::shared_ptr<GraphicItemBase> theRegionOfInterest = m_regionToProcess;
     DisplayRegion displayRegion = m_displayArea;
     auto displayAreaSize = displayRegion.output_size;
-
+    double estSize;
     //If a region of interest has been set, use the 
     if (roiSet && theRegionOfInterest != nullptr) {
         Rect rect = containingRect(theRegionOfInterest->graphic());
         double sizeFromRect = static_cast<double>(rect.height())
             * static_cast<double>(rect.width());
-        overThresholdFlag = (sizeFromRect > thresholdVal) ? true : false;
+        estSize = sizeFromRect;
     }
     else {
         //No region of interest set. Constrain to display area
         double sizeFromDisplayArea = static_cast<double>(displayAreaSize.height())
             * static_cast<double>(displayAreaSize.width());
-        overThresholdFlag = (sizeFromDisplayArea > thresholdVal) ? true : false;
+        estSize = sizeFromDisplayArea;
     }
+    return estSize;
+}//end EstimateOutputImageSize
 
-    return overThresholdFlag;
-}//end CheckOutputImageSize
+std::string StainAnalysis::EstimateImageStorageSize(const double &pix) {
+    const double bytesPerPixel(4.0);
+    const double estStorageSize = bytesPerPixel * pix;
+    if (estStorageSize < 1.0) { return "0 bytes"; }
+    //bytes? kB? MB? GB? TB?
+    int power = static_cast<int>(std::log(estStorageSize) / std::log(1024.0));
+    double val = estStorageSize / std::pow(1024.0, power*1.0);
+    std::stringstream ss;
+    ss << std::setprecision(3) << val << " ";
+    if (power == 0) {
+        ss << "bytes";
+    }
+    else if (power == 1) {
+        ss << "kB";
+    }
+    else if (power == 2) {
+        ss << "MB";
+    }
+    else if (power == 3) {
+        ss << "GB";
+    }
+    else {
+        ss << "TB";
+    }
+    return ss.str();
+}//end EstimateImageStorageSize
 
 bool StainAnalysis::SaveFlatImageToFile(const std::string &p) {
     //It is assumed that error checks have already been performed, and that the type is valid
