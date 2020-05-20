@@ -180,7 +180,7 @@ void StainAnalysis::init(const image::ImageHandle& image) {
         true, false); //default value, optional
 
     // Init the user defined threshold value
-	//TEMPORARY: Can't set precision on DoubleParameter right now, so use 1/100 downscale
+  	//TEMPORARY: Can't set precision on DoubleParameter right now, so use 1/100 downscale
     //auto color = getColorSpace(image);
     //auto max_value = (1 << bitsPerChannel(color)) - 1;
     m_displayThreshold = createDoubleParameter(*this,
@@ -329,25 +329,25 @@ void StainAnalysis::run() {
 
 		// Update the output text report
 		if (false == askedToStop()) {
-			std::string report = generateCompleteReport(chosenStainProfile);
-            //If an output file should be written and the algorithm ran successfully, save images
-            if (m_saveSeparatedImage == true) {
-                //Save the result as a flat image file
-                bool saveResult = SaveFlatImageToFile(outputFilePath);
-                //Check whether saving was successful
-                std::stringstream ss;
-                if (saveResult) {
-                    ss << std::endl << "Stain-separated image saved as " << outputFilePath << std::endl;
-                    report.append(ss.str());
-                }
-                else {
-                    ss << std::endl << "Saving the stain-separated image failed. Please check the file name and directory permissions." << std::endl;
-                    report.append(ss.str());
-                }
+        std::string report = generateCompleteReport(chosenStainProfile);
+        //If an output file should be written and the algorithm ran successfully, save images
+        if (m_saveSeparatedImage == true) {
+            //Save the result as a flat image file
+            bool saveResult = SaveFlatImageToFile(outputFilePath);
+            //Check whether saving was successful
+            std::stringstream ss;
+            if (saveResult) {
+                ss << std::endl << "Stain-separated image saved as " << outputFilePath << std::endl;
+                report.append(ss.str());
             }
+            else {
+                ss << std::endl << "Saving the stain-separated image failed. Please check the file name and directory permissions." << std::endl;
+                report.append(ss.str());
+            }
+        }
 
-            //Finally, send the report to the results window
-            m_outputText.sendText(report);
+        //Finally, send the report to the results window
+        m_outputText.sendText(report);
 		}
 	}//end if UI changes
 

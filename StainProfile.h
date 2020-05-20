@@ -279,7 +279,7 @@ private:
     ///Store the list of possible stain analysis model names here
     const std::vector<std::string> m_stainAnalysisModelOptions;
     ///Store the list of possible stain separation algorithm names here
-	const std::vector<std::string> m_stainSeparationAlgorithmOptions;
+    const std::vector<std::string> m_stainSeparationAlgorithmOptions;
 
     ///An XML document associated with this class: note that elements can't be smartpointers
     std::shared_ptr<tinyxml2::XMLDocument> m_xmlDoc;
