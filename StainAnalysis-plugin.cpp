@@ -73,8 +73,9 @@ StainAnalysis::StainAnalysis()
     m_result(),
     m_outputText(),
     m_report(""),
-    m_displayThresholdDefaultVal(20.0),
-    m_displayThresholdMaxVal(300.0),
+    m_displayThresholdDefaultVal(0.20),
+    m_displayThresholdMaxVal(3.0),
+    m_thresholdStepSizeVal(0.01),
     m_pixelWarningThreshold(1e8), //100,000,000 pixels, ~400 MB
     m_colorDeconvolution_factory(nullptr)
 {
@@ -180,15 +181,15 @@ void StainAnalysis::init(const image::ImageHandle& image) {
         true, false); //default value, optional
 
     // Init the user defined threshold value
-	//TEMPORARY: Can't set precision on DoubleParameter right now, so use 1/100 downscale
     //auto color = getColorSpace(image);
     //auto max_value = (1 << bitsPerChannel(color)) - 1;
     m_displayThreshold = createDoubleParameter(*this,
-        "OD x100 Threshold",   // Widget label
+        "OD Threshold",   // Widget label
         "Threshold value to apply to the separated images. Images will be saved with this threshold applied.",   // Widget tooltip
         m_displayThresholdDefaultVal, // Initial value
-        0.0,                   // minimum value
+        0.0,                          // minimum value
         m_displayThresholdMaxVal,     // maximum value
+        m_thresholdStepSizeVal,
         false);
 
     //Allow the user to write separated images to file
@@ -208,7 +209,7 @@ void StainAnalysis::init(const image::ImageHandle& image) {
 
     // Bind result
     m_outputText = createTextResult(*this, "Text Result");
-    m_result = createImageResult(*this, " StainAnalysisResult");
+    m_result = createImageResult(*this, "StainAnalysisResult");
       
 }//end init
 
@@ -403,7 +404,7 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
         //Scale down the threshold to create more precision
         auto colorDeconvolution_kernel =
             std::make_shared<image::tile::ColorDeconvolution>(DisplayOption, chosenStainProfile, 
-                m_applyDisplayThreshold, m_displayThreshold/100.0);  //Need to tell it whether to use the threshold or not
+                m_applyDisplayThreshold, m_displayThreshold);  //Need to tell it whether to use the threshold or not
 
         // Create a Factory for the composition of these Kernels
         auto non_cached_factory =

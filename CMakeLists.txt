@@ -5,7 +5,7 @@ SET(CMAKE_CXX_STANDARD 17)
 INCLUDE(FetchContent)
 
 #Note which version of Sedeen Viewer this plugin was last compiled and tested with
-SET(SEDEENSDK_VERSION "5.4.4.20191024" CACHE STRING "Last version of Sedeen Viewer the plugin was compiled and tested with")
+SET(SEDEENSDK_VERSION "5.5.0.20200610" CACHE STRING "Last version of Sedeen Viewer the plugin was compiled and tested with")
 
 # Define project description variables
 SET( DISPLAY_NAME_TEXT "Stain Analysis and Separation" CACHE STRING "Name of the plugin as it should be displayed in Sedeen Viewer")
@@ -16,18 +16,18 @@ SET( DEVELOPER_TEXT "Sunnybrook Research Institute" CACHE STRING "Name of the au
 SET(PROGRAMFILESX86 "PROGRAMFILES\(X86\)")
 FIND_PACKAGE( SEDEENSDK REQUIRED 
   HINTS ../../.. 
-        "$ENV{${PROGRAMFILESX86}}/Sedeen Viewer SDK/v5.4.4.20191024/msvc2017"
-        "$ENV{PROGRAMFILES}/Sedeen Viewer SDK/v5.4.4.20191024/msvc2017" )
+        "$ENV{${PROGRAMFILESX86}}/Sedeen Viewer SDK/v5.5.0.20200610/msvc2017"
+        "$ENV{PROGRAMFILES}/Sedeen Viewer SDK/v5.5.0.20200610/msvc2017" )
 
 # Load the included OpenCV libs
 FIND_PACKAGE(SEDEENSDK_OPENCV REQUIRED
   HINTS ../../..
-        "$ENV{${PROGRAMFILESX86}}/Sedeen Viewer SDK/v5.4.4.20191024/msvc2017"
-        "$ENV{PROGRAMFILES}/Sedeen Viewer SDK/v5.4.4.20191024/msvc2017" )
+        "$ENV{${PROGRAMFILESX86}}/Sedeen Viewer SDK/v5.5.0.20200610/msvc2017"
+        "$ENV{PROGRAMFILES}/Sedeen Viewer SDK/v5.5.0.20200610/msvc2017" )
 
 #Add OpenMP for parallel programming
 #This is not essential to the plugin and can be omitted
-FIND_PACKAGE(OPENMP)
+FIND_PACKAGE(OpenMP)
 IF(OPENMP_FOUND)
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
