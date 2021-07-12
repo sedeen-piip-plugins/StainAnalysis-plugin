@@ -1,6 +1,6 @@
 /*=============================================================================
  *
- *  Copyright (c) 2020 Sunnybrook Research Institute
+ *  Copyright (c) 2021 Sunnybrook Research Institute
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -609,8 +609,7 @@ std::string StainAnalysis::generateCompleteReport(std::shared_ptr<StainProfile> 
     //and the pixel fraction report, return the full string
     std::ostringstream ss;
     ss << generateStainProfileReport(theProfile);
-    ss << std::endl;
-    //ss << generatePixelFractionReport();
+    ss << generatePixelFractionReport();
     return ss.str();
 }//end generateCompleteReport
 
@@ -770,7 +769,6 @@ std::string StainAnalysis::generatePixelFractionReport() const {
     ss << "Percent of processed region covered by" << std::endl; 
     ss << "stain, above the displayed threshold : ";
 	ss << std::fixed << std::setprecision(3) << coveredFraction*100  << " %" << std::endl;
-	ss << std::endl;
 
 	return ss.str();
 }//end generatePixelFractionReport

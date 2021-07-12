@@ -54,8 +54,10 @@ cmrc_add_resource_library(stain-resources ALIAS stain::rc NAMESPACE stain
 FetchContent_Declare(
   TinyXML2
   GIT_REPOSITORY https://github.com/leethomason/tinyxml2.git
-  GIT_TAG 61a4c7d507322c9f494f5880d4c94b60e4ce9590
+  GIT_TAG 1dee28e51f9175a31955b9791c74c430fe13dc82
 )
+#61a4c7d507322c9f494f5880d4c94b60e4ce9590
+
 # Check if the tinyxml2 files have already been populated
 FetchContent_GetProperties(TinyXML2)
 STRING(TOLOWER "TinyXML2" TinyXML2Name)
@@ -68,7 +70,7 @@ ENDIF()
 FetchContent_Declare(
   OpticalDensityThreshold
   GIT_REPOSITORY https://github.com/sedeen-piip-plugins/OpticalDensityThreshold.git
-  GIT_TAG 4c13adceeccbc51384d198541759be3b48280ef3
+  GIT_TAG de819961664eb76b11dd7c4782c1f10226b8db62
 )
 FetchContent_GetProperties(OpticalDensityThreshold)
 STRING(TOLOWER "OpticalDensityThreshold" OpticalDensityThresholdName)
