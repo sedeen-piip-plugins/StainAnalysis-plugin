@@ -1,6 +1,6 @@
 /*=============================================================================
  *
- *  Copyright (c) 2020 Sunnybrook Research Institute
+ *  Copyright (c) 2021 Sunnybrook Research Institute
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -150,7 +150,7 @@ public:
     ///Set the values of the stain vector profiles from a 9-element double array
     bool SetProfilesFromDoubleArray(double (&profileArray)[9]);
 
-    //Check if the file exists and accessible for reading or writing, or that the directory to write to exists
+    ///Check if the file exists and accessible for reading or writing, or that the directory to write to exists
     static bool checkFile(const std::string &, const std::string &);
 
     ///Check if the basic structure of the stain profile has been assembled

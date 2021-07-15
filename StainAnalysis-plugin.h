@@ -1,6 +1,6 @@
 /*=============================================================================
  *
- *  Copyright (c) 2020 Sunnybrook Research Institute
+ *  Copyright (c) 2021 Sunnybrook Research Institute
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -93,7 +93,7 @@ private:
     bool SaveFlatImageToFile(const std::string &p);
 
     ///Given a full file path as a string, identify if there is an extension and return it
-    const std::string StainAnalysis::getExtension(const std::string &p);
+    const std::string getExtension(const std::string &p);
 
     ///Search the m_saveFileExtensionText vector for a given extension, and return the index, or -1 if not found
     const int findExtensionIndex(const std::string &x) const;
@@ -160,10 +160,11 @@ private:
     std::vector<std::string> m_stainToDisplayOptions;
     std::vector<std::string> m_saveFileFormatOptions;
     std::vector<std::string> m_saveFileExtensionText;
-    double m_displayThresholdDefaultVal;
-    double m_displayThresholdMaxVal;
+    const double m_displayThresholdDefaultVal;
+    const double m_displayThresholdMaxVal;
+    const double m_thresholdStepSizeVal;
     ///Number of pixels in an image to be saved over which the user will receive a warning.
-    double m_pixelWarningThreshold;
+    const double m_pixelWarningThreshold;
 };
 
 } // namespace algorithm

@@ -5,7 +5,7 @@ SET(CMAKE_CXX_STANDARD 17)
 INCLUDE(FetchContent)
 
 #Note which version of Sedeen Viewer this plugin was last compiled and tested with
-SET(SEDEENSDK_VERSION "5.4.4.20191024" CACHE STRING "Last version of Sedeen Viewer the plugin was compiled and tested with")
+SET(SEDEENSDK_VERSION "5.5.0.20200610" CACHE STRING "Last version of Sedeen Viewer the plugin was compiled and tested with")
 
 # Define project description variables
 SET( DISPLAY_NAME_TEXT "Stain Analysis and Separation" CACHE STRING "Name of the plugin as it should be displayed in Sedeen Viewer")
@@ -16,18 +16,18 @@ SET( DEVELOPER_TEXT "Sunnybrook Research Institute" CACHE STRING "Name of the au
 SET(PROGRAMFILESX86 "PROGRAMFILES\(X86\)")
 FIND_PACKAGE( SEDEENSDK REQUIRED 
   HINTS ../../.. 
-        "$ENV{${PROGRAMFILESX86}}/Sedeen Viewer SDK/v5.4.4.20191024/msvc2017"
-        "$ENV{PROGRAMFILES}/Sedeen Viewer SDK/v5.4.4.20191024/msvc2017" )
+        "$ENV{${PROGRAMFILESX86}}/Sedeen Viewer SDK/v5.5.0.20200610/msvc2017"
+        "$ENV{PROGRAMFILES}/Sedeen Viewer SDK/v5.5.0.20200610/msvc2017" )
 
 # Load the included OpenCV libs
 FIND_PACKAGE(SEDEENSDK_OPENCV REQUIRED
   HINTS ../../..
-        "$ENV{${PROGRAMFILESX86}}/Sedeen Viewer SDK/v5.4.4.20191024/msvc2017"
-        "$ENV{PROGRAMFILES}/Sedeen Viewer SDK/v5.4.4.20191024/msvc2017" )
+        "$ENV{${PROGRAMFILESX86}}/Sedeen Viewer SDK/v5.5.0.20200610/msvc2017"
+        "$ENV{PROGRAMFILES}/Sedeen Viewer SDK/v5.5.0.20200610/msvc2017" )
 
 #Add OpenMP for parallel programming
 #This is not essential to the plugin and can be omitted
-FIND_PACKAGE(OPENMP)
+FIND_PACKAGE(OpenMP)
 IF(OPENMP_FOUND)
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
@@ -54,8 +54,10 @@ cmrc_add_resource_library(stain-resources ALIAS stain::rc NAMESPACE stain
 FetchContent_Declare(
   TinyXML2
   GIT_REPOSITORY https://github.com/leethomason/tinyxml2.git
-  GIT_TAG 61a4c7d507322c9f494f5880d4c94b60e4ce9590
+  GIT_TAG 1dee28e51f9175a31955b9791c74c430fe13dc82
 )
+#61a4c7d507322c9f494f5880d4c94b60e4ce9590
+
 # Check if the tinyxml2 files have already been populated
 FetchContent_GetProperties(TinyXML2)
 STRING(TOLOWER "TinyXML2" TinyXML2Name)
@@ -68,7 +70,7 @@ ENDIF()
 FetchContent_Declare(
   OpticalDensityThreshold
   GIT_REPOSITORY https://github.com/sedeen-piip-plugins/OpticalDensityThreshold.git
-  GIT_TAG 4c13adceeccbc51384d198541759be3b48280ef3
+  GIT_TAG de819961664eb76b11dd7c4782c1f10226b8db62
 )
 FetchContent_GetProperties(OpticalDensityThreshold)
 STRING(TOLOWER "OpticalDensityThreshold" OpticalDensityThresholdName)
