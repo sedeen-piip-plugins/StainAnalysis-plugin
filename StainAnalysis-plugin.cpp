@@ -569,7 +569,8 @@ bool StainAnalysis::SaveFlatImageToFile(const std::string &p) {
     }
     //Save the outputImage to a file at the given location
     imageSaved = outputImage.save(outFilePath);
-    return imageSaved; //true on successful save, false otherwise
+    //true on successful save, false otherwise
+    return imageSaved; 
 }//end SaveFlatImageToFile
 
 const std::string StainAnalysis::getExtension(const std::string &p) {
