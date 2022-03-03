@@ -28,16 +28,31 @@
 
 namespace sedeen {
 namespace image {
+
+namespace {
+    const ColorSpace GrayscaleColorSpace(ColorModel::Grayscale, ChannelType::UInt8); //Const definition of GrayscaleColorSpace
+    const ColorSpace RGBAColorSpace(ColorModel::RGBA, ChannelType::UInt8); //Const definition of RGBAColorSpace
+}
+
 namespace tile {
 	ColorDeconvolution::ColorDeconvolution( DisplayOptions displayOption, 
         std::shared_ptr<StainProfile> theProfile, 
-        bool applyThreshold, double threshold) :
+        bool applyThreshold, double threshold, bool stainQuantityOnly /*= false*/) :
         m_applyThreshold(applyThreshold),
 		m_threshold(threshold),
 		m_DisplayOption(displayOption),
         m_stainProfile(theProfile),
-        m_colorSpace(ColorModel::RGBA, ChannelType::UInt8)
+        m_grayscaleQuantityOnly(stainQuantityOnly),
+        m_grayscaleNormFactor(100.0),
+        m_outputColorSpace(ColorModel::RGBA, ChannelType::UInt8) //initialize a default value
 	{
+        //If m_grayscaleQuantityOnly is true, set m_outputColorSpace to grayscale
+        if (GetGrayscaleQuantityOnly()) {
+            SetOutputColorSpace(GrayscaleColorSpace);
+        }
+        else {
+            SetOutputColorSpace(RGBAColorSpace);
+        }
 	}//end constructor
 
     ColorDeconvolution::~ColorDeconvolution(void) {
@@ -46,13 +61,17 @@ namespace tile {
 	RawImage ColorDeconvolution::separateStains(const RawImage &source, double (&stainVec_matrix)[9])
 	{
         int scaleMax = 255;
-        // initialize 3 output images
+        // initialize 3 output color images and 3 grayscale images
         sedeen::Size imageSize = source.size();
         std::vector<RawImage> colorImages;
+        std::vector<RawImage> grayscaleImages;
         for (int i = 0; i < 3; i++) {
             //Color images: adjust pixel value, assign
-            colorImages.push_back(RawImage(imageSize, ColorSpace(ColorModel::RGBA, ChannelType::UInt8)));
+            colorImages.push_back(RawImage(imageSize, RGBAColorSpace));
             colorImages[i].fill(ChannelValue(0)); //ChannelValue is a std::variant, so values can be retrieved as multiple types
+            //Grayscale images: adjust pixel value, assign
+            grayscaleImages.push_back(RawImage(imageSize, GrayscaleColorSpace));
+            grayscaleImages[i].fill(ChannelValue(0));
         }
 
         //The inverse can't be calculated if there is a row of zeros. Replace these values first.
@@ -73,7 +92,7 @@ namespace tile {
 			x = j%imageSize.width();
 			y = j/imageSize.width();
 
-			// log transform the RGB data
+			// log transform the source RGB data
             int R = source.at(x, y, 0).as<int>();
             int G = source.at(x, y, 1).as<int>();
             int B = source.at(x, y, 2).as<int>();
@@ -84,47 +103,57 @@ namespace tile {
 
             //The resulting RGB values for the three images
             double RGB_sep[9] = { 0.0 };
-            GetSeparateColorsForPixel(pixelOD, RGB_sep, stainVec_matrix, inverse_matrix);
+            double stainQuant[3] = { 0.0 };
+            GetSeparateColorsForPixel(pixelOD, RGB_sep, stainQuant, stainVec_matrix, inverse_matrix);
 
             for (int i = 0; i < 3; i++) { //i index is stain
                 colorImages.at(i).setValue(x, y, 0, static_cast<int>(RGB_sep[i * 3    ]));
                 colorImages.at(i).setValue(x, y, 1, static_cast<int>(RGB_sep[i * 3 + 1]));
                 colorImages.at(i).setValue(x, y, 2, static_cast<int>(RGB_sep[i * 3 + 2]));
                 colorImages.at(i).setValue(x, y, 3, scaleMax);
+                int sq = static_cast<int>(stainQuant[i] * m_grayscaleNormFactor);
+                grayscaleImages.at(i).setValue(x, y, 0, sq);
             }
 		}//end for each pixel
 
         //Return the requested stain image
+        //Either colorImages, or if GrayscaleQuantityOnly is true, grayscaleImages
 		if( m_DisplayOption == DisplayOptions::STAIN1 ){
-			return colorImages[0];
+			return GetGrayscaleQuantityOnly() ? grayscaleImages[0] : colorImages[0];
         }
 		else if( m_DisplayOption == DisplayOptions::STAIN2 ){
-			return colorImages[1];
+			return GetGrayscaleQuantityOnly() ? grayscaleImages[1] : colorImages[1];
         }
 		else if( m_DisplayOption == DisplayOptions::STAIN3 ){
-			return colorImages[2];
+			return GetGrayscaleQuantityOnly() ? grayscaleImages[2] : colorImages[2];
         }
         else {
             return source;
         }
 	}//end separateStains
 
+    void ColorDeconvolution::GetSeparateColorsForPixel(double(&pixelOD)[3], double(&RGB_sep)[9],
+        double(&stainVec_matrix)[9], double(&inverse_matrix)[9]) {
+        double quant[3] = { 0.0 }; //allocated but not accessible when using this overload
+        GetSeparateColorsForPixel(pixelOD, RGB_sep, quant, stainVec_matrix, inverse_matrix);
+    }//end GetSeparateColorsForPixel
+
     void ColorDeconvolution::GetSeparateColorsForPixel(double (&pixelOD)[3], double (&RGB_sep)[9], 
-        double (&stainVec_matrix)[9], double (&inverse_matrix)[9]) {
+        double(&outQuant)[3], double (&stainVec_matrix)[9], double (&inverse_matrix)[9]) {
         //Determine how much of each stain is present at a pixel
-        double stainSaturation[3] = { 0.0 }; //index is stain number
-        StainVectorMath::Multiply3x3MatrixAndVector(inverse_matrix, pixelOD, stainSaturation);
+        double stainQuantity[3] = { 0.0 }; //index is stain number
+        StainVectorMath::Multiply3x3MatrixAndVector(inverse_matrix, pixelOD, stainQuantity);
 
         for (int i = 0; i < 3; i++) { //i index is stain
             //Scale the stain's OD by the amount of stain at this pixel, get the RGB values
             double OD_scaled[3]; //index is color channel
 
-            //Don't allow negative stain saturations
-            stainSaturation[i] = (stainSaturation[i] > 0.0) ? stainSaturation[i] : 0.0;
+            //Don't allow negative stain quantities
+            stainQuantity[i] = (stainQuantity[i] > 0.0) ? stainQuantity[i] : 0.0;
 
-            OD_scaled[0] = (stainSaturation[i]) * stainVec_matrix[i * 3];
-            OD_scaled[1] = (stainSaturation[i]) * stainVec_matrix[i * 3 + 1];
-            OD_scaled[2] = (stainSaturation[i]) * stainVec_matrix[i * 3 + 2];
+            OD_scaled[0] = (stainQuantity[i]) * stainVec_matrix[i * 3];
+            OD_scaled[1] = (stainQuantity[i]) * stainVec_matrix[i * 3 + 1];
+            OD_scaled[2] = (stainQuantity[i]) * stainVec_matrix[i * 3 + 2];
 
             double OD_sum = OD_scaled[0] + OD_scaled[1] + OD_scaled[2];
             //Determine if the threshold should be applied to this stain's pixel value
@@ -140,11 +169,13 @@ namespace tile {
                 RGB_sep[i * 3    ] = ODConversion::ConvertODtoRGB(OD_scaled[0]);
                 RGB_sep[i * 3 + 1] = ODConversion::ConvertODtoRGB(OD_scaled[1]);
                 RGB_sep[i * 3 + 2] = ODConversion::ConvertODtoRGB(OD_scaled[2]);
+                outQuant[i] = stainQuantity[i];
             }
             else {
                 RGB_sep[i * 3    ] = 0.0;
                 RGB_sep[i * 3 + 1] = 0.0;
                 RGB_sep[i * 3 + 2] = 0.0;
+                outQuant[i] = 0.0;
             }
         }
     }//end GetSeparateColorsForPixel
@@ -247,7 +278,7 @@ namespace tile {
 
 	const ColorSpace& ColorDeconvolution::doGetColorSpace() const
 	{
-		return m_colorSpace;
+		return m_outputColorSpace;
 	}
 
 } // namespace tile

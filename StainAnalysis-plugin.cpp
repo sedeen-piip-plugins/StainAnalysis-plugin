@@ -64,6 +64,7 @@ StainAnalysis::StainAnalysis()
     m_stainSeparationAlgorithm(),
     m_stainVectorProfile(),
     m_regionToProcess(),
+    m_stainResultType(),
     m_stainToDisplay(),
     m_applyDisplayThreshold(),
     m_displayThreshold(),
@@ -124,6 +125,11 @@ StainAnalysis::StainAnalysis()
     //Clean up
     tempStainProfile.reset();
 
+    //Define the list of results to display 
+    //(grayscale quantity versus re-coloured with stain vectors)
+    m_stainResultTypeOptions.push_back("Stain RGB colours");
+    m_stainResultTypeOptions.push_back("Grayscale quantity");
+
     //Define the default list of names of stains to display
     m_stainToDisplayOptions.push_back("Stain 1");
     m_stainToDisplayOptions.push_back("Stain 2");
@@ -170,6 +176,11 @@ void StainAnalysis::init(const image::ImageHandle& image) {
     m_regionToProcess = createGraphicItemParameter(*this, "Apply to ROI (None for Display Area)",
         "Choose a Region of Interest on which to apply the stain separation algorithm. Choosing no ROI will apply the stain separation to the whole slide image.",
         true); //optional. None means apply to whole slide
+
+    //List of result types to display (re-coloured with stain vectors or grayscale quantity)
+    m_stainResultType = createOptionParameter(*this, "Result Type",
+        "Choose the type of separated image to display (RGB colours from stain vectors or grayscale stain quantity",
+        0, m_stainResultTypeOptions, false);
 
     //List of options of the stains to be shown
     m_stainToDisplay = createOptionParameter(*this, "Show Separated Stain",
@@ -277,7 +288,7 @@ void StainAnalysis::run() {
                 m_outputText.sendText("The filename is blank. Please choose a file to save the image to, or uncheck Save Separated Images.");
                 return;
             }
-            //Does it exist or can it be created, and can it be written to?
+            //Does the file exist or can it be created, and can it be written to?
             bool validFileCheck = StainProfile::checkFile(outputFilePath, "w");
             if (!validFileCheck) {
                 m_outputText.sendText("The file name selected cannot be written to. Please choose another, or check the permissions of the directory.");
@@ -375,6 +386,7 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
          || m_regionToProcess.isChanged()
          || m_stainSeparationAlgorithm.isChanged() 
          || m_stainVectorProfile.isChanged() 
+         || m_stainResultType.isChanged()
          || m_stainToDisplay.isChanged() 
          || m_applyDisplayThreshold.isChanged() 
          || m_displayThreshold.isChanged() 
@@ -401,10 +413,10 @@ bool StainAnalysis::buildPipeline(std::shared_ptr<StainProfile> chosenStainProfi
             break;
         }
 
-        //Scale down the threshold to create more precision
+        //Kernel is affected by the display threshold settings, and choice of stain quantity or colour image
         auto colorDeconvolution_kernel =
             std::make_shared<image::tile::ColorDeconvolution>(DisplayOption, chosenStainProfile, 
-                m_applyDisplayThreshold, m_displayThreshold);  //Need to tell it whether to use the threshold or not
+                m_applyDisplayThreshold, m_displayThreshold, m_stainResultType);
 
         // Create a Factory for the composition of these Kernels
         auto non_cached_factory =
@@ -609,8 +621,9 @@ std::string StainAnalysis::generateCompleteReport(std::shared_ptr<StainProfile> 
     //Combine the output of the stain profile report
     //and the pixel fraction report, return the full string
     std::ostringstream ss;
-    ss << generateStainProfileReport(theProfile);
     ss << generatePixelFractionReport();
+    ss << std::endl;
+    ss << generateStainProfileReport(theProfile);
     return ss.str();
 }//end generateCompleteReport
 
@@ -726,12 +739,16 @@ std::string StainAnalysis::generatePixelFractionReport() const {
 	DisplayRegion region = m_displayArea;
 	auto output_image = compositor->getImage(region.source_region, region.output_size);
 
+    //Check the ColorSpace of output_image to get the number of channels
+    ColorSpace outputColorSpace = output_image.colorSpace();
+    //The values of interest for the channelCount are 1 or 3, force to those options
+    int channelCount = outputColorSpace.channelCount() > 1 ? 3 : 1;
+
 	// Get image from the input factory
 	auto compositorsource = std::make_unique<Compositor>(image()->getFactory());
 	auto input_image = compositorsource->getImage(region.source_region, region.output_size);
 
 	if (m_regionToProcess.isUserDefined()) {
-		//myss << m_regionToProcess.isUserDefined() << std::endl;
 		std::shared_ptr<GraphicItemBase> roi = m_regionToProcess;
 		auto display_resolution = getDisplayResolution(image(), m_displayArea);
 		Rect rect = containingRect(roi->graphic());
@@ -751,8 +768,10 @@ std::string StainAnalysis::generatePixelFractionReport() const {
         for (i = 0; i < iWidth; ++i) {
             for (j = 0; j < jHeight; ++j) {
                 //This relies on implicit conversion from boolean operators to integers 0/1
-                pixelSetArray[i*jHeight + j] 
-                    = (   output_image.at(i, j, 0).as<uint8_t>()
+                //Use a ternary conditional operator to choose how many channels to consider
+                pixelSetArray[i*jHeight + j] = (channelCount == 1)
+                    ? (false || output_image.at(i, j, 0).as<uint8_t>()) //grayscale output image
+                    : (   output_image.at(i, j, 0).as<uint8_t>()        //RGB+ output image
                        || output_image.at(i, j, 1).as<uint8_t>()
                        || output_image.at(i, j, 2).as<uint8_t>() );
             }
@@ -770,6 +789,9 @@ std::string StainAnalysis::generatePixelFractionReport() const {
     ss << "Percent of processed region covered by" << std::endl; 
     ss << "stain, above the displayed threshold : ";
 	ss << std::fixed << std::setprecision(3) << coveredFraction*100  << " %" << std::endl;
+    //Show the numerator and denominator of the pixel fraction
+    ss << "stained / total pixels: ";
+    ss << numPixels << " / " << totalNumPixels << std::endl;
 
 	return ss.str();
 }//end generatePixelFractionReport

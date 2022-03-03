@@ -88,7 +88,6 @@ private:
     ///Get a human-readable estimate of the storage space required for an output file (with 4 bytes per pixel).
     std::string EstimateImageStorageSize(const double &pix);
 
-
     ///Save the separated image to a TIF/PNG/BMP/GIF/JPG flat format file
     bool SaveFlatImageToFile(const std::string &p);
 
@@ -130,6 +129,8 @@ private:
     OptionParameter m_stainVectorProfile;
     GraphicItemParameter m_regionToProcess; //single output region
 
+    ///Result type is whether to show stain quantity in grayscale, or re-colour with the stain vectors
+    OptionParameter m_stainResultType;
     OptionParameter m_stainToDisplay;
     BoolParameter m_applyDisplayThreshold;
     /// User defined Threshold value.
@@ -157,6 +158,7 @@ private:
     std::vector<std::string> m_stainAnalysisModelOptions;
     std::vector<std::string> m_separationAlgorithmOptions;
     std::vector<std::string> m_stainVectorProfileOptions;
+    std::vector<std::string> m_stainResultTypeOptions;
     std::vector<std::string> m_stainToDisplayOptions;
     std::vector<std::string> m_saveFileFormatOptions;
     std::vector<std::string> m_saveFileExtensionText;

@@ -28,6 +28,8 @@
 #include "Global.h"
 #include "Geometry.h"
 #include "Image.h"
+#include "image/filter/Kernel.h"
+#include "global/ColorSpace.h"
 
 #include <cstdio>
 #include <sstream>
@@ -63,7 +65,7 @@ namespace tile {
 		/// \param 
 		/// 
         explicit ColorDeconvolution(DisplayOptions displayOption, std::shared_ptr<StainProfile>, 
-            bool applyThreshold, double threshold);
+            bool applyThreshold, double threshold, bool stainQuantityOnly = false);
 
 		virtual ~ColorDeconvolution();
 
@@ -71,22 +73,39 @@ namespace tile {
 		/// \cond INTERNAL
 
 		virtual RawImage doProcessData(const RawImage &source);
-
 		virtual const ColorSpace& doGetColorSpace() const;
+        ///Given an input RGBA image and stain vectors, output either an RGBA or a Grayscale image
+		RawImage separateStains(const RawImage &source, double (&stainVec)[9]);
 
-		RawImage separateStains(const RawImage &source, double (&out)[9]);
+        ///Apply threshold to source image, output RGB or averaged grayscale if stainQuantityOnly is false
         RawImage thresholdOnly(const RawImage &source);
 
-        ///Arguments are: the three OD values for the pixel, the output array, the stain vector matrix, and the inverse of the matrix
+
+        ///Arguments are: the 3 OD values, the 9-element RGB output, the 3-element stain quantity output, the stain vector matrix, and the inverse of the matrix
+        void GetSeparateColorsForPixel(double(&pixelOD)[3], double(&RGB_sep)[9],
+            double(&quant)[3], double(&stainVec_matrix)[9], double(&inverse_matrix)[9]);
+
+        ///Original argument list (overload)
         void GetSeparateColorsForPixel(double (&pixelOD)[3], double (&RGB_sep)[9], 
             double (&stainVec_matrix)[9], double (&inverse_matrix)[9]);
 
+        ///Get the boolean value of m_grayscaleQuanityOnly
+        const bool& GetGrayscaleQuantityOnly() const { return m_grayscaleQuantityOnly; }
+        ///Set the output color space
+        void SetOutputColorSpace(const ColorSpace& os) { m_outputColorSpace = os; }
+
 		// rows of matrix are stains, columns are color channels
 		ColorDeconvolution::DisplayOptions m_DisplayOption;	
+        bool m_grayscaleQuantityOnly;
         bool m_applyThreshold;
 		double m_threshold;
 
-        ColorSpace m_colorSpace;
+        //Normalization for grayscale stain quantities: -log_10(1/255) is 2.40, so set 2.55 to be channel 255 = norm factor 100
+        const double m_grayscaleNormFactor;
+
+        ///ColorSpace of the source (input) image
+        ///ColorSpace of the output image
+        ColorSpace m_outputColorSpace;
         std::shared_ptr<StainProfile> m_stainProfile;
 		/// \endcond
 	};
@@ -95,4 +114,3 @@ namespace tile {
 } // namespace image
 } // namespace sedeen
 #endif
-
