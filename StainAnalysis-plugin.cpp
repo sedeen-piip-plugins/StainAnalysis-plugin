@@ -621,8 +621,9 @@ std::string StainAnalysis::generateCompleteReport(std::shared_ptr<StainProfile> 
     //Combine the output of the stain profile report
     //and the pixel fraction report, return the full string
     std::ostringstream ss;
-    ss << generateStainProfileReport(theProfile);
     ss << generatePixelFractionReport();
+    ss << std::endl;
+    ss << generateStainProfileReport(theProfile);
     return ss.str();
 }//end generateCompleteReport
 
@@ -788,6 +789,9 @@ std::string StainAnalysis::generatePixelFractionReport() const {
     ss << "Percent of processed region covered by" << std::endl; 
     ss << "stain, above the displayed threshold : ";
 	ss << std::fixed << std::setprecision(3) << coveredFraction*100  << " %" << std::endl;
+    //Show the numerator and denominator of the pixel fraction
+    ss << "stained / total pixels: ";
+    ss << numPixels << " / " << totalNumPixels << std::endl;
 
 	return ss.str();
 }//end generatePixelFractionReport
